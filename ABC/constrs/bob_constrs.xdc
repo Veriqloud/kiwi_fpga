@@ -35,6 +35,8 @@ set_property PACKAGE_PIN AB16 [get_ports ext_clk100_n]
 set_property IOSTANDARD LVDS_25 [get_ports ext_clk100_*]
 #set_property DIFF_TERM_ADV TERM_100 [get_ports ext_clk100_*]
 
+#create clock to test the FREQ_HZ
+create_clock -period 5.000 -name clk200_net -waveform {0.000 2.500} [get_nets ext_clk200_o]
 
 
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/ibuf_clk100/O]
