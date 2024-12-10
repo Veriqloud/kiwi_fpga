@@ -134,8 +134,6 @@ proc checkRequiredFiles { origin_dir} {
  "[file normalize "$origin_dir/../srcs/tdc_fav/AS6501_IF.v"]"\
  "[file normalize "$origin_dir/../srcs/ttl_reg_mngt.v"]"\
  "[file normalize "$origin_dir/../srcs/ttl_gate_apd.v"]"\
- "[file normalize "$origin_dir/../Bob.srcs/sources_1/bd/Bob_top/Bob_top.bd"]"\
- "[file normalize "$origin_dir/../srcs/Bob_top_wrapper.v"]"\
  "[file normalize "$origin_dir/../ip/fifo_axistream_128/fifo_axistream_128.xci"]"\
  "[file normalize "$origin_dir/../ip/axis_data_fifo_0/axis_data_fifo_0.xci"]"\
  "[file normalize "$origin_dir/../srcs/axi_monitor.v"]"\
@@ -193,7 +191,7 @@ proc checkRequiredFiles { origin_dir} {
   return $status
 }
 # Set the reference directory for source file relative paths (by default the value is script directory path)
-set origin_dir "."
+ set origin_dir "."
 
 # Use origin directory path location variable, if specified in the tcl shell
 if { [info exists ::origin_dir_loc] } {
@@ -274,7 +272,11 @@ if { $validate_required } {
 create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xcau25p-ffvb676-2-e
 
 # Source block ddesign tcl
-source Bob_bd.tcl
+source $origin_dir/../tcl/Bob_bd.tcl
+
+# Generate Bob_top_wrapper
+set design_name [get_bd_designs]
+make_wrapper -files [get_files Bob_top.bd] -top -import 
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -404,8 +406,6 @@ set files [list \
  [file normalize "${origin_dir}/../srcs/tdc_fav/AS6501_IF.v" ]\
  [file normalize "${origin_dir}/../srcs/ttl_reg_mngt.v" ]\
  [file normalize "${origin_dir}/../srcs/ttl_gate_apd.v" ]\
- [file normalize "${origin_dir}/../Bob.srcs/sources_1/bd/Bob_top/Bob_top.bd" ]\
- [file normalize "${origin_dir}/../srcs/Bob_top_wrapper.v" ]\
  [file normalize "${origin_dir}/../ip/fifo_axistream_128/fifo_axistream_128.xci" ]\
  [file normalize "${origin_dir}/../ip/axis_data_fifo_0/axis_data_fifo_0.xci" ]\
  [file normalize "${origin_dir}/../srcs/axi_monitor.v" ]\
@@ -838,31 +838,31 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "Bob_top/Bob_top.bd"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "exclude_debug_logic" -value "0" -objects $file_obj
-set_property -name "is_enabled" -value "1" -objects $file_obj
-set_property -name "is_global_include" -value "0" -objects $file_obj
-set_property -name "library" -value "xil_defaultlib" -objects $file_obj
-set_property -name "path_mode" -value "RelativeFirst" -objects $file_obj
-set_property -name "pfm_name" -value "" -objects $file_obj
-set_property -name "registered_with_manager" -value "1" -objects $file_obj
-set_property -name "used_in" -value "synthesis implementation simulation" -objects $file_obj
-set_property -name "used_in_implementation" -value "1" -objects $file_obj
-set_property -name "used_in_simulation" -value "1" -objects $file_obj
-set_property -name "used_in_synthesis" -value "1" -objects $file_obj
+# set file "Bob_top/Bob_top.bd"
+# set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+# set_property -name "exclude_debug_logic" -value "0" -objects $file_obj
+# set_property -name "is_enabled" -value "1" -objects $file_obj
+# set_property -name "is_global_include" -value "0" -objects $file_obj
+# set_property -name "library" -value "xil_defaultlib" -objects $file_obj
+# set_property -name "path_mode" -value "RelativeFirst" -objects $file_obj
+# set_property -name "pfm_name" -value "" -objects $file_obj
+# set_property -name "registered_with_manager" -value "1" -objects $file_obj
+# set_property -name "used_in" -value "synthesis implementation simulation" -objects $file_obj
+# set_property -name "used_in_implementation" -value "1" -objects $file_obj
+# set_property -name "used_in_simulation" -value "1" -objects $file_obj
+# set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "srcs/Bob_top_wrapper.v"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "file_type" -value "Verilog" -objects $file_obj
-set_property -name "is_enabled" -value "1" -objects $file_obj
-set_property -name "is_global_include" -value "0" -objects $file_obj
-set_property -name "library" -value "xil_defaultlib" -objects $file_obj
-set_property -name "path_mode" -value "RelativeFirst" -objects $file_obj
-set_property -name "used_in" -value "synthesis implementation simulation" -objects $file_obj
-set_property -name "used_in_implementation" -value "1" -objects $file_obj
-set_property -name "used_in_simulation" -value "1" -objects $file_obj
-set_property -name "used_in_synthesis" -value "1" -objects $file_obj
+# set file "srcs/Bob_top_wrapper.v"
+# set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+# set_property -name "file_type" -value "Verilog" -objects $file_obj
+# set_property -name "is_enabled" -value "1" -objects $file_obj
+# set_property -name "is_global_include" -value "0" -objects $file_obj
+# set_property -name "library" -value "xil_defaultlib" -objects $file_obj
+# set_property -name "path_mode" -value "RelativeFirst" -objects $file_obj
+# set_property -name "used_in" -value "synthesis implementation simulation" -objects $file_obj
+# set_property -name "used_in_implementation" -value "1" -objects $file_obj
+# set_property -name "used_in_simulation" -value "1" -objects $file_obj
+# set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
 set file "fifo_axistream_128/fifo_axistream_128.xci"
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
@@ -1126,7 +1126,7 @@ set_property -name "include_dirs" -value "" -objects $obj
 set_property -name "lib_map_file" -value "" -objects $obj
 set_property -name "loop_count" -value "1000" -objects $obj
 set_property -name "name" -value "sources_1" -objects $obj
-set_property -name "top" -value "Bob_top_wrapper" -objects $obj
+# set_property -name "top" -value "Bob_top_wrapper" -objects $obj
 set_property -name "verilog_define" -value "" -objects $obj
 set_property -name "verilog_uppercase" -value "0" -objects $obj
 set_property -name "verilog_version" -value "verilog_2001" -objects $obj
