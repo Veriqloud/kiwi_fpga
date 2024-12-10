@@ -199,7 +199,7 @@ if { [info exists ::origin_dir_loc] } {
 }
 
 # Set the project name
-set _xil_proj_name_ "TurnKey"
+set _xil_proj_name_ "Bob"
 
 # Use project name variable, if specified in the tcl shell
 if { [info exists ::user_project_name] } {
@@ -278,8 +278,8 @@ set proj_dir [get_property directory [current_project]]
 source $origin_dir/block_design.tcl
 
 #Generate top wrapper
-#set design_name [get_bd_designs]
-#make_wrapper -files [get_files Bob_top.bd] -top -import
+set design_name [get_bd_designs]
+make_wrapper -files [get_files Bob_top.bd] -top -import
 
 
 # Set project properties
