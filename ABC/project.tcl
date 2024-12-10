@@ -275,7 +275,7 @@ create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xcau25p-ffvb676-2-e
 set proj_dir [get_property directory [current_project]]
 
 #Create block design
-#source $origin_dir/block_design.tcl
+source $origin_dir/block_design.tcl
 
 #Generate top wrapper
 #set design_name [get_bd_designs]
