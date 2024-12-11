@@ -27,24 +27,24 @@ module AS6501_IF (
     input           sdi_i,
 
     // AXI-Stream to fifo
-    input 			s_axis_clk,
-    output [127:0]	s_axis_tdata,
-    output 			s_axis_tvalid,
-    output [3:0]	s_axis_tuser,
-    input 			s_axis_tready,
+    input 			m_axis_clk,
+    output [127:0]	m_axis_tdata,
+    output 			m_axis_tvalid,
+    output [3:0]	m_axis_tuser,
+    input 			m_axis_tready,
     output			fifo_calib_rst,
 
     // AXI-Stream to fifo_gc
-    // output[63:0]      s_axis_tdata_gc,
-    // output[3:0]        s_axis_tuser_gc,
-    // output             s_axis_tvalid_gc,
-    // input              s_axis_tready_gc,
+    // output[63:0]      m_axis_tdata_gc,
+    // output[3:0]        m_axis_tuser_gc,
+    // output             m_axis_tvalid_gc,
+    // input              m_axis_tready_gc,
     // output 			   fifo_gc_rst,
     //Debug
     output wire [31:0] 	debug_tdc_tdata,
     output wire 		debug_tdc_tvalid,
-    output wire [127:0] debug_s_axis_tdata,
-    output wire 		debug_s_axis_tvalid,
+    output wire [127:0] debug_m_axis_tdata,
+    output wire 		debug_m_axis_tvalid,
 
 
     //Signals for global counter
@@ -135,18 +135,18 @@ module AS6501_IF (
 
         
      // AXI-Stream to fifo 
-    reg[127:0]      s_axis_tdata;
-    reg[3:0]        s_axis_tuser;
-    reg             s_axis_tvalid;
-    reg             s_axis_tlast;
-    wire            s_axis_tready;
+    reg[127:0]      m_axis_tdata;
+    reg[3:0]        m_axis_tuser;
+    reg             m_axis_tvalid;
+    reg             m_axis_tlast;
+    wire            m_axis_tready;
 
     //AXI-Stream to fifo_gc
-    reg[63:0]      s_axis_tdata_gc;
-    reg[3:0]        s_axis_tuser_gc;
-    reg             s_axis_tvalid_gc;
-    reg             s_axis_tlast_gc;
-    wire            s_axis_tready_gc;
+    reg[63:0]      m_axis_tdata_gc;
+    reg[3:0]        m_axis_tuser_gc;
+    reg             m_axis_tvalid_gc;
+    reg             m_axis_tlast_gc;
+    wire            m_axis_tready_gc;
     
     // Resynchro
     reg [2:0]                      	linterrupt_r;
@@ -162,8 +162,8 @@ module AS6501_IF (
 	assign debug_tdc_tdata = tdc_tdata;
 	assign debug_tdc_tvalid = tdc_tvalid;
 
-	assign debug_s_axis_tdata = s_axis_tdata;
-	assign debug_s_axis_tvalid = s_axis_tvalid;
+	assign debug_m_axis_tdata = m_axis_tdata;
+	assign debug_m_axis_tvalid = m_axis_tvalid;
     
 
 // State machine
@@ -175,8 +175,8 @@ module AS6501_IF (
 	
 	// Output depends only on the state
 	always @ (state) begin
-	   s_axis_tuser            <= 0;
-	   s_axis_tlast            <= 1'b1;
+	   m_axis_tuser            <= 0;
+	   m_axis_tlast            <= 1'b1;
 	   tdc_tvalid           <= 1'b0;
 	   shift_rcv_sdi_en        <= 1'b0;
 	   shift_rcv_sdi_ld        <= 1'b0;
@@ -198,7 +198,7 @@ module AS6501_IF (
 		    default:;              				
 	   endcase
 	 end
-	//assign s_axis_tready       = 1'b1;
+	//assign m_axis_tready       = 1'b1;
 	reg [2:0] enable_axi_r;
 	reg [3:0] counter_stretch;
 
@@ -289,7 +289,7 @@ module AS6501_IF (
 					begin
 						counter_stretch <= counter_stretch + 1;
 						if (counter_stretch == 4) begin
-					    //if (s_axis_tready)
+					    //if (m_axis_tready)
 					    	state                   <= S0;
 					    	counter_stretch <= 0;
 				    	end
@@ -432,12 +432,12 @@ always @(posedge clk200_i, posedge gc_rst) begin
 		// counter_valid <= 0;
 
 
-		s_axis_tvalid <= 0;
-		s_axis_tdata <= 0;
+		m_axis_tvalid <= 0;
+		m_axis_tdata <= 0;
 		fifo_calib_rst <= 0;
 
-		// s_axis_tdata_gc <= 0;
-		// s_axis_tvalid_gc <= 0;
+		// m_axis_tdata_gc <= 0;
+		// m_axis_tvalid_gc <= 0;
 		// fifo_gc_rst <= 0;
 
 		counter_mon_en <= 0;
@@ -474,10 +474,10 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				click1_count <= 0;
 
 				click_result <= 0;
-				s_axis_tvalid <= 0;
-				s_axis_tdata <= 0;
-				// s_axis_tvalid_gc <= 0;
-				// s_axis_tdata_gc <= 0;
+				m_axis_tvalid <= 0;
+				m_axis_tdata <= 0;
+				// m_axis_tvalid_gc <= 0;
+				// m_axis_tdata_gc <= 0;
 				state_gc <= WAIT_START;
 			end
 			WAIT_START: begin //Wait for the Start_gc commamd, put it to clk200 domain
@@ -551,12 +551,12 @@ always @(posedge clk200_i, posedge gc_rst) begin
 						if (command_enable_r[2]) begin
 							fifo_calib_rst <= 1;
 							// gc_time_valid <= gc_div64 + index_shift_gc + time_ref_gc;
-							// s_axis_tdata <= {click_result,gc,tdata200};
-							s_axis_tdata <= {click_result,gc_time_valid,tdata200};
-							s_axis_tvalid <= 1'b1;
+							// m_axis_tdata <= {click_result,gc,tdata200};
+							m_axis_tdata <= {click_result,gc_time_valid,tdata200};
+							m_axis_tvalid <= 1'b1;
 						end else begin
-							s_axis_tdata <= s_axis_tdata;
-							s_axis_tvalid <= 1'b0;
+							m_axis_tdata <= m_axis_tdata;
+							m_axis_tvalid <= 1'b0;
 							fifo_calib_rst <= 0;
 						end
 					end else if (command_r == 3'b010) begin //with gate
@@ -565,34 +565,34 @@ always @(posedge clk200_i, posedge gc_rst) begin
 						if (command_enable_r[2]) begin
 							fifo_calib_rst <= 1;
 							if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625))begin
-								s_axis_tdata <= {2'b00,gc_time_valid,tdata200}; //2'b00: click_result|q_pos
-								s_axis_tvalid <= 1'b1;
+								m_axis_tdata <= {2'b00,gc_time_valid,tdata200}; //2'b00: click_result|q_pos
+								m_axis_tvalid <= 1'b1;
 							end else if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (tdata200_mod_dq >=625 && tdata200_mod_dq < 1250))begin
-								s_axis_tdata <= {2'b01,gc_time_valid,tdata200}; 
-								s_axis_tvalid <= 1'b1;
+								m_axis_tdata <= {2'b01,gc_time_valid,tdata200}; 
+								m_axis_tvalid <= 1'b1;
 							end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625)) begin 
-								s_axis_tdata <= {2'b10,gc_time_valid,tdata200};
-								s_axis_tvalid <= 1'b1;
+								m_axis_tdata <= {2'b10,gc_time_valid,tdata200};
+								m_axis_tvalid <= 1'b1;
 							end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (tdata200_mod_dq >=625 && tdata200_mod_dq < 1250)) begin 
-								s_axis_tdata <= {2'b11,gc_time_valid,tdata200};
-								s_axis_tvalid <= 1'b1;
+								m_axis_tdata <= {2'b11,gc_time_valid,tdata200};
+								m_axis_tvalid <= 1'b1;
 							end else begin
-								s_axis_tdata <= s_axis_tdata;
-								s_axis_tvalid <= 1'b0;
+								m_axis_tdata <= m_axis_tdata;
+								m_axis_tvalid <= 1'b0;
 							end
 						end else begin
-							s_axis_tdata <= s_axis_tdata;
-							s_axis_tvalid <= 1'b0;
+							m_axis_tdata <= m_axis_tdata;
+							m_axis_tvalid <= 1'b0;
 							fifo_calib_rst <= 0;
 						end
 					end
 				end else begin
 					// gc_time_valid <= gc_time_valid;
 					click_result <= click_result;
-					s_axis_tvalid <= 1'b0;
-					s_axis_tdata <= s_axis_tdata;
-					s_axis_tvalid_gc <= 1'b0;
-					s_axis_tdata_gc <= s_axis_tdata_gc;
+					m_axis_tvalid <= 1'b0;
+					m_axis_tdata <= m_axis_tdata;
+					m_axis_tvalid_gc <= 1'b0;
+					m_axis_tdata_gc <= m_axis_tdata_gc;
 				end
 				// if (tvalid200) begin
 				// 	counter_valid <= counter_valid + 1;
@@ -604,12 +604,12 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				// 			command_enable_r <= {command_enable_r[1:0],command_enable};
 				// 			if (command_enable_r[2]) begin
 				// 				fifo_calib_rst <= 1;
-				// 				// s_axis_tdata <= {click_result,gc,tdata200};
-				// 				s_axis_tdata <= {click_result,gc_time_valid,tdata200};
-				// 				s_axis_tvalid <= 1'b1;
+				// 				// m_axis_tdata <= {click_result,gc,tdata200};
+				// 				m_axis_tdata <= {click_result,gc_time_valid,tdata200};
+				// 				m_axis_tvalid <= 1'b1;
 				// 			end else begin
-				// 				s_axis_tdata <= s_axis_tdata;
-				// 				s_axis_tvalid <= 1'b0;
+				// 				m_axis_tdata <= m_axis_tdata;
+				// 				m_axis_tvalid <= 1'b0;
 				// 				fifo_calib_rst <= 0;
 				// 			end
 				// 		end else if (command_r == 3'b010) begin //with gate
@@ -619,41 +619,41 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				// 				fifo_calib_rst <= 1;
 				// 				if (tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) begin
 				// 					//click_result <= 2'b00;
-				// 					// s_axis_tdata <= {2'b00,gc,tdata200};
-				// 					s_axis_tdata <= {2'b00,gc_time_valid,tdata200};
-				// 					s_axis_tvalid <= 1'b1;
+				// 					// m_axis_tdata <= {2'b00,gc,tdata200};
+				// 					m_axis_tdata <= {2'b00,gc_time_valid,tdata200};
+				// 					m_axis_tvalid <= 1'b1;
 				// 				end else if (tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) begin 
 				// 					//click_result <= 2'b01;
-				// 					// s_axis_tdata <= {2'b01,gc,tdata200};
-				// 					s_axis_tdata <= {2'b01,gc_time_valid,tdata200};
-				// 					s_axis_tvalid <= 1'b1;
+				// 					// m_axis_tdata <= {2'b01,gc,tdata200};
+				// 					m_axis_tdata <= {2'b01,gc_time_valid,tdata200};
+				// 					m_axis_tvalid <= 1'b1;
 				// 				end else begin
 				// 					//click_result <= 2'b11;
-				// 					s_axis_tdata <= s_axis_tdata;
-				// 					s_axis_tvalid <= 1'b0;
+				// 					m_axis_tdata <= m_axis_tdata;
+				// 					m_axis_tvalid <= 1'b0;
 				// 				end
 				// 			end else begin
-				// 				s_axis_tdata <= s_axis_tdata;
-				// 				s_axis_tvalid <= 1'b0;
+				// 				m_axis_tdata <= m_axis_tdata;
+				// 				m_axis_tvalid <= 1'b0;
 				// 				fifo_calib_rst <= 0;
 				// 			end
 				// 		end
 				// 	end else begin
 				// 		gc_time_valid <= gc_time_valid;
 				// 		click_result <= click_result;
-				// 		s_axis_tvalid <= 1'b0;
-				// 		s_axis_tdata <= s_axis_tdata;
-				// 		s_axis_tvalid_gc <= 1'b0;
-				// 		s_axis_tdata_gc <= s_axis_tdata_gc;
+				// 		m_axis_tvalid <= 1'b0;
+				// 		m_axis_tdata <= m_axis_tdata;
+				// 		m_axis_tvalid_gc <= 1'b0;
+				// 		m_axis_tdata_gc <= m_axis_tdata_gc;
 				// 	end
 				// end else begin
 				// 	counter_valid <= 0;
 				// 	gc_time_valid <= gc_time_valid;
 				// 	click_result <= click_result;
-				// 	s_axis_tvalid <= 1'b0;
-				// 	s_axis_tdata <= s_axis_tdata;			
-				// 	s_axis_tvalid_gc <= 1'b0;
-				// 	s_axis_tdata_gc <= s_axis_tdata_gc;
+				// 	m_axis_tvalid <= 1'b0;
+				// 	m_axis_tdata <= m_axis_tdata;			
+				// 	m_axis_tvalid_gc <= 1'b0;
+				// 	m_axis_tdata_gc <= m_axis_tdata_gc;
 				// end				
 			end
 		endcase
