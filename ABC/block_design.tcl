@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# pcierefclk, ttl_gate_apd, ILVDS, clk_rst_mngt, led_test, axi_virtual_controller_wrapper, ddr_data, ddr_data_reg_mngt, fifos_out, mon_ddr_fifos, jesd204b_tx_wrapper, jesd_transport, sync_tx_tready, spi_inout_mngt, ILVDS_TDC, OLVDS_TDC, tdc_clk_rst_mngt, AS6501_IF, TDC_REG_MNGT_v1_0, spi_inout_mngt
+# pcierefclk, ttl_gate_apd, ILVDS, clk_rst_mngt, led_test, axi_virtual_controller_wrapper, ddr_data, ddr_data_reg_mngt, fifos_out, mon_ddr_fifos, jesd204b_tx_wrapper, jesd_transport, sync_tx_tready, spi_inout_mngt, ILVDS_TDC, OLVDS_TDC, tdc_clk_rst_mngt, AS6501_IF, TDC_REG_MNGT_v1_0, fifo_gc_tdc_rtl, spi_inout_mngt
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -140,7 +140,6 @@ xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:ila:6.2\
 xilinx.com:ip:jesd204_phy:4.0\
 xilinx.com:ip:axi_quad_spi:3.2\
-xilinx.com:ip:fifo_generator:13.2\
 "
 
    set list_ips_missing ""
@@ -185,6 +184,7 @@ OLVDS_TDC\
 tdc_clk_rst_mngt\
 AS6501_IF\
 TDC_REG_MNGT_v1_0\
+fifo_gc_tdc_rtl\
 spi_inout_mngt\
 "
 
@@ -394,14 +394,6 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
      return 1
    }
   
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /tdc/tdc_mngt/AS6501_IF_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_pins /tdc/tdc_mngt/AS6501_IF_0/s_axis_clk]
-
   # Create instance: TDC_REG_MNGT_v1_0_0, and set properties
   set block_name TDC_REG_MNGT_v1_0
   set block_cell_name TDC_REG_MNGT_v1_0_0
@@ -415,34 +407,47 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
     set_property CONFIG.C_s_axil_ADDR_WIDTH {12} $TDC_REG_MNGT_v1_0_0
 
 
-  # Create instance: fifo_generator_0, and set properties
-  set fifo_generator_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fifo_generator:13.2 fifo_generator_0 ]
-  set_property -dict [list \
-    CONFIG.Clock_Type_AXI {Independent_Clock} \
-    CONFIG.FIFO_Implementation_axis {Independent_Clocks_Block_RAM} \
-    CONFIG.INTERFACE_TYPE {AXI_STREAM} \
-    CONFIG.Input_Depth_axis {512} \
-    CONFIG.Programmable_Empty_Type_axis {No_Programmable_Empty_Threshold} \
-    CONFIG.Programmable_Full_Type_axis {No_Programmable_Full_Threshold} \
-    CONFIG.TDATA_NUM_BYTES {16} \
-    CONFIG.synchronization_stages_axi {3} \
-  ] $fifo_generator_0
+  # Create instance: fifo_gc_tdc_rtl_0, and set properties
+  set block_name fifo_gc_tdc_rtl
+  set block_cell_name fifo_gc_tdc_rtl_0
+  if { [catch {set fifo_gc_tdc_rtl_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $fifo_gc_tdc_rtl_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/m_axis]
 
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/s_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/m_aclk]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/s_aclk]
 
   # Create interface connections
-  connect_bd_intf_net -intf_net AS6501_IF_0_s_axis [get_bd_intf_pins AS6501_IF_0/s_axis] [get_bd_intf_pins fifo_generator_0/S_AXIS]
+  connect_bd_intf_net -intf_net AS6501_IF_0_m_axis [get_bd_intf_pins AS6501_IF_0/m_axis] [get_bd_intf_pins fifo_gc_tdc_rtl_0/s_axis]
   connect_bd_intf_net -intf_net S_AXIL_PCIE_1 [get_bd_intf_pins s_axil] [get_bd_intf_pins TDC_REG_MNGT_v1_0_0/s_axil]
-  connect_bd_intf_net -intf_net fifo_generator_0_M_AXIS [get_bd_intf_pins M_AXIS2] [get_bd_intf_pins fifo_generator_0/M_AXIS]
+  connect_bd_intf_net -intf_net fifo_gc_tdc_rtl_0_m_axis [get_bd_intf_pins M_AXIS2] [get_bd_intf_pins fifo_gc_tdc_rtl_0/m_axis]
 
   # Create port connections
   connect_bd_net -net AS6501_IF_0_click0_count_o [get_bd_pins AS6501_IF_0/click0_count_o] [get_bd_pins TDC_REG_MNGT_v1_0_0/click0_count_i]
   connect_bd_net -net AS6501_IF_0_click1_count_o [get_bd_pins AS6501_IF_0/click1_count_o] [get_bd_pins TDC_REG_MNGT_v1_0_0/click1_count_i]
   connect_bd_net -net AS6501_IF_0_data_count_valid_o [get_bd_pins AS6501_IF_0/data_count_valid_o] [get_bd_pins TDC_REG_MNGT_v1_0_0/data_count_valid_i]
-  connect_bd_net -net AS6501_IF_0_debug_s_axis_tdata [get_bd_pins debug_s_axis_tdata] [get_bd_pins AS6501_IF_0/debug_s_axis_tdata]
-  connect_bd_net -net AS6501_IF_0_debug_s_axis_tvalid [get_bd_pins debug_s_axis_tvalid] [get_bd_pins AS6501_IF_0/debug_s_axis_tvalid]
+  connect_bd_net -net AS6501_IF_0_debug_s_axis_tdata [get_bd_pins debug_s_axis_tdata] [get_bd_pins AS6501_IF_0/debug_m_axis_tdata]
+  connect_bd_net -net AS6501_IF_0_debug_s_axis_tvalid [get_bd_pins debug_s_axis_tvalid] [get_bd_pins AS6501_IF_0/debug_m_axis_tvalid]
   connect_bd_net -net AS6501_IF_0_debug_tdc_tdata [get_bd_pins debug_tdc_tdata] [get_bd_pins AS6501_IF_0/debug_tdc_tdata]
   connect_bd_net -net AS6501_IF_0_debug_tdc_tvalid [get_bd_pins debug_tdc_tvalid] [get_bd_pins AS6501_IF_0/debug_tdc_tvalid]
-  connect_bd_net -net AS6501_IF_0_fifo_calib_rst [get_bd_pins AS6501_IF_0/fifo_calib_rst] [get_bd_pins fifo_generator_0/s_aresetn]
+  connect_bd_net -net AS6501_IF_0_fifo_calib_rst [get_bd_pins AS6501_IF_0/fifo_calib_rst] [get_bd_pins fifo_gc_tdc_rtl_0/s_aresetn]
   connect_bd_net -net AS6501_IF_0_gate_pos0 [get_bd_pins gate_pos0] [get_bd_pins AS6501_IF_0/gate_pos0]
   connect_bd_net -net AS6501_IF_0_gate_pos1 [get_bd_pins gate_pos1] [get_bd_pins AS6501_IF_0/gate_pos1]
   connect_bd_net -net AS6501_IF_0_gate_pos2 [get_bd_pins gate_pos2] [get_bd_pins AS6501_IF_0/gate_pos2]
@@ -473,7 +478,7 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_stopa_sim_enable_o [get_bd_pins stopa_sim_enable_o] [get_bd_pins TDC_REG_MNGT_v1_0_0/stopa_sim_enable_o]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_stopa_sim_limit [get_bd_pins stopa_sim_limit] [get_bd_pins TDC_REG_MNGT_v1_0_0/stopa_sim_limit]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_tdc_enable [get_bd_pins AS6501_IF_0/enable] [get_bd_pins TDC_REG_MNGT_v1_0_0/tdc_enable]
-  connect_bd_net -net clk200_1 [get_bd_pins clk200] [get_bd_pins AS6501_IF_0/clk200_i] [get_bd_pins AS6501_IF_0/s_axis_clk] [get_bd_pins TDC_REG_MNGT_v1_0_0/clk200_i] [get_bd_pins fifo_generator_0/s_aclk]
+  connect_bd_net -net clk200_1 [get_bd_pins clk200] [get_bd_pins AS6501_IF_0/clk200_i] [get_bd_pins AS6501_IF_0/m_axis_clk] [get_bd_pins TDC_REG_MNGT_v1_0_0/clk200_i] [get_bd_pins fifo_gc_tdc_rtl_0/s_aclk]
   connect_bd_net -net ext_pps_1 [get_bd_pins ext_pps] [get_bd_pins AS6501_IF_0/pps_i]
   connect_bd_net -net gc_rst_1 [get_bd_pins gc_rst] [get_bd_pins AS6501_IF_0/gc_rst]
   connect_bd_net -net lclk_i_1 [get_bd_pins s_axil_aclk] [get_bd_pins TDC_REG_MNGT_v1_0_0/s_axil_aclk]
@@ -481,7 +486,7 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   connect_bd_net -net lrst_i_1 [get_bd_pins lrst_i] [get_bd_pins AS6501_IF_0/lrst_i]
   connect_bd_net -net lrstn_i_0_1 [get_bd_pins lrstn_i_0] [get_bd_pins AS6501_IF_0/lrstn_i]
   connect_bd_net -net lrstn_i_1 [get_bd_pins s_axil_aresetn] [get_bd_pins TDC_REG_MNGT_v1_0_0/s_axil_aresetn]
-  connect_bd_net -net m_axi_tclk_1 [get_bd_pins m_axi_tclk] [get_bd_pins fifo_generator_0/m_aclk]
+  connect_bd_net -net m_axi_tclk_1 [get_bd_pins m_axi_tclk] [get_bd_pins fifo_gc_tdc_rtl_0/m_aclk]
   connect_bd_net -net rd_en_4_1 [get_bd_pins rd_en_4] [get_bd_pins AS6501_IF_0/rd_en_4]
 
   # Restore current instance
@@ -1034,10 +1039,6 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /fastdac/jesd_transport_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /fastdac/jesd_transport_0/s_axis_clk]
 
   # Create instance: sync_tx_tready_0, and set properties
@@ -1241,14 +1242,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis_gc]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_pins /ddr4/ddr_data_0/m_axis_alpha_clk]
 
   set_property -dict [ list \
@@ -1298,14 +1291,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /ddr4/fifos_out_0/m_axis_gco]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_alpha]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_gco]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
@@ -1997,7 +1982,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2009,4 +1993,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
