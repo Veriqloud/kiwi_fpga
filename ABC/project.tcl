@@ -138,8 +138,6 @@ proc checkRequiredFiles { origin_dir} {
  "[file normalize "$origin_dir/srcs/fpga_turnkey_reg_mngt.v"]"\
  "[file normalize "$origin_dir/srcs/clk_rst_mngt.v"]"\
  "[file normalize "$origin_dir/srcs/fifos_out.v"]"\
- "[file normalize "$origin_dir/Bob.srcs/sources_1/bd/Bob_top/Bob_top.bd"]"\
- "[file normalize "$origin_dir/srcs/Bob_top_wrapper.v"]"\
  "[file normalize "$origin_dir/ip/fifo_axistream_128/fifo_axistream_128.xci"]"\
  "[file normalize "$origin_dir/ip/axis_data_fifo_0/axis_data_fifo_0.xci"]"\
  "[file normalize "$origin_dir/srcs/axi_monitor.v"]"\
@@ -416,8 +414,6 @@ set files [list \
  [file normalize "${origin_dir}/srcs/fpga_turnkey_reg_mngt.v" ]\
  [file normalize "${origin_dir}/srcs/clk_rst_mngt.v" ]\
  [file normalize "${origin_dir}/srcs/fifos_out.v" ]\
- [file normalize "${origin_dir}/Bob.srcs/sources_1/bd/Bob_top/Bob_top.bd" ]\
- [file normalize "${origin_dir}/srcs/Bob_top_wrapper.v" ]\
  [file normalize "${origin_dir}/ip/fifo_axistream_128/fifo_axistream_128.xci" ]\
  [file normalize "${origin_dir}/ip/axis_data_fifo_0/axis_data_fifo_0.xci" ]\
  [file normalize "${origin_dir}/srcs/axi_monitor.v" ]\
@@ -862,31 +858,31 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_simulation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "Bob_top/Bob_top.bd"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "exclude_debug_logic" -value "0" -objects $file_obj
-set_property -name "is_enabled" -value "1" -objects $file_obj
-set_property -name "is_global_include" -value "0" -objects $file_obj
-set_property -name "library" -value "xil_defaultlib" -objects $file_obj
-set_property -name "path_mode" -value "RelativeFirst" -objects $file_obj
-set_property -name "pfm_name" -value "" -objects $file_obj
-set_property -name "registered_with_manager" -value "1" -objects $file_obj
-set_property -name "used_in" -value "synthesis implementation simulation" -objects $file_obj
-set_property -name "used_in_implementation" -value "1" -objects $file_obj
-set_property -name "used_in_simulation" -value "1" -objects $file_obj
-set_property -name "used_in_synthesis" -value "1" -objects $file_obj
+# set file "Bob_top/Bob_top.bd"
+# set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+# set_property -name "exclude_debug_logic" -value "0" -objects $file_obj
+# set_property -name "is_enabled" -value "1" -objects $file_obj
+# set_property -name "is_global_include" -value "0" -objects $file_obj
+# set_property -name "library" -value "xil_defaultlib" -objects $file_obj
+# set_property -name "path_mode" -value "RelativeFirst" -objects $file_obj
+# set_property -name "pfm_name" -value "" -objects $file_obj
+# set_property -name "registered_with_manager" -value "1" -objects $file_obj
+# set_property -name "used_in" -value "synthesis implementation simulation" -objects $file_obj
+# set_property -name "used_in_implementation" -value "1" -objects $file_obj
+# set_property -name "used_in_simulation" -value "1" -objects $file_obj
+# set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-set file "srcs/Bob_top_wrapper.v"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "file_type" -value "Verilog" -objects $file_obj
-set_property -name "is_enabled" -value "1" -objects $file_obj
-set_property -name "is_global_include" -value "0" -objects $file_obj
-set_property -name "library" -value "xil_defaultlib" -objects $file_obj
-set_property -name "path_mode" -value "RelativeFirst" -objects $file_obj
-set_property -name "used_in" -value "synthesis implementation simulation" -objects $file_obj
-set_property -name "used_in_implementation" -value "1" -objects $file_obj
-set_property -name "used_in_simulation" -value "1" -objects $file_obj
-set_property -name "used_in_synthesis" -value "1" -objects $file_obj
+# set file "srcs/Bob_top_wrapper.v"
+# set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+# set_property -name "file_type" -value "Verilog" -objects $file_obj
+# set_property -name "is_enabled" -value "1" -objects $file_obj
+# set_property -name "is_global_include" -value "0" -objects $file_obj
+# set_property -name "library" -value "xil_defaultlib" -objects $file_obj
+# set_property -name "path_mode" -value "RelativeFirst" -objects $file_obj
+# set_property -name "used_in" -value "synthesis implementation simulation" -objects $file_obj
+# set_property -name "used_in_implementation" -value "1" -objects $file_obj
+# set_property -name "used_in_simulation" -value "1" -objects $file_obj
+# set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
 set file "fifo_axistream_128/fifo_axistream_128.xci"
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
