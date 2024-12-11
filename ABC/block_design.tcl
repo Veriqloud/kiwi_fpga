@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# pcierefclk, ttl_gate_apd, ILVDS, clk_rst_mngt, led_test, axi_virtual_controller_wrapper, ddr_data, ddr_data_reg_mngt, mon_ddr_fifos, jesd204b_tx_wrapper, jesd_transport, sync_tx_tready, spi_inout_mngt, ILVDS_TDC, OLVDS_TDC, tdc_clk_rst_mngt, AS6501_IF, TDC_REG_MNGT_v1_0, spi_inout_mngt
+# pcierefclk, ttl_gate_apd, ILVDS, clk_rst_mngt, led_test, axi_virtual_controller_wrapper, ddr_data, ddr_data_reg_mngt, fifos_out, mon_ddr_fifos, jesd204b_tx_wrapper, jesd_transport, sync_tx_tready, spi_inout_mngt, ILVDS_TDC, OLVDS_TDC, tdc_clk_rst_mngt, AS6501_IF, TDC_REG_MNGT_v1_0, spi_inout_mngt
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -134,13 +134,13 @@ if { $bCheckIPs == 1 } {
 xilinx.com:ip:clk_wiz:6.0\
 xilinx.com:ip:xdma:4.1\
 xilinx.com:ip:ddr4:2.2\
-xilinx.com:ip:fifo_generator:13.2\
 xilinx.com:ip:system_ila:1.1\
 xilinx.com:ip:util_vector_logic:2.0\
 xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:ila:6.2\
 xilinx.com:ip:jesd204_phy:4.0\
 xilinx.com:ip:axi_quad_spi:3.2\
+xilinx.com:ip:fifo_generator:13.2\
 "
 
    set list_ips_missing ""
@@ -174,6 +174,7 @@ led_test\
 axi_virtual_controller_wrapper\
 ddr_data\
 ddr_data_reg_mngt\
+fifos_out\
 mon_ddr_fifos\
 jesd204b_tx_wrapper\
 jesd_transport\
@@ -1033,6 +1034,10 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /fastdac/jesd_transport_0/s_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /fastdac/jesd_transport_0/s_axis_clk]
 
   # Create instance: sync_tx_tready_0, and set properties
@@ -1236,6 +1241,14 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis_gc]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_pins /ddr4/ddr_data_0/m_axis_alpha_clk]
 
   set_property -dict [ list \
@@ -1267,36 +1280,48 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
     set_property CONFIG.C_s_axil_ADDR_WIDTH {12} $ddr_data_reg_mngt_0
 
 
-  # Create instance: fifo_alpha_out, and set properties
-  set fifo_alpha_out [ create_bd_cell -type ip -vlnv xilinx.com:ip:fifo_generator:13.2 fifo_alpha_out ]
-  set_property -dict [list \
-    CONFIG.Clock_Type_AXI {Independent_Clock} \
-    CONFIG.Empty_Threshold_Assert_Value_axis {4} \
-    CONFIG.FIFO_Implementation_axis {Independent_Clocks_Block_RAM} \
-    CONFIG.Full_Threshold_Assert_Value_axis {2047} \
-    CONFIG.INTERFACE_TYPE {AXI_STREAM} \
-    CONFIG.Input_Depth_axis {2048} \
-    CONFIG.Programmable_Empty_Type_axis {Single_Programmable_Empty_Threshold_Constant} \
-    CONFIG.Programmable_Full_Type_axis {Single_Programmable_Full_Threshold_Constant} \
-    CONFIG.TDATA_NUM_BYTES {16} \
-  ] $fifo_alpha_out
+  # Create instance: fifos_out_0, and set properties
+  set block_name fifos_out
+  set block_cell_name fifos_out_0
+  if { [catch {set fifos_out_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $fifos_out_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /ddr4/fifos_out_0/m_axis_alpha]
 
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /ddr4/fifos_out_0/m_axis_gco]
 
-  # Create instance: fifo_gc_out, and set properties
-  set fifo_gc_out [ create_bd_cell -type ip -vlnv xilinx.com:ip:fifo_generator:13.2 fifo_gc_out ]
-  set_property -dict [list \
-    CONFIG.Clock_Type_AXI {Independent_Clock} \
-    CONFIG.Empty_Threshold_Assert_Value_axis {4} \
-    CONFIG.FIFO_Implementation_axis {Independent_Clocks_Block_RAM} \
-    CONFIG.Full_Threshold_Assert_Value_axis {511} \
-    CONFIG.INTERFACE_TYPE {AXI_STREAM} \
-    CONFIG.Input_Depth_axis {512} \
-    CONFIG.Programmable_Empty_Type_axis {Single_Programmable_Empty_Threshold_Constant} \
-    CONFIG.Programmable_Full_Type_axis {Single_Programmable_Full_Threshold_Constant} \
-    CONFIG.TDATA_NUM_BYTES {8} \
-    CONFIG.synchronization_stages_axi {3} \
-  ] $fifo_gc_out
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_alpha]
 
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_gco]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_pins /ddr4/fifos_out_0/m_alpha_aclk]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_pins /ddr4/fifos_out_0/m_gco_aclk]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_pins /ddr4/fifos_out_0/s_alpha_aclk]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_pins /ddr4/fifos_out_0/s_gco_aclk]
 
   # Create instance: mon_ddr_fifos_0, and set properties
   set block_name mon_ddr_fifos
@@ -1372,8 +1397,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins s_axil] [get_bd_intf_pins ddr_data_reg_mngt_0/s_axil]
-  connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins M_AXIS] [get_bd_intf_pins fifo_gc_out/M_AXIS]
-  connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins fifo_alpha_out/M_AXIS]
   connect_bd_intf_net -intf_net axi_vfifo_ctrl_0_M_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
   connect_bd_intf_net -intf_net axi_vfifo_ctrl_0_M_AXI1 [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins axi_virtual_controll_0/m_axi]
   connect_bd_intf_net -intf_net [get_bd_intf_nets axi_vfifo_ctrl_0_M_AXI1] [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins system_ila_ddr/SLOT_0_AXI]
@@ -1382,13 +1405,15 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_pins c0_ddr4] [get_bd_intf_pins ddr4_0/C0_DDR4]
   connect_bd_intf_net -intf_net ddr_data_0_m_axis [get_bd_intf_pins axi_virtual_controll_0/s_axis] [get_bd_intf_pins ddr_data_0/m_axis]
   connect_bd_intf_net -intf_net [get_bd_intf_nets ddr_data_0_m_axis] [get_bd_intf_pins ddr_data_0/m_axis] [get_bd_intf_pins system_ila_ddr/SLOT_2_AXIS]
-  connect_bd_intf_net -intf_net ddr_data_0_m_axis_alpha [get_bd_intf_pins ddr_data_0/m_axis_alpha] [get_bd_intf_pins fifo_alpha_out/S_AXIS]
-  connect_bd_intf_net -intf_net ddr_data_0_m_axis_gc [get_bd_intf_pins ddr_data_0/m_axis_gc] [get_bd_intf_pins fifo_gc_out/S_AXIS]
-  connect_bd_intf_net -intf_net [get_bd_intf_nets ddr_data_0_m_axis_gc] [get_bd_intf_pins fifo_gc_out/S_AXIS] [get_bd_intf_pins system_ila_ddr/SLOT_3_AXIS]
+  connect_bd_intf_net -intf_net ddr_data_0_m_axis_alpha [get_bd_intf_pins ddr_data_0/m_axis_alpha] [get_bd_intf_pins fifos_out_0/s_axis_alpha]
+  connect_bd_intf_net -intf_net ddr_data_0_m_axis_gc [get_bd_intf_pins ddr_data_0/m_axis_gc] [get_bd_intf_pins fifos_out_0/s_axis_gco]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets ddr_data_0_m_axis_gc] [get_bd_intf_pins ddr_data_0/m_axis_gc] [get_bd_intf_pins system_ila_ddr/SLOT_3_AXIS]
+  connect_bd_intf_net -intf_net fifos_out_0_m_axis_alpha [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins fifos_out_0/m_axis_alpha]
+  connect_bd_intf_net -intf_net fifos_out_0_m_axis_gco [get_bd_intf_pins M_AXIS] [get_bd_intf_pins fifos_out_0/m_axis_gco]
   connect_bd_intf_net -intf_net s_axis_gc_1 [get_bd_intf_pins s_axis_gc] [get_bd_intf_pins ddr_data_0/s_axis_gc]
 
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins ddr_data_0/s_axis_gc_clk] [get_bd_pins fifo_alpha_out/m_aclk] [get_bd_pins fifo_gc_out/m_aclk] [get_bd_pins mon_ddr_fifos_0/clk250_i]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins ddr_data_0/s_axis_gc_clk] [get_bd_pins fifos_out_0/m_alpha_aclk] [get_bd_pins fifos_out_0/m_gco_aclk] [get_bd_pins mon_ddr_fifos_0/clk250_i]
   connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins ddr_data_0/s_gc_aresetn] [get_bd_pins mon_ddr_fifos_0/aresetn]
   connect_bd_net -net axi_vfifo_ctrl_0_vfifo_mm2s_channel_empty [get_bd_pins axi_virtual_controll_0/vfifo_mm2s_channel_empty] [get_bd_pins mon_ddr_fifos_0/vfifo_empty] [get_bd_pins system_ila_ddr/probe13]
   connect_bd_net -net axi_vfifo_ctrl_0_vfifo_s2mm_channel_full [get_bd_pins axi_virtual_controll_0/vfifo_s2mm_channel_full] [get_bd_pins mon_ddr_fifos_0/vfifo_full] [get_bd_pins system_ila_ddr/probe1]
@@ -1397,7 +1422,7 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net axi_virtual_controll_0_delta_count [get_bd_pins axi_virtual_controll_0/delta_count] [get_bd_pins system_ila_ddr/probe16]
   connect_bd_net -net axi_virtual_controll_0_vfifo_idle [get_bd_pins axi_virtual_controll_0/vfifo_idle] [get_bd_pins mon_ddr_fifos_0/vfifo_idle]
   connect_bd_net -net c0_ddr4_aresetn_1 [get_bd_pins c0_ddr4_aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins ddr4_0/c0_ddr4_aresetn]
-  connect_bd_net -net clk200_i_1 [get_bd_pins clk200_i] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_virtual_controll_0/aclk] [get_bd_pins ddr_data_0/clk200_i] [get_bd_pins ddr_data_0/m_axis_alpha_clk] [get_bd_pins ddr_data_0/m_axis_clk] [get_bd_pins ddr_data_0/m_axis_gc_clk] [get_bd_pins ddr_data_0/s_axis_clk] [get_bd_pins ddr_data_reg_mngt_0/clk200_i] [get_bd_pins fifo_alpha_out/s_aclk] [get_bd_pins fifo_gc_out/s_aclk] [get_bd_pins mon_ddr_fifos_0/clk200_i] [get_bd_pins system_ila_ddr/clk]
+  connect_bd_net -net clk200_i_1 [get_bd_pins clk200_i] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_virtual_controll_0/aclk] [get_bd_pins ddr_data_0/clk200_i] [get_bd_pins ddr_data_0/m_axis_alpha_clk] [get_bd_pins ddr_data_0/m_axis_clk] [get_bd_pins ddr_data_0/m_axis_gc_clk] [get_bd_pins ddr_data_0/s_axis_clk] [get_bd_pins ddr_data_reg_mngt_0/clk200_i] [get_bd_pins fifos_out_0/s_alpha_aclk] [get_bd_pins fifos_out_0/s_gco_aclk] [get_bd_pins mon_ddr_fifos_0/clk200_i] [get_bd_pins system_ila_ddr/clk]
   connect_bd_net -net ddr4_0_addn_ui_clkout1 [get_bd_pins addn_ui_clkout1] [get_bd_pins ddr4_0/addn_ui_clkout1] [get_bd_pins ddr_data_reg_mngt_0/s_axil_aclk]
   connect_bd_net -net ddr4_0_addn_ui_clkout2 [get_bd_pins addn_ui_clkout2] [get_bd_pins ddr4_0/addn_ui_clkout2]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
@@ -1412,10 +1437,10 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net ddr_data_0_cycle_counter [get_bd_pins ddr_data_0/cycle_counter] [get_bd_pins system_ila_ddr/probe8]
   connect_bd_net -net ddr_data_0_dq_gc [get_bd_pins ddr_data_0/dq_gc] [get_bd_pins system_ila_ddr/probe24]
   connect_bd_net -net ddr_data_0_dq_gc_start_r_debug [get_bd_pins ddr_data_0/dq_gc_start_r_debug] [get_bd_pins system_ila_ddr/probe20]
-  connect_bd_net -net ddr_data_0_fifo_alpha_rst [get_bd_pins ddr_data_0/fifo_alpha_rst] [get_bd_pins fifo_alpha_out/s_aresetn]
+  connect_bd_net -net ddr_data_0_fifo_alpha_rst [get_bd_pins ddr_data_0/fifo_alpha_rst] [get_bd_pins fifos_out_0/s_alpha_aresetn]
   connect_bd_net -net ddr_data_0_fifo_gc_empty [get_bd_pins ddr_data_0/fifo_gc_empty] [get_bd_pins mon_ddr_fifos_0/gc_in_fifo_empty]
   connect_bd_net -net ddr_data_0_fifo_gc_full [get_bd_pins ddr_data_0/fifo_gc_full] [get_bd_pins mon_ddr_fifos_0/gc_in_fifo_full]
-  connect_bd_net -net ddr_data_0_fifo_gc_rst [get_bd_pins fifo_gc_rst_0] [get_bd_pins ddr_data_0/fifo_gc_rst] [get_bd_pins fifo_gc_out/s_aresetn] [get_bd_pins system_ila_ddr/probe27]
+  connect_bd_net -net ddr_data_0_fifo_gc_rst [get_bd_pins fifo_gc_rst_0] [get_bd_pins ddr_data_0/fifo_gc_rst] [get_bd_pins fifos_out_0/s_gco_aresetn] [get_bd_pins system_ila_ddr/probe27]
   connect_bd_net -net ddr_data_0_gc_time_valid_div [get_bd_pins ddr_data_0/gc_time_valid_div] [get_bd_pins system_ila_ddr/probe22]
   connect_bd_net -net ddr_data_0_gc_time_valid_mod [get_bd_pins ddr_data_0/gc_time_valid_mod] [get_bd_pins system_ila_ddr/probe23]
   connect_bd_net -net ddr_data_0_pack_done [get_bd_pins ddr_data_0/pack_done] [get_bd_pins system_ila_ddr/probe9]
@@ -1442,10 +1467,10 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net ddr_sys_clk_n_1 [get_bd_pins ddr_sys_clk_n] [get_bd_pins ddr4_0/c0_sys_clk_n]
   connect_bd_net -net ddr_sys_clk_p_1 [get_bd_pins ddr_sys_clk_p] [get_bd_pins ddr4_0/c0_sys_clk_p]
   connect_bd_net -net ext_pps_1 [get_bd_pins ext_pps] [get_bd_pins ddr_data_0/pps_i]
-  connect_bd_net -net fifo_alpha_out_axis_prog_empty [get_bd_pins fifo_alpha_out/axis_prog_empty] [get_bd_pins mon_ddr_fifos_0/alpha_out_fifo_empty]
-  connect_bd_net -net fifo_alpha_out_axis_prog_full [get_bd_pins fifo_alpha_out/axis_prog_full] [get_bd_pins mon_ddr_fifos_0/alpha_out_fifo_full]
-  connect_bd_net -net fifo_gc_out_axis_prog_empty [get_bd_pins fifo_gc_out/axis_prog_empty] [get_bd_pins mon_ddr_fifos_0/gc_out_fifo_empty]
-  connect_bd_net -net fifo_gc_out_axis_prog_full [get_bd_pins fifo_gc_out/axis_prog_full] [get_bd_pins mon_ddr_fifos_0/gc_out_fifo_full]
+  connect_bd_net -net fifos_out_0_axis_prog_empty_alpha [get_bd_pins fifos_out_0/axis_prog_empty_alpha] [get_bd_pins mon_ddr_fifos_0/alpha_out_fifo_empty]
+  connect_bd_net -net fifos_out_0_axis_prog_empty_gco [get_bd_pins fifos_out_0/axis_prog_empty_gco] [get_bd_pins mon_ddr_fifos_0/gc_out_fifo_empty]
+  connect_bd_net -net fifos_out_0_axis_prog_full_alpha [get_bd_pins fifos_out_0/axis_prog_full_alpha] [get_bd_pins mon_ddr_fifos_0/alpha_out_fifo_full]
+  connect_bd_net -net fifos_out_0_axis_prog_full_gco [get_bd_pins fifos_out_0/axis_prog_full_gco] [get_bd_pins mon_ddr_fifos_0/gc_out_fifo_full]
   connect_bd_net -net gate_pos0_1 [get_bd_pins gate_pos0] [get_bd_pins ddr_data_0/gate_pos0]
   connect_bd_net -net gate_pos1_1 [get_bd_pins gate_pos1] [get_bd_pins ddr_data_0/gate_pos1]
   connect_bd_net -net gate_pos2_1 [get_bd_pins gate_pos2] [get_bd_pins ddr_data_0/gate_pos2]
@@ -1828,6 +1853,7 @@ proc create_root_design { parentCell } {
   # Create instance: xdma_0, and set properties
   set xdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xdma:4.1 xdma_0 ]
   set_property -dict [list \
+    CONFIG.axi_data_width {128_bit} \
     CONFIG.axil_master_64bit_en {false} \
     CONFIG.axilite_master_en {true} \
     CONFIG.axilite_master_scale {Megabytes} \
