@@ -1,6 +1,6 @@
-This repos contains fpga source code for KiwiKD.
-FPGA board: XEM8310 from opalkelly
-FPGA: Xilinx Artix UltraScale+ (XCAU25P-2FFVB676E)
+- This repos contains fpga source code for KiwiKD.
+- FPGA board: XEM8310 from opalkelly
+- FPGA: Xilinx Artix UltraScale+ (XCAU25P-2FFVB676E)
 ## Prerequisites
 - Vivado 2022.2
 - Vivado installation includes packages for UltraScale+ FPGA
