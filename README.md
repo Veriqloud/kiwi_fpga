@@ -6,13 +6,17 @@ This repos contains fpga source code for KiwiKD
 ## Build Vivado project from TCL scripts
 ### Clone project
 ```
-git clone git@github.com:Veriqloud/kiwi_fpga.git`
+git clone git@github.com:Veriqloud/kiwi_fpga.git
 ```
 ### Build project and block design 
 Run these command in vivado Tcl console:
-- `cd ../ABC/`
-- `source project.tcl`
-- `source block_design.tcl`
+```
+cd ../ABC/
+```
+```
+source project.tcl
+source block_design.tcl
+```
 ### Troubleshoot the mismatch FREQ_HZ error
 ## Create TCL scripts (Optional)
 
