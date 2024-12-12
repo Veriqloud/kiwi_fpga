@@ -50,6 +50,7 @@ Before create Tcl scripts, remove all design checkpoints (.dcp) and waveforms (.
 File -> Project -> Write Tcl. Check in 2 options:
 - Write all properties
 - Write objects values
+
 Removes eveyrything regarding HDL wrapper and block design file (.bd). Save the project.tcl
 ### Create block_design.tcl
 File -> Export -> Export Block Design
