@@ -1,4 +1,6 @@
-This repos contains fpga source code for KiwiKD
+This repos contains fpga source code for KiwiKD.
+FPGA board: XEM8310 from opalkelly
+FPGA: Xilinx Artix UltraScale+ (XCAU25P-2FFVB676E)
 ## Prerequisites
 - Vivado 2022.2
 - Vivado installation includes packages for UltraScale+ FPGA
@@ -37,8 +39,9 @@ set design_name [get_bd_designs]
 make_wrapper -files [get_files Bob_top.bd] -top -import
 save_bd_design
 ```
+After design is validated, succeed to create the wrapper, you can generate bitstream.
 ## Create TCL scripts (Optional)
-This is my flow to create the Tcl scripts. I want to separate project and block design so vivado won't copy the sources to local vivado project
+This is my flow to create the Tcl scripts. I want to separate project and block design so vivado won't copy the sources to local vivado project.
 ### Create project.tcl
 File -> Project -> Write Tcl
 Check in 2 options:
