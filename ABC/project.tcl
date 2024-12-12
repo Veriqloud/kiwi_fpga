@@ -292,13 +292,6 @@ create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xcau25p-ffvb676-2-e
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
 
-#Create block design
-source $origin_dir/block_design.tcl
-
-#Generate top wrapper
-set design_name [get_bd_designs]
-make_wrapper -files [get_files Bob_top.bd] -top -import
-
 # Set project properties
 set obj [current_project]
 set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../../Xprojects/XilinxBoardStore/boards/OpalKelly"]" -objects $obj
