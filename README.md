@@ -1,2 +1,3 @@
 # kiwi_fpga
-Source code of the fpga
+## Create TCL scripts
+## Build Vivado project from TCL scripts
