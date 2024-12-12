@@ -42,6 +42,7 @@ save_bd_design
 After design is validated, succeed to create the wrapper, you can generate bitstream.
 ## Create TCL scripts (Optional)
 This is my flow to create the Tcl scripts. I want to separate project and block design so vivado won't copy the sources to local vivado project.
+Before create Tcl scripts, remove all design checkpoints (.dcp) and waveforms (.wcfg) in vivado Sources
 ### Create project.tcl
 File -> Project -> Write Tcl. Check in 2 options:
 - Write all properties
