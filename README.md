@@ -21,7 +21,7 @@ source block_design.tcl
 ```
 ### Troubleshoot the mismatch FREQ_HZ error
 AXI and AXIS interfaces in vivado project will reset to default clock frequency (100MHz), generate the mistmatched FREQ_HZ error.
-Run these command in Tcl console to change FREQ_HZ and wrap the design:
+Run these command in Tcl console to change FREQ_HZ:
 ```
 set_property CONFIG.FREQ_HZ 200000000 [get_bd_pins /tdc/tdc_mngt/AS6501_IF_0/m_axis_clk]
 set_property CONFIG.FREQ_HZ 200000000 [get_bd_pins /ddr4/axi_virtual_controll_0/aclk]
@@ -34,6 +34,9 @@ create_bd_port -dir I -type clk -freq_hz 200000000 clk
 set_property -dict [list CONFIG.CLK_DOMAIN [get_property CONFIG.CLK_DOMAIN [get_bd_pins ddr4/system_ila_ddr/clk]]] [get_bd_ports clk]
 connect_bd_net [get_bd_pins /ddr4/system_ila_ddr/clk] [get_bd_ports clk]
 validate_bd_design
+```
+Run these command to remove clk port and wrap the design:
+```
 delete_bd_objs [get_bd_nets clk_1] [get_bd_ports clk]
 delete_bd_objs [get_bd_nets ddr4/clk_1] [get_bd_pins ddr4/clk]
 connect_bd_net [get_bd_pins ddr4/clk200_i] [get_bd_pins ddr4/system_ila_ddr/clk]
