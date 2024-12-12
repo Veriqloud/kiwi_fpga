@@ -1299,14 +1299,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
  ] [get_bd_intf_pins /ddr4/fifos_out_0/m_axis_gco]
 
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_alpha]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_gco]
-
-  set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /ddr4/fifos_out_0/m_alpha_aclk]
 
