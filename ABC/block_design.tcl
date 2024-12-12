@@ -424,10 +424,6 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
  ] [get_bd_intf_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/m_axis]
 
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/s_axis]
-
-  set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/m_aclk]
 
@@ -1040,10 +1036,6 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /fastdac/jesd_transport_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /fastdac/jesd_transport_0/s_axis_clk]
 
   # Create instance: sync_tx_tready_0, and set properties
@@ -1203,10 +1195,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
  ] [get_bd_intf_pins /ddr4/axi_clock_converter_0/m_axi]
 
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/axi_clock_converter_0/s_axi]
-
-  set_property -dict [ list \
    CONFIG.FREQ_HZ {300000000} \
  ] [get_bd_pins /ddr4/axi_clock_converter_0/m_axi_aclk]
 
@@ -1257,14 +1245,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_intf_pins /ddr4/ddr_data_0/m_axis_gc]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis_gc]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
