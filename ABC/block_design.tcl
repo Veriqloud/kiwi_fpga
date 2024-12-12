@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# pcierefclk, ttl_gate_apd, ILVDS, clk_rst_mngt, led_test, axi_virtual_controller_wrapper, ddr_data, ddr_data_reg_mngt, fifos_out, mon_ddr_fifos, jesd204b_tx_wrapper, jesd_transport, sync_tx_tready, spi_inout_mngt, ILVDS_TDC, OLVDS_TDC, tdc_clk_rst_mngt, AS6501_IF, TDC_REG_MNGT_v1_0, fifo_gc_tdc_rtl, spi_inout_mngt
+# pcierefclk, ttl_gate_apd, ILVDS, clk_rst_mngt, led_test, axi_clock_converter_rtl, axi_virtual_controller_wrapper, ddr_data, ddr_data_reg_mngt, fifos_out, mon_ddr_fifos, jesd204b_tx_wrapper, jesd_transport, sync_tx_tready, spi_inout_mngt, ILVDS_TDC, OLVDS_TDC, tdc_clk_rst_mngt, AS6501_IF, TDC_REG_MNGT_v1_0, fifo_gc_tdc_rtl, spi_inout_mngt
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -170,6 +170,7 @@ ttl_gate_apd\
 ILVDS\
 clk_rst_mngt\
 led_test\
+axi_clock_converter_rtl\
 axi_virtual_controller_wrapper\
 ddr_data\
 ddr_data_reg_mngt\
@@ -1182,19 +1183,32 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   create_bd_pin -dir I -from 15 -to 0 tdata200_mod
   create_bd_pin -dir I tvalid200
 
-  # Create instance: axi_interconnect_0, and set properties
-  set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
-  set_property -dict [list \
-    CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
-    CONFIG.ENABLE_PROTOCOL_CHECKERS {1} \
-    CONFIG.M00_SECURE {0} \
-    CONFIG.NUM_MI {1} \
-    CONFIG.PCHK_MAX_RD_BURSTS {64} \
-    CONFIG.PCHK_MAX_WR_BURSTS {64} \
-    CONFIG.S00_HAS_REGSLICE {0} \
-    CONFIG.XBAR_DATA_WIDTH {32} \
-  ] $axi_interconnect_0
+  # Create instance: axi_clock_converter_0, and set properties
+  set block_name axi_clock_converter_rtl
+  set block_cell_name axi_clock_converter_0
+  if { [catch {set axi_clock_converter_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $axi_clock_converter_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+ ] [get_bd_intf_pins /ddr4/axi_clock_converter_0/m_axi]
 
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /ddr4/axi_clock_converter_0/s_axi]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+ ] [get_bd_pins /ddr4/axi_clock_converter_0/m_axi_aclk]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_pins /ddr4/axi_clock_converter_0/s_axi_aclk]
 
   # Create instance: axi_virtual_controll_0, and set properties
   set block_name axi_virtual_controller_wrapper
@@ -1382,9 +1396,9 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins s_axil] [get_bd_intf_pins ddr_data_reg_mngt_0/s_axil]
-  connect_bd_intf_net -intf_net axi_vfifo_ctrl_0_M_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
-  connect_bd_intf_net -intf_net axi_vfifo_ctrl_0_M_AXI1 [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins axi_virtual_controll_0/m_axi]
-  connect_bd_intf_net -intf_net [get_bd_intf_nets axi_vfifo_ctrl_0_M_AXI1] [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins system_ila_ddr/SLOT_0_AXI]
+  connect_bd_intf_net -intf_net axi_clock_converter_0_m_axi [get_bd_intf_pins axi_clock_converter_0/m_axi] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
+  connect_bd_intf_net -intf_net axi_vfifo_ctrl_0_M_AXI1 [get_bd_intf_pins axi_clock_converter_0/s_axi] [get_bd_intf_pins axi_virtual_controll_0/m_axi]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets axi_vfifo_ctrl_0_M_AXI1] [get_bd_intf_pins axi_virtual_controll_0/m_axi] [get_bd_intf_pins system_ila_ddr/SLOT_0_AXI]
   connect_bd_intf_net -intf_net axi_vfifo_ctrl_0_M_AXIS [get_bd_intf_pins axi_virtual_controll_0/m_axis] [get_bd_intf_pins ddr_data_0/s_axis]
   connect_bd_intf_net -intf_net [get_bd_intf_nets axi_vfifo_ctrl_0_M_AXIS] [get_bd_intf_pins axi_virtual_controll_0/m_axis] [get_bd_intf_pins system_ila_ddr/SLOT_1_AXIS]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_pins c0_ddr4] [get_bd_intf_pins ddr4_0/C0_DDR4]
@@ -1406,11 +1420,11 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net axi_virtual_controll_0_counter_write [get_bd_pins axi_virtual_controll_0/counter_write] [get_bd_pins system_ila_ddr/probe15]
   connect_bd_net -net axi_virtual_controll_0_delta_count [get_bd_pins axi_virtual_controll_0/delta_count] [get_bd_pins system_ila_ddr/probe16]
   connect_bd_net -net axi_virtual_controll_0_vfifo_idle [get_bd_pins axi_virtual_controll_0/vfifo_idle] [get_bd_pins mon_ddr_fifos_0/vfifo_idle]
-  connect_bd_net -net c0_ddr4_aresetn_1 [get_bd_pins c0_ddr4_aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins ddr4_0/c0_ddr4_aresetn]
-  connect_bd_net -net clk200_i_1 [get_bd_pins clk200_i] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_virtual_controll_0/aclk] [get_bd_pins ddr_data_0/clk200_i] [get_bd_pins ddr_data_0/m_axis_alpha_clk] [get_bd_pins ddr_data_0/m_axis_clk] [get_bd_pins ddr_data_0/m_axis_gc_clk] [get_bd_pins ddr_data_0/s_axis_clk] [get_bd_pins ddr_data_reg_mngt_0/clk200_i] [get_bd_pins fifos_out_0/s_alpha_aclk] [get_bd_pins fifos_out_0/s_gco_aclk] [get_bd_pins mon_ddr_fifos_0/clk200_i] [get_bd_pins system_ila_ddr/clk]
+  connect_bd_net -net c0_ddr4_aresetn_1 [get_bd_pins c0_ddr4_aresetn] [get_bd_pins axi_clock_converter_0/m_axi_aresetn] [get_bd_pins ddr4_0/c0_ddr4_aresetn]
+  connect_bd_net -net clk200_i_1 [get_bd_pins clk200_i] [get_bd_pins axi_clock_converter_0/s_axi_aclk] [get_bd_pins axi_virtual_controll_0/aclk] [get_bd_pins ddr_data_0/clk200_i] [get_bd_pins ddr_data_0/m_axis_alpha_clk] [get_bd_pins ddr_data_0/m_axis_clk] [get_bd_pins ddr_data_0/m_axis_gc_clk] [get_bd_pins ddr_data_0/s_axis_clk] [get_bd_pins ddr_data_reg_mngt_0/clk200_i] [get_bd_pins fifos_out_0/s_alpha_aclk] [get_bd_pins fifos_out_0/s_gco_aclk] [get_bd_pins mon_ddr_fifos_0/clk200_i] [get_bd_pins system_ila_ddr/clk]
   connect_bd_net -net ddr4_0_addn_ui_clkout1 [get_bd_pins addn_ui_clkout1] [get_bd_pins ddr4_0/addn_ui_clkout1] [get_bd_pins ddr_data_reg_mngt_0/s_axil_aclk]
   connect_bd_net -net ddr4_0_addn_ui_clkout2 [get_bd_pins addn_ui_clkout2] [get_bd_pins ddr4_0/addn_ui_clkout2]
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk] [get_bd_pins axi_clock_converter_0/m_axi_aclk] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_pins c0_ddr4_ui_clk_sync_rst] [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst]
   connect_bd_net -net ddr4_0_c0_init_calib_complete [get_bd_pins led] [get_bd_pins ddr4_0/c0_init_calib_complete]
   connect_bd_net -net ddr_data_0_alpha_cycle_counter [get_bd_pins ddr_data_0/alpha_cycle_counter] [get_bd_pins system_ila_ddr/probe21]
@@ -1448,7 +1462,7 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net ddr_data_reg_mngt_0_start_write_ddr_o [get_bd_pins ddr_data_0/start_write_ddr_i] [get_bd_pins ddr_data_reg_mngt_0/start_write_ddr_o] [get_bd_pins system_ila_ddr/probe0]
   connect_bd_net -net ddr_data_reg_mngt_0_threshold_full_o [get_bd_pins ddr_data_0/threshold_full_i] [get_bd_pins ddr_data_reg_mngt_0/threshold_full_o]
   connect_bd_net -net ddr_data_reg_mngt_0_threshold_o [get_bd_pins ddr_data_0/threshold_i] [get_bd_pins ddr_data_reg_mngt_0/threshold_o]
-  connect_bd_net -net ddr_data_rstn_1 [get_bd_pins ddr_data_rstn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_virtual_controll_0/aresetn] [get_bd_pins ddr_data_0/ddr_data_rstn] [get_bd_pins mon_ddr_fifos_0/ddr_data_rstn] [get_bd_pins system_ila_ddr/resetn]
+  connect_bd_net -net ddr_data_rstn_1 [get_bd_pins ddr_data_rstn] [get_bd_pins axi_clock_converter_0/s_axi_aresetn] [get_bd_pins axi_virtual_controll_0/aresetn] [get_bd_pins ddr_data_0/ddr_data_rstn] [get_bd_pins mon_ddr_fifos_0/ddr_data_rstn] [get_bd_pins system_ila_ddr/resetn]
   connect_bd_net -net ddr_sys_clk_n_1 [get_bd_pins ddr_sys_clk_n] [get_bd_pins ddr4_0/c0_sys_clk_n]
   connect_bd_net -net ddr_sys_clk_p_1 [get_bd_pins ddr_sys_clk_p] [get_bd_pins ddr4_0/c0_sys_clk_p]
   connect_bd_net -net ext_pps_1 [get_bd_pins ext_pps] [get_bd_pins ddr_data_0/pps_i]
@@ -1982,7 +1996,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -1994,4 +2007,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
