@@ -43,8 +43,7 @@ After design is validated, succeed to create the wrapper, you can generate bitst
 ## Create TCL scripts (Optional)
 This is my flow to create the Tcl scripts. I want to separate project and block design so vivado won't copy the sources to local vivado project.
 ### Create project.tcl
-File -> Project -> Write Tcl
-Check in 2 options:
+File -> Project -> Write Tcl. Check in 2 options:
 - Write all properties
 - Write objects values
 Removes eveyrything regarding HDL wrapper and block design file (.bd). Save the project.tcl
