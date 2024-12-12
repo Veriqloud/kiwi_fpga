@@ -13,7 +13,7 @@ git clone git@github.com:Veriqloud/kiwi_fpga.git
 ### Build project and block design 
 Run these command in vivado Tcl console:
 ```
-cd ../ABC/
+cd [your local directory]/ABC/
 ```
 ```
 source project.tcl
