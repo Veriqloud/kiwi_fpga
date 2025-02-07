@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau, Hop Dinh
 // 
 // Create Date: 07/17/2024 03:00:07 PM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Manage axil registers for ddr_data module 
 // 
 // Dependencies: 
 // 
@@ -32,6 +32,7 @@ module ddr_data_reg_mngt #
     )
     (
         input clk200_i,
+        input pps_i,
         output wire start_write_ddr_o,
         output wire command_enable_o,
         output wire command_alpha_enable_o,
@@ -163,6 +164,7 @@ ddr_data_axil_mngt # (
     .status_200_valid_i(status_200_valid_i),
     .fifos_status_i(fifos_status_i),
     .status_250_valid_i(status_250_valid_i),
+    .pps_i(pps_i),
     .S_AXI_ACLK(s_axil_aclk),
     .S_AXI_ARESETN(s_axil_aresetn),
     .S_AXI_AWADDR(s_axil_awaddr),

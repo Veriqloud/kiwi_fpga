@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Hop Dinh
 // 
 // Create Date: 02/02/2024 03:33:49 PM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Generate reference clock, reset index, simulated stopa for tdc
 // 
 // Dependencies: 
 // 

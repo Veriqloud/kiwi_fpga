@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Hop Dinh
 // 
 // Create Date: 07/17/2024 01:44:29 PM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Manage write and read AXI virtual fifo 
 // 
 // Dependencies: 
 // 
@@ -115,7 +115,8 @@ module ddr_data(
     output gc_time_valid_div,
     output gc_time_valid_mod,
     output dq_gc,
-    output command_gc_enable_r
+    output command_gc_enable_r,
+    output debug_rc_gc_div
 
     );
 
@@ -129,6 +130,9 @@ assign dq_gc_start_r_debug = dq_gc_start_r[47:6];
 assign threshold_full_debug = threshold_full_r;
 // assign threshold_wait = dq_gc_start_r[47:32];
 assign threshold_wait = threshold_r;
+//debug delta number of read out of ddr and global counter received
+wire [47:0] debug_rc_gc_div; 
+assign debug_rc_gc_div = read_count - gc_time_valid_div;
 //clock domain changing from 200MHz to 250MHz
 reg s_axis_tready_gc_200;
 reg [2:0] s_axis_tready_gc_r;
@@ -281,16 +285,16 @@ wire q_pos;
 // wire [41:0] delta_time_count;
 // wire debug_empty_flag;
 
-assign gc_time_valid = tdata_gc[47:0] - fiber_delay_r; //might have some calib value
-assign gc_time_valid_div = gc_time_valid[47:6];
-assign gc_time_valid_mod = gc_time_valid[5:0];
-assign q_pos = tdata_gc[48];
-
-// assign gc_time_valid = (pair_delay_r == 1)?(tdata_gc[47:0] - fiber_delay_r)
-// :((tdata_gc[48] == 1)?(tdata_gc[47:0] - fiber_delay_r + 1):(tdata_gc[47:0] - fiber_delay_r));
+// assign gc_time_valid = tdata_gc[47:0] - fiber_delay_r; //might have some calib value
 // assign gc_time_valid_div = gc_time_valid[47:6];
 // assign gc_time_valid_mod = gc_time_valid[5:0];
-// assign q_pos = (pair_delay_r == 1)?(tdata_gc[48]):(~tdata_gc[48]); 
+// assign q_pos = tdata_gc[48];
+
+assign gc_time_valid = (pair_delay_r == 1)?(tdata_gc[47:0] - fiber_delay_r)
+:((tdata_gc[48] == 1)?(tdata_gc[47:0] - fiber_delay_r + 1):(tdata_gc[47:0] - fiber_delay_r));
+assign gc_time_valid_div = gc_time_valid[47:6];
+assign gc_time_valid_mod = gc_time_valid[5:0];
+assign q_pos = (pair_delay_r == 1)?(tdata_gc[48]):(~tdata_gc[48]); 
 
 
 wire current_dq_gc_valid;
@@ -389,7 +393,15 @@ always @(posedge clk200_i) begin
             end
             WAIT_START: begin
                 start_write_ddr_r <= {start_write_ddr_r[1:0], start_write_ddr_i};
-                if (start_write_ddr_r[2] == 0 && start_write_ddr_r[1] == 1) begin
+                // if (start_write_ddr_r[2] == 0 && start_write_ddr_r[1] == 1) begin
+                //     start_write_ddr_o <= 1'b1;
+                //     state <= DETECT_PPS;
+                // end 
+                // else begin
+                //     state_alpha <= IDLE_AL;
+                //     state <= WAIT_START;
+                // end
+                if (start_write_ddr_r[2] == 1 && !pps_i) begin
                     start_write_ddr_o <= 1'b1;
                     state <= DETECT_PPS;
                 end 
@@ -397,6 +409,7 @@ always @(posedge clk200_i) begin
                     state_alpha <= IDLE_AL;
                     state <= WAIT_START;
                 end
+
             end
             DETECT_PPS: begin
                 pps_r <= pps_i;

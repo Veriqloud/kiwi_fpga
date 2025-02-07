@@ -46,6 +46,7 @@
         output [14:0] fastdac_dpram_max_addr_rng_dac1_o,
         output fastdac_rng_mode_o,
         output fastdac_dac1_mode_o,
+        output fastdac_dac0_mode_o,
         // output [7:0] fastdac_dpram_max_addr_pos_dac0_o,
         // output [7:0] fastdac_dpram_max_addr_pos_dac1_o,
         output [3:0]  fastdac_amp_dac1_shift_o,
@@ -54,6 +55,7 @@
         output fastdac_fb_mode_o,
         output fastdac_zero_mode_o,
         output [15:0] fastdac_up_offset_o,
+        output [31:0] division_sp_o,
 
 
         // output [14:0] fastdac_reg_alpha0_dac0_0_o,
@@ -212,16 +214,17 @@
 	assign fastdac_dac1_mode_o = slv_reg5[1];
 	assign fastdac_fb_mode_o = slv_reg5[2];
 	assign fastdac_zero_mode_o = slv_reg5[3];
+	assign fastdac_dac0_mode_o =slv_reg5[4];
 	assign fastdac_up_offset_o = slv_reg1[31:16];
-	
+	assign division_sp_o = slv_reg8[31:0];	
 	// assign fastdac_reg_alpha1_dac0_1_o = slv_reg5[14:0];
 	// assign fastdac_reg_alpha1_dac0_2_o = slv_reg5[30:16];
 	// assign fastdac_reg_alpha0_dac1_0_o = slv_reg6[14:0];
 	// assign fastdac_reg_alpha0_dac1_1_o = slv_reg6[30:16];
 	// assign fastdac_reg_alpha0_dac1_2_o = slv_reg7[14:0];
 	// assign fastdac_reg_alpha1_dac1_0_o = slv_reg7[30:16];
-	assign fastdac_reg_alpha1_dac1_1_o = slv_reg8[14:0];
-	assign fastdac_reg_alpha1_dac1_2_o = slv_reg8[30:16];
+	// assign fastdac_reg_alpha1_dac1_1_o = slv_reg8[14:0];
+	// assign fastdac_reg_alpha1_dac1_2_o = slv_reg8[30:16];
 	// assign slv_reg16[5:0] = fastdac_ddr_status_i;
 	// I/O Connections assignments
 

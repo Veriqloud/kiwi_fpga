@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Hop Dinh
 // 
 // Create Date: 11/09/2023 03:11:37 PM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Test the signals, clocks out of the clk_rst_mngt module
 // 
 // Dependencies: 
 // 

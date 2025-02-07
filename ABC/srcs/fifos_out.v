@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Hop Dinh
 // 
 // Create Date: 12/11/2024 04:00:08 PM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Instantiate the axis fifos of global counter out and alpha
 // 
 // Dependencies: 
 // 

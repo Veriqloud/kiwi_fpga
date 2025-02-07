@@ -45,6 +45,7 @@ module sample_dac1_tb();
     reg [14:0]         fastdac_dpram_max_addr_rng_dac1_int;
     reg               fastdac_rng_mode_i;
     reg               fastdac_dac1_mode_i;
+    reg               fastdac_dac0_mode_i;
     reg fb_mode_i;
     reg [14:0] up_offset_i;
     reg tvalid200;
@@ -81,6 +82,7 @@ sample_dac1 sample_dac1_inst(
     .fastdac_rng_mode_i(fastdac_rng_mode_i),
     .fastdac_dac1_mode_i(fastdac_dac1_mode_i),
     .fb_mode_i(fb_mode_i),
+    .fastdac_dac0_mode_i(fastdac_dac0_mode_i),
     .up_offset_i(up_offset_i),
     .tvalid200(tvalid200),
     .tdata200_mod(tdata200_mod),
@@ -129,6 +131,7 @@ initial begin
     fastdac_dpram_max_addr_rng_dac1_int = 1;
     fastdac_rng_mode_i = 1;
     fastdac_dac1_mode_i = 1;
+    fastdac_dac0_mode_i = 1;
     fb_mode_i = 1;
     up_offset_i = 15'h4000;
     #500 dac1_shift_en_o = 1;

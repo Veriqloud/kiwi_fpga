@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# pcierefclk, ttl_gate_apd, ILVDS, clk_rst_mngt, led_test, axi_clock_converter_rtl, axi_virtual_controller_wrapper, ddr_data, ddr_data_reg_mngt, fifos_out, mon_ddr_fifos, jesd204b_tx_wrapper, jesd_transport, sync_tx_tready, spi_inout_mngt, ILVDS_TDC, OLVDS_TDC, tdc_clk_rst_mngt, AS6501_IF, TDC_REG_MNGT_v1_0, fifo_gc_tdc_rtl, spi_inout_mngt
+# pcierefclk, ttl_gate_apd, clk_rst_mngt, led_test, axi_clock_converter_rtl, axi_virtual_controller_wrapper, ddr_data, ddr_data_reg_mngt, fifos_out, mon_ddr_fifos, jesd204b_tx_wrapper, jesd_transport, sync_tx_tready, spi_inout_mngt, ILVDS_TDC, OLVDS_TDC, tdc_clk_rst_mngt, AS6501_IF, TDC_REG_MNGT_v1_0, fifo_gc_tdc_rtl, spi_inout_mngt
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -133,10 +133,10 @@ if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:clk_wiz:6.0\
 xilinx.com:ip:xdma:4.1\
+xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:ddr4:2.2\
 xilinx.com:ip:system_ila:1.1\
 xilinx.com:ip:util_vector_logic:2.0\
-xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:ila:6.2\
 xilinx.com:ip:jesd204_phy:4.0\
 xilinx.com:ip:axi_quad_spi:3.2\
@@ -167,7 +167,6 @@ if { $bCheckModules == 1 } {
    set list_check_mods "\ 
 pcierefclk\
 ttl_gate_apd\
-ILVDS\
 clk_rst_mngt\
 led_test\
 axi_clock_converter_rtl\
@@ -369,7 +368,6 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   create_bd_pin -dir I lclk_i
   create_bd_pin -dir I linterrupt_i_0
   create_bd_pin -dir I lrst_i
-  create_bd_pin -dir I lrstn_i_0
   create_bd_pin -dir I -type clk m_axi_tclk
   create_bd_pin -dir I m_axi_trstn
   create_bd_pin -dir I rd_en_4
@@ -429,6 +427,7 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
+   CONFIG.ASSOCIATED_BUSIF {s_axis} \
  ] [get_bd_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/s_aclk]
 
   # Create interface connections
@@ -440,10 +439,10 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   connect_bd_net -net AS6501_IF_0_click0_count_o [get_bd_pins AS6501_IF_0/click0_count_o] [get_bd_pins TDC_REG_MNGT_v1_0_0/click0_count_i]
   connect_bd_net -net AS6501_IF_0_click1_count_o [get_bd_pins AS6501_IF_0/click1_count_o] [get_bd_pins TDC_REG_MNGT_v1_0_0/click1_count_i]
   connect_bd_net -net AS6501_IF_0_data_count_valid_o [get_bd_pins AS6501_IF_0/data_count_valid_o] [get_bd_pins TDC_REG_MNGT_v1_0_0/data_count_valid_i]
-  connect_bd_net -net AS6501_IF_0_debug_s_axis_tdata [get_bd_pins debug_s_axis_tdata] [get_bd_pins AS6501_IF_0/debug_m_axis_tdata]
-  connect_bd_net -net AS6501_IF_0_debug_s_axis_tvalid [get_bd_pins debug_s_axis_tvalid] [get_bd_pins AS6501_IF_0/debug_m_axis_tvalid]
-  connect_bd_net -net AS6501_IF_0_debug_tdc_tdata [get_bd_pins debug_tdc_tdata] [get_bd_pins AS6501_IF_0/debug_tdc_tdata]
-  connect_bd_net -net AS6501_IF_0_debug_tdc_tvalid [get_bd_pins debug_tdc_tvalid] [get_bd_pins AS6501_IF_0/debug_tdc_tvalid]
+  connect_bd_net -net AS6501_IF_0_debug_s_axis_tdata [get_bd_pins debug_s_axis_tdata] [get_bd_pins AS6501_IF_0/debug_m_axis_data]
+  connect_bd_net -net AS6501_IF_0_debug_s_axis_tvalid [get_bd_pins debug_s_axis_tvalid] [get_bd_pins AS6501_IF_0/debug_m_axis_valid]
+  connect_bd_net -net AS6501_IF_0_debug_tdc_tdata [get_bd_pins debug_tdc_tdata] [get_bd_pins AS6501_IF_0/debug_tdc_data]
+  connect_bd_net -net AS6501_IF_0_debug_tdc_tvalid [get_bd_pins debug_tdc_tvalid] [get_bd_pins AS6501_IF_0/debug_tdc_valid]
   connect_bd_net -net AS6501_IF_0_fifo_calib_rst [get_bd_pins AS6501_IF_0/fifo_calib_rst] [get_bd_pins fifo_gc_tdc_rtl_0/s_aresetn]
   connect_bd_net -net AS6501_IF_0_gate_pos0 [get_bd_pins gate_pos0] [get_bd_pins AS6501_IF_0/gate_pos0]
   connect_bd_net -net AS6501_IF_0_gate_pos1 [get_bd_pins gate_pos1] [get_bd_pins AS6501_IF_0/gate_pos1]
@@ -481,7 +480,6 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   connect_bd_net -net lclk_i_1 [get_bd_pins s_axil_aclk] [get_bd_pins TDC_REG_MNGT_v1_0_0/s_axil_aclk]
   connect_bd_net -net linterrupt_i_0_1 [get_bd_pins linterrupt_i_0] [get_bd_pins AS6501_IF_0/linterrupt_i]
   connect_bd_net -net lrst_i_1 [get_bd_pins lrst_i] [get_bd_pins AS6501_IF_0/lrst_i]
-  connect_bd_net -net lrstn_i_0_1 [get_bd_pins lrstn_i_0] [get_bd_pins AS6501_IF_0/lrstn_i]
   connect_bd_net -net lrstn_i_1 [get_bd_pins s_axil_aresetn] [get_bd_pins TDC_REG_MNGT_v1_0_0/s_axil_aresetn]
   connect_bd_net -net m_axi_tclk_1 [get_bd_pins m_axi_tclk] [get_bd_pins fifo_gc_tdc_rtl_0/m_aclk]
   connect_bd_net -net rd_en_4_1 [get_bd_pins rd_en_4] [get_bd_pins AS6501_IF_0/rd_en_4]
@@ -709,7 +707,6 @@ proc create_hier_cell_tdc { parentCell nameHier } {
   create_bd_pin -dir I -type clk s_axil_aclk
   create_bd_pin -dir I -type rst s_axil_aresetn
   create_bd_pin -dir O stopa_sim_0
-  create_bd_pin -dir I sys_rst_n
   create_bd_pin -dir O -from 31 -to 0 tdata200
   create_bd_pin -dir O -from 15 -to 0 tdata200_mod
   create_bd_pin -dir I -type rst tdc_rst
@@ -727,7 +724,7 @@ proc create_hier_cell_tdc { parentCell nameHier } {
     CONFIG.C_PROBE13_WIDTH {1} \
     CONFIG.C_PROBE14_WIDTH {128} \
     CONFIG.C_PROBE15_WIDTH {1} \
-    CONFIG.C_PROBE16_WIDTH {1} \
+    CONFIG.C_PROBE16_WIDTH {4} \
     CONFIG.C_PROBE17_WIDTH {1} \
     CONFIG.C_PROBE18_WIDTH {4} \
     CONFIG.C_PROBE19_WIDTH {4} \
@@ -736,8 +733,8 @@ proc create_hier_cell_tdc { parentCell nameHier } {
     CONFIG.C_PROBE2_WIDTH {32} \
     CONFIG.C_PROBE3_WIDTH {32} \
     CONFIG.C_PROBE5_WIDTH {1} \
-    CONFIG.C_PROBE6_WIDTH {40} \
-    CONFIG.C_PROBE7_WIDTH {40} \
+    CONFIG.C_PROBE6_WIDTH {48} \
+    CONFIG.C_PROBE7_WIDTH {48} \
     CONFIG.C_PROBE8_WIDTH {1} \
     CONFIG.C_PROBE_WIDTH_PROPAGATION {MANUAL} \
     CONFIG.C_SLOT_0_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
@@ -975,7 +972,6 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   create_bd_pin -dir I -type clk tx_core_clk_0
   create_bd_pin -dir I -type rst tx_core_reset
   create_bd_pin -dir I tx_sync_0
-  create_bd_pin -dir O -from 0 -to 0 tx_tready_o
 
   # Create instance: ila_fastdac, and set properties
   set ila_fastdac [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_fastdac ]
@@ -1092,7 +1088,7 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   connect_bd_net -net s_axi_aclk_1 [get_bd_pins s_axi_aclk] [get_bd_pins jesd204b_tx_wrapper_0/s_axil_aclk] [get_bd_pins jesd_transport_0/s_axil_aclk]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins jesd204b_tx_wrapper_0/s_axil_aresetn] [get_bd_pins jesd_transport_0/s_axil_aresetn]
   connect_bd_net -net tdata200_mod_1 [get_bd_pins tdata200_mod] [get_bd_pins jesd_transport_0/tdata200_mod]
-  connect_bd_net -net test_jesd_reset_0_syncout_o [get_bd_pins tx_tready_o] [get_bd_pins ila_fastdac/probe0] [get_bd_pins jesd_transport_0/tx_tready] [get_bd_pins sync_tx_tready_0/tx_tready_o]
+  connect_bd_net -net test_jesd_reset_0_syncout_o [get_bd_pins ila_fastdac/probe0] [get_bd_pins jesd_transport_0/tx_tready] [get_bd_pins sync_tx_tready_0/tx_tready_o]
   connect_bd_net -net tvalid200_1 [get_bd_pins tvalid200] [get_bd_pins jesd_transport_0/tvalid200]
   connect_bd_net -net tx_core_clk_0_1 [get_bd_pins tx_core_clk_0] [get_bd_pins ila_fastdac/clk] [get_bd_pins jesd204_phy_0/drpclk] [get_bd_pins jesd204_phy_0/rx_core_clk] [get_bd_pins jesd204_phy_0/tx_core_clk] [get_bd_pins jesd204b_tx_wrapper_0/tx_core_clk] [get_bd_pins jesd_transport_0/tx_core_clk] [get_bd_pins sync_tx_tready_0/tx_core_clk]
   connect_bd_net -net tx_core_reset_1 [get_bd_pins tx_core_reset] [get_bd_pins jesd204_phy_0/tx_sys_reset] [get_bd_pins jesd204b_tx_wrapper_0/tx_core_reset] [get_bd_pins jesd_transport_0/tx_core_reset] [get_bd_pins sync_tx_tready_0/tx_core_rst]
@@ -1157,7 +1153,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   create_bd_pin -dir O -type clk c0_ddr4_ui_clk
   create_bd_pin -dir O -type rst c0_ddr4_ui_clk_sync_rst
   create_bd_pin -dir I clk200_i
-  create_bd_pin -dir I -type rst ddr_data_rst
   create_bd_pin -dir I -type rst ddr_data_rstn
   create_bd_pin -dir I -type clk ddr_sys_clk_n
   create_bd_pin -dir I -type clk ddr_sys_clk_p
@@ -1308,10 +1303,12 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
+   CONFIG.ASSOCIATED_BUSIF {s_axis_alpha} \
  ] [get_bd_pins /ddr4/fifos_out_0/s_alpha_aclk]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
+   CONFIG.ASSOCIATED_BUSIF {s_axis_gco} \
  ] [get_bd_pins /ddr4/fifos_out_0/s_gco_aclk]
 
   # Create instance: mon_ddr_fifos_0, and set properties
@@ -1330,29 +1327,30 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [list \
     CONFIG.C_MON_TYPE {MIX} \
     CONFIG.C_NUM_MONITOR_SLOTS {4} \
-    CONFIG.C_NUM_OF_PROBES {28} \
+    CONFIG.C_NUM_OF_PROBES {22} \
     CONFIG.C_PROBE10_WIDTH {2} \
     CONFIG.C_PROBE11_WIDTH {4} \
     CONFIG.C_PROBE12_WIDTH {64} \
     CONFIG.C_PROBE13_WIDTH {2} \
     CONFIG.C_PROBE14_WIDTH {48} \
-    CONFIG.C_PROBE15_WIDTH {48} \
-    CONFIG.C_PROBE16_WIDTH {48} \
+    CONFIG.C_PROBE15_WIDTH {32} \
+    CONFIG.C_PROBE16_WIDTH {7} \
     CONFIG.C_PROBE17_WIDTH {42} \
-    CONFIG.C_PROBE19_WIDTH {7} \
-    CONFIG.C_PROBE1_WIDTH {3} \
-    CONFIG.C_PROBE20_WIDTH {32} \
-    CONFIG.C_PROBE21_WIDTH {7} \
-    CONFIG.C_PROBE22_WIDTH {42} \
-    CONFIG.C_PROBE23_WIDTH {7} \
-    CONFIG.C_PROBE24_WIDTH {32} \
-    CONFIG.C_PROBE26_WIDTH {3} \
+    CONFIG.C_PROBE18_WIDTH {7} \
+    CONFIG.C_PROBE19_WIDTH {1} \
+    CONFIG.C_PROBE1_WIDTH {2} \
+    CONFIG.C_PROBE20_WIDTH {3} \
+    CONFIG.C_PROBE21_WIDTH {48} \
+    CONFIG.C_PROBE22_WIDTH {1} \
+    CONFIG.C_PROBE23_WIDTH {1} \
+    CONFIG.C_PROBE24_WIDTH {1} \
+    CONFIG.C_PROBE26_WIDTH {1} \
     CONFIG.C_PROBE2_WIDTH {1} \
     CONFIG.C_PROBE3_WIDTH {48} \
     CONFIG.C_PROBE4_WIDTH {3} \
     CONFIG.C_PROBE5_WIDTH {1} \
     CONFIG.C_PROBE7_WIDTH {1} \
-    CONFIG.C_PROBE8_WIDTH {6} \
+    CONFIG.C_PROBE8_WIDTH {7} \
     CONFIG.C_PROBE9_WIDTH {1} \
     CONFIG.C_PROBE_WIDTH_PROPAGATION {MANUAL} \
     CONFIG.C_SLOT {3} \
@@ -1408,9 +1406,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins ddr_data_0/s_gc_aresetn] [get_bd_pins mon_ddr_fifos_0/aresetn]
   connect_bd_net -net axi_vfifo_ctrl_0_vfifo_mm2s_channel_empty [get_bd_pins axi_virtual_controll_0/vfifo_mm2s_channel_empty] [get_bd_pins mon_ddr_fifos_0/vfifo_empty] [get_bd_pins system_ila_ddr/probe13]
   connect_bd_net -net axi_vfifo_ctrl_0_vfifo_s2mm_channel_full [get_bd_pins axi_virtual_controll_0/vfifo_s2mm_channel_full] [get_bd_pins mon_ddr_fifos_0/vfifo_full] [get_bd_pins system_ila_ddr/probe1]
-  connect_bd_net -net axi_virtual_controll_0_counter_read [get_bd_pins axi_virtual_controll_0/counter_read] [get_bd_pins system_ila_ddr/probe14]
-  connect_bd_net -net axi_virtual_controll_0_counter_write [get_bd_pins axi_virtual_controll_0/counter_write] [get_bd_pins system_ila_ddr/probe15]
-  connect_bd_net -net axi_virtual_controll_0_delta_count [get_bd_pins axi_virtual_controll_0/delta_count] [get_bd_pins system_ila_ddr/probe16]
   connect_bd_net -net axi_virtual_controll_0_vfifo_idle [get_bd_pins axi_virtual_controll_0/vfifo_idle] [get_bd_pins mon_ddr_fifos_0/vfifo_idle]
   connect_bd_net -net c0_ddr4_aresetn_1 [get_bd_pins c0_ddr4_aresetn] [get_bd_pins axi_clock_converter_0/m_axi_aresetn] [get_bd_pins ddr4_0/c0_ddr4_aresetn]
   connect_bd_net -net clk200_i_1 [get_bd_pins clk200_i] [get_bd_pins axi_clock_converter_0/s_axi_aclk] [get_bd_pins axi_virtual_controll_0/aclk] [get_bd_pins ddr_data_0/clk200_i] [get_bd_pins ddr_data_0/m_axis_alpha_clk] [get_bd_pins ddr_data_0/m_axis_clk] [get_bd_pins ddr_data_0/m_axis_gc_clk] [get_bd_pins ddr_data_0/s_axis_clk] [get_bd_pins ddr_data_reg_mngt_0/clk200_i] [get_bd_pins fifos_out_0/s_alpha_aclk] [get_bd_pins fifos_out_0/s_gco_aclk] [get_bd_pins mon_ddr_fifos_0/clk200_i] [get_bd_pins system_ila_ddr/clk]
@@ -1419,27 +1414,28 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk] [get_bd_pins axi_clock_converter_0/m_axi_aclk] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_pins c0_ddr4_ui_clk_sync_rst] [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst]
   connect_bd_net -net ddr4_0_c0_init_calib_complete [get_bd_pins led] [get_bd_pins ddr4_0/c0_init_calib_complete]
-  connect_bd_net -net ddr_data_0_alpha_cycle_counter [get_bd_pins ddr_data_0/alpha_cycle_counter] [get_bd_pins system_ila_ddr/probe21]
+  connect_bd_net -net ddr_data_0_alpha_cycle_counter [get_bd_pins ddr_data_0/alpha_cycle_counter] [get_bd_pins system_ila_ddr/probe16]
   connect_bd_net -net ddr_data_0_alpha_pack_done [get_bd_pins ddr_data_0/alpha_pack_done] [get_bd_pins system_ila_ddr/probe7]
   connect_bd_net -net ddr_data_0_alpha_q [get_bd_pins ddr_data_0/alpha_q] [get_bd_pins system_ila_ddr/probe10]
-  connect_bd_net -net ddr_data_0_command_gc_enable_r [get_bd_pins ddr_data_0/command_gc_enable_r] [get_bd_pins system_ila_ddr/probe26]
-  connect_bd_net -net ddr_data_0_current_dq_gc [get_bd_pins ddr_data_0/current_dq_gc] [get_bd_pins ddr_data_reg_mngt_0/current_dq_gc_i] [get_bd_pins system_ila_ddr/probe17]
-  connect_bd_net -net ddr_data_0_current_dq_gc_valid [get_bd_pins ddr_data_0/current_dq_gc_valid] [get_bd_pins ddr_data_reg_mngt_0/current_dq_gc_valid_i] [get_bd_pins system_ila_ddr/probe18]
+  connect_bd_net -net ddr_data_0_command_gc_enable_r [get_bd_pins ddr_data_0/command_gc_enable_r] [get_bd_pins system_ila_ddr/probe20]
+  connect_bd_net -net ddr_data_0_current_dq_gc [get_bd_pins ddr_data_0/current_dq_gc] [get_bd_pins ddr_data_reg_mngt_0/current_dq_gc_i]
+  connect_bd_net -net ddr_data_0_current_dq_gc_valid [get_bd_pins ddr_data_0/current_dq_gc_valid] [get_bd_pins ddr_data_reg_mngt_0/current_dq_gc_valid_i]
   connect_bd_net -net ddr_data_0_cycle_counter [get_bd_pins ddr_data_0/cycle_counter] [get_bd_pins system_ila_ddr/probe8]
-  connect_bd_net -net ddr_data_0_dq_gc [get_bd_pins ddr_data_0/dq_gc] [get_bd_pins system_ila_ddr/probe24]
-  connect_bd_net -net ddr_data_0_dq_gc_start_r_debug [get_bd_pins ddr_data_0/dq_gc_start_r_debug] [get_bd_pins system_ila_ddr/probe20]
+  connect_bd_net -net ddr_data_0_debug_rc_gc_div [get_bd_pins ddr_data_0/debug_rc_gc_div] [get_bd_pins system_ila_ddr/probe21]
+  connect_bd_net -net ddr_data_0_dq_gc [get_bd_pins ddr_data_0/dq_gc] [get_bd_pins system_ila_ddr/probe14]
+  connect_bd_net -net ddr_data_0_dq_gc_start_r_debug [get_bd_pins ddr_data_0/dq_gc_start_r_debug] [get_bd_pins system_ila_ddr/probe15]
   connect_bd_net -net ddr_data_0_fifo_alpha_rst [get_bd_pins ddr_data_0/fifo_alpha_rst] [get_bd_pins fifos_out_0/s_alpha_aresetn]
   connect_bd_net -net ddr_data_0_fifo_gc_empty [get_bd_pins ddr_data_0/fifo_gc_empty] [get_bd_pins mon_ddr_fifos_0/gc_in_fifo_empty]
   connect_bd_net -net ddr_data_0_fifo_gc_full [get_bd_pins ddr_data_0/fifo_gc_full] [get_bd_pins mon_ddr_fifos_0/gc_in_fifo_full]
-  connect_bd_net -net ddr_data_0_fifo_gc_rst [get_bd_pins fifo_gc_rst_0] [get_bd_pins ddr_data_0/fifo_gc_rst] [get_bd_pins fifos_out_0/s_gco_aresetn] [get_bd_pins system_ila_ddr/probe27]
-  connect_bd_net -net ddr_data_0_gc_time_valid_div [get_bd_pins ddr_data_0/gc_time_valid_div] [get_bd_pins system_ila_ddr/probe22]
-  connect_bd_net -net ddr_data_0_gc_time_valid_mod [get_bd_pins ddr_data_0/gc_time_valid_mod] [get_bd_pins system_ila_ddr/probe23]
+  connect_bd_net -net ddr_data_0_fifo_gc_rst [get_bd_pins fifo_gc_rst_0] [get_bd_pins ddr_data_0/fifo_gc_rst] [get_bd_pins fifos_out_0/s_gco_aresetn]
+  connect_bd_net -net ddr_data_0_gc_time_valid_div [get_bd_pins ddr_data_0/gc_time_valid_div] [get_bd_pins system_ila_ddr/probe17]
+  connect_bd_net -net ddr_data_0_gc_time_valid_mod [get_bd_pins ddr_data_0/gc_time_valid_mod] [get_bd_pins system_ila_ddr/probe18]
   connect_bd_net -net ddr_data_0_pack_done [get_bd_pins ddr_data_0/pack_done] [get_bd_pins system_ila_ddr/probe9]
   connect_bd_net -net ddr_data_0_rd_en_fifo_gc [get_bd_pins rd_en_fifo_gc_0] [get_bd_pins ddr_data_0/rd_en_fifo_gc]
   connect_bd_net -net ddr_data_0_rd_gc_valid [get_bd_pins rd_gc_valid_0] [get_bd_pins ddr_data_0/rd_gc_valid] [get_bd_pins system_ila_ddr/probe6]
   connect_bd_net -net ddr_data_0_read_count [get_bd_pins ddr_data_0/read_count] [get_bd_pins system_ila_ddr/probe3]
   connect_bd_net -net ddr_data_0_read_done [get_bd_pins read_done_0] [get_bd_pins ddr_data_0/read_done] [get_bd_pins system_ila_ddr/probe2]
-  connect_bd_net -net ddr_data_0_start_save_alpha [get_bd_pins ddr_data_0/start_save_alpha] [get_bd_pins system_ila_ddr/probe5] [get_bd_pins system_ila_ddr/probe19]
+  connect_bd_net -net ddr_data_0_start_save_alpha [get_bd_pins ddr_data_0/start_save_alpha] [get_bd_pins system_ila_ddr/probe5]
   connect_bd_net -net ddr_data_0_state_alpha [get_bd_pins ddr_data_0/state_alpha] [get_bd_pins system_ila_ddr/probe4]
   connect_bd_net -net ddr_data_0_tdata_gc [get_bd_pins ddr_data_0/tdata_gc] [get_bd_pins system_ila_ddr/probe12]
   connect_bd_net -net ddr_data_reg_mngt_0_command_alpha_enable_o [get_bd_pins ddr_data_0/command_alpha_enable] [get_bd_pins ddr_data_reg_mngt_0/command_alpha_enable_o]
@@ -1457,7 +1453,7 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net ddr_data_rstn_1 [get_bd_pins ddr_data_rstn] [get_bd_pins axi_clock_converter_0/s_axi_aresetn] [get_bd_pins axi_virtual_controll_0/aresetn] [get_bd_pins ddr_data_0/ddr_data_rstn] [get_bd_pins mon_ddr_fifos_0/ddr_data_rstn] [get_bd_pins system_ila_ddr/resetn]
   connect_bd_net -net ddr_sys_clk_n_1 [get_bd_pins ddr_sys_clk_n] [get_bd_pins ddr4_0/c0_sys_clk_n]
   connect_bd_net -net ddr_sys_clk_p_1 [get_bd_pins ddr_sys_clk_p] [get_bd_pins ddr4_0/c0_sys_clk_p]
-  connect_bd_net -net ext_pps_1 [get_bd_pins ext_pps] [get_bd_pins ddr_data_0/pps_i]
+  connect_bd_net -net ext_pps_1 [get_bd_pins ext_pps] [get_bd_pins ddr_data_0/pps_i] [get_bd_pins ddr_data_reg_mngt_0/pps_i]
   connect_bd_net -net fifos_out_0_axis_prog_empty_alpha [get_bd_pins fifos_out_0/axis_prog_empty_alpha] [get_bd_pins mon_ddr_fifos_0/alpha_out_fifo_empty]
   connect_bd_net -net fifos_out_0_axis_prog_empty_gco [get_bd_pins fifos_out_0/axis_prog_empty_gco] [get_bd_pins mon_ddr_fifos_0/gc_out_fifo_empty]
   connect_bd_net -net fifos_out_0_axis_prog_full_alpha [get_bd_pins fifos_out_0/axis_prog_full_alpha] [get_bd_pins mon_ddr_fifos_0/alpha_out_fifo_full]
@@ -1476,7 +1472,7 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net sys_rst_n_1 [get_bd_pins sys_rst_n] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net tdata200_1 [get_bd_pins tdata200] [get_bd_pins ddr_data_0/tdata200]
   connect_bd_net -net tdata200_mod_1 [get_bd_pins tdata200_mod] [get_bd_pins ddr_data_0/tdata200_mod]
-  connect_bd_net -net tvalid200_1 [get_bd_pins tvalid200] [get_bd_pins ddr_data_0/tvalid200] [get_bd_pins system_ila_ddr/probe25]
+  connect_bd_net -net tvalid200_1 [get_bd_pins tvalid200] [get_bd_pins ddr_data_0/tvalid200] [get_bd_pins system_ila_ddr/probe19]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins ddr4_0/sys_rst] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins axi_virtual_controll_0/vfifo_mm2s_channel_full] [get_bd_pins xlconstant_0/dout]
 
@@ -1527,7 +1523,6 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
   create_bd_pin -dir O clk200
   create_bd_pin -dir O clk3125
   create_bd_pin -dir I clk_ddr_axi_i
-  create_bd_pin -dir O -type rst ddr_data_rst_o
   create_bd_pin -dir O -type rst ddr_data_rstn_o
   create_bd_pin -dir I ext_clk100_n
   create_bd_pin -dir I ext_clk100_p
@@ -1544,34 +1539,18 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
   create_bd_pin -dir I fastdac_gt_powergood_i
   create_bd_pin -dir O -type rst gc_rst_o
   create_bd_pin -dir I lclk_i
-  create_bd_pin -dir O locked
   create_bd_pin -dir O lrst_o
-  create_bd_pin -dir I -from 0 -to 0 probe2
-  create_bd_pin -dir I -from 0 -to 0 probe3
-  create_bd_pin -dir I -from 0 -to 0 probe4
   create_bd_pin -dir O qpll0_refclk_o
   create_bd_pin -dir I rst_ddr_axi_i
   create_bd_pin -dir O rstn_axil_o
   create_bd_pin -dir O rstn_ddr_axi_o
   create_bd_pin -dir I -type clk s_axil_aclk
-  create_bd_pin -dir O sig3125
   create_bd_pin -dir I sys_rst_n
   create_bd_pin -dir O -type rst tdc_rst_o
   create_bd_pin -dir O -type rst ttl_rst
   create_bd_pin -dir O -from 0 -to 0 -type rst tx_core_reset_o
   create_bd_pin -dir O tx_sync_o
 
-  # Create instance: ILVDS_0, and set properties
-  set block_name ILVDS
-  set block_cell_name ILVDS_0
-  if { [catch {set ILVDS_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $ILVDS_0 eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-  
   # Create instance: clk_rst_mngt, and set properties
   set block_name clk_rst_mngt
   set block_cell_name clk_rst_mngt
@@ -1594,6 +1573,14 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
      return 1
    }
   
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+  set_property -dict [list \
+    CONFIG.CONST_VAL {0} \
+    CONFIG.CONST_WIDTH {1} \
+  ] $xlconstant_0
+
+
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins s_axil] [get_bd_intf_pins clk_rst_mngt/s_axil]
 
@@ -1604,10 +1591,9 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
   connect_bd_net -net clk_rst_mngt_0_tx_sysref_o [get_bd_pins clk3125] [get_bd_pins clk_rst_mngt/fastdac_sysref_o] [get_bd_pins led_test_0/clk3125]
   connect_bd_net -net clk_rst_mngt_clk100_o [get_bd_pins clk_rst_mngt/clk100_o] [get_bd_pins led_test_0/clk100]
   connect_bd_net -net clk_rst_mngt_clk10_o [get_bd_pins clk10_o] [get_bd_pins clk_rst_mngt/clk10_o] [get_bd_pins led_test_0/clk10]
-  connect_bd_net -net clk_rst_mngt_ddr_data_rst_o [get_bd_pins ddr_data_rst_o] [get_bd_pins clk_rst_mngt/ddr_data_rst_o]
   connect_bd_net -net clk_rst_mngt_ddr_data_rstn_o [get_bd_pins ddr_data_rstn_o] [get_bd_pins clk_rst_mngt/ddr_data_rstn_o]
   connect_bd_net -net clk_rst_mngt_fastdac_corerst_o [get_bd_pins tx_core_reset_o] [get_bd_pins clk_rst_mngt/fastdac_corerst_o]
-  connect_bd_net -net clk_rst_mngt_fpga_turnkey_fastdac_sync_o [get_bd_pins clk_rst_mngt/fpga_turnkey_fastdac_sync_o] [get_bd_pins led_test_0/syncout]
+  connect_bd_net -net clk_rst_mngt_fastdac_syncout_o [get_bd_pins tx_sync_o] [get_bd_pins clk_rst_mngt/fastdac_syncout_o]
   connect_bd_net -net clk_rst_mngt_gc_rst_o [get_bd_pins gc_rst_o] [get_bd_pins clk_rst_mngt/gc_rst_o]
   connect_bd_net -net clk_rst_mngt_lrst_o [get_bd_pins lrst_o] [get_bd_pins clk_rst_mngt/lrst_o]
   connect_bd_net -net clk_rst_mngt_rstn_axil_o [get_bd_pins rstn_axil_o] [get_bd_pins clk_rst_mngt/rstn_axil_o]
@@ -1621,18 +1607,17 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
   connect_bd_net -net ext_clk10_p_1 [get_bd_pins ext_clk10_p] [get_bd_pins clk_rst_mngt/ext_clk10_p]
   connect_bd_net -net ext_fastdac_refclk_n_1 [get_bd_pins ext_fastdac_refclk_n] [get_bd_pins clk_rst_mngt/fastdac_refclkn_i]
   connect_bd_net -net ext_fastdac_refclk_p_1 [get_bd_pins ext_fastdac_refclk_p] [get_bd_pins clk_rst_mngt/fastdac_refclkp_i]
-  connect_bd_net -net ext_fastdac_sync_n_0_1 [get_bd_pins ext_fastdac_sync_n] [get_bd_pins ILVDS_0/IB]
-  connect_bd_net -net ext_fastdac_sync_p_0_1 [get_bd_pins ext_fastdac_sync_p] [get_bd_pins ILVDS_0/I]
+  connect_bd_net -net ext_fastdac_sync_n_1 [get_bd_pins ext_fastdac_sync_n] [get_bd_pins clk_rst_mngt/fastdac_syncoutn_i]
+  connect_bd_net -net ext_fastdac_sync_p_1 [get_bd_pins ext_fastdac_sync_p] [get_bd_pins clk_rst_mngt/fastdac_syncoutp_i]
   connect_bd_net -net ext_fastdac_sysref_n_1 [get_bd_pins ext_fastdac_sysref_n] [get_bd_pins clk_rst_mngt/fastdac_sysrefn_i]
   connect_bd_net -net ext_fastdac_sysref_p_1 [get_bd_pins ext_fastdac_sysref_p] [get_bd_pins clk_rst_mngt/fastdac_sysrefp_i]
   connect_bd_net -net ext_pps_1 [get_bd_pins ext_pps] [get_bd_pins clk_rst_mngt/pps_i] [get_bd_pins led_test_0/pps]
   connect_bd_net -net fastdac_gt_powergood_i_1 [get_bd_pins fastdac_gt_powergood_i] [get_bd_pins clk_rst_mngt/fastdac_gt_powergood_i]
   connect_bd_net -net lclk_i_1 [get_bd_pins lclk_i] [get_bd_pins clk_rst_mngt/lclk_i]
-  connect_bd_net -net led_test_0_sig3125 [get_bd_pins sig3125] [get_bd_pins led_test_0/sig3125]
   connect_bd_net -net rst_ddr_axi_i_1 [get_bd_pins rst_ddr_axi_i] [get_bd_pins clk_rst_mngt/rst_ddr_axi_i]
   connect_bd_net -net s_axil_aclk_1 [get_bd_pins s_axil_aclk] [get_bd_pins clk_rst_mngt/s_axil_aclk]
   connect_bd_net -net sys_rst_n_1 [get_bd_pins sys_rst_n] [get_bd_pins clk_rst_mngt/sys_reset_n]
-  connect_bd_net -net test_jesd_reset_0_syncout_o [get_bd_pins tx_sync_o] [get_bd_pins ILVDS_0/O]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins led_test_0/clockchip_sync] [get_bd_pins led_test_0/syncout] [get_bd_pins led_test_0/sys_reset_n] [get_bd_pins led_test_0/tdc_pps_trigger_i] [get_bd_pins xlconstant_0/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1922,7 +1907,6 @@ proc create_root_design { parentCell } {
   connect_bd_net -net ddr4_rd_en_fifo_gc_0 [get_bd_ports rd_en_fifo_gc] [get_bd_pins ddr4/rd_en_fifo_gc_0]
   connect_bd_net -net ddr4_rd_gc_valid_0 [get_bd_ports rd_gc_valid] [get_bd_pins ddr4/rd_gc_valid_0]
   connect_bd_net -net ddr4_read_done_0 [get_bd_ports read_done] [get_bd_pins ddr4/read_done_0]
-  connect_bd_net -net ddr_data_rst_1 [get_bd_pins clk_rst/ddr_data_rst_o] [get_bd_pins ddr4/ddr_data_rst]
   connect_bd_net -net ddr_data_rstn_1 [get_bd_pins clk_rst/ddr_data_rstn_o] [get_bd_pins ddr4/ddr_data_rstn]
   connect_bd_net -net ext_clk100_n_1 [get_bd_ports ext_clk100_n] [get_bd_pins clk_rst/ext_clk100_n]
   connect_bd_net -net ext_clk100_p_1 [get_bd_ports ext_clk100_p] [get_bd_pins clk_rst/ext_clk100_p]
@@ -1944,13 +1928,12 @@ proc create_root_design { parentCell } {
   connect_bd_net -net pcierefclk_0_O [get_bd_pins pcierefclk_0/O] [get_bd_pins xdma_0/sys_clk_gt]
   connect_bd_net -net pcierefclk_0_ODIV2 [get_bd_pins pcierefclk_0/ODIV2] [get_bd_pins xdma_0/sys_clk]
   connect_bd_net -net probe18_1 [get_bd_pins fastdac/dout4_test] [get_bd_pins tdc/dout4_test]
-  connect_bd_net -net probe4_1 [get_bd_pins clk_rst/probe4] [get_bd_pins fastdac/tx_tready_o]
   connect_bd_net -net probe7_1 [get_bd_pins ddr4/rd_en_4] [get_bd_pins fastdac/rd_en_4] [get_bd_pins tdc/rd_en_4]
   connect_bd_net -net rng_data_1 [get_bd_pins ddr4/rng_data] [get_bd_pins fastdac/rng_value] [get_bd_pins tdc/rng_value]
   connect_bd_net -net sync_ltc_0_sync_ltc [get_bd_ports ext_sync_ltc] [get_bd_pins clk_rst/ext_sync_ltc]
   connect_bd_net -net sys_clk_n_1 [get_bd_ports sys_clk_n] [get_bd_pins pcierefclk_0/IB]
   connect_bd_net -net sys_clk_p_1 [get_bd_ports sys_clk_p] [get_bd_pins pcierefclk_0/I]
-  connect_bd_net -net sys_rst_n_0_1 [get_bd_ports sys_rst_n] [get_bd_pins clk_rst/sys_rst_n] [get_bd_pins ddr4/sys_rst_n] [get_bd_pins tdc/sys_rst_n] [get_bd_pins xdma_0/sys_rst_n]
+  connect_bd_net -net sys_rst_n_0_1 [get_bd_ports sys_rst_n] [get_bd_pins clk_rst/sys_rst_n] [get_bd_pins ddr4/sys_rst_n] [get_bd_pins xdma_0/sys_rst_n]
   connect_bd_net -net tdata200_1 [get_bd_pins ddr4/tdata200] [get_bd_pins tdc/tdata200]
   connect_bd_net -net tdata200_mod_1 [get_bd_pins ddr4/tdata200_mod] [get_bd_pins fastdac/tdata200_mod] [get_bd_pins tdc/tdata200_mod]
   connect_bd_net -net tdc_OB_tdc_lclki_n_0 [get_bd_ports ext_tdc_lclki_n] [get_bd_pins tdc/OB_tdc_lclki_n_0]
@@ -1961,8 +1944,8 @@ proc create_root_design { parentCell } {
   connect_bd_net -net tdc_gate_pos2 [get_bd_pins ddr4/gate_pos2] [get_bd_pins fastdac/gate_pos2] [get_bd_pins tdc/gate_pos2]
   connect_bd_net -net tdc_gate_pos3 [get_bd_pins ddr4/gate_pos3] [get_bd_pins fastdac/gate_pos3] [get_bd_pins tdc/gate_pos3]
   connect_bd_net -net tdc_pps_trigger [get_bd_ports pps_trigger] [get_bd_pins tdc/pps_trigger]
-  connect_bd_net -net tdc_probe_tdc_refclk [get_bd_ports probe_tdc_refclk] [get_bd_pins clk_rst/probe2] [get_bd_pins tdc/probe_tdc_refclk]
-  connect_bd_net -net tdc_probe_tdc_rstidx [get_bd_ports probe_tdc_rstidx] [get_bd_pins clk_rst/probe3] [get_bd_pins tdc/probe_tdc_rstidx]
+  connect_bd_net -net tdc_probe_tdc_refclk [get_bd_ports probe_tdc_refclk] [get_bd_pins tdc/probe_tdc_refclk]
+  connect_bd_net -net tdc_probe_tdc_rstidx [get_bd_ports probe_tdc_rstidx] [get_bd_pins tdc/probe_tdc_rstidx]
   connect_bd_net -net tdc_rst_jic_0 [get_bd_ports ext_rst_jic] [get_bd_pins tdc/rst_jic_0]
   connect_bd_net -net tdc_stopa_sim_0 [get_bd_ports ext_stopa_sim] [get_bd_pins tdc/stopa_sim_0]
   connect_bd_net -net ttl_gate_apd_0_pulse_n [get_bd_ports pulse_n] [get_bd_pins ttl_gate_apd_0/pulse_n]

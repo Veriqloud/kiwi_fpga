@@ -55,6 +55,7 @@ module ddr_data_axil_mngt #
         input status_200_valid_i,
         input [2:0] fifos_status_i,
         input status_250_valid_i,
+        input pps_i,
 
         // User ports ends
         // Do not modify the ports beyond this line
@@ -387,13 +388,13 @@ module ddr_data_axil_mngt #
                     // Slave register 7
                     slv_reg11[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
-              4'hc:
-                for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
-                  if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-                    // Respective byte enables are asserted as per write strobes 
-                    // Slave register 7
-                    slv_reg12[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-                  end
+              // 4'hc:
+              //   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+              //     if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+              //       // Respective byte enables are asserted as per write strobes 
+              //       // Slave register 7
+              //       slv_reg12[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+              //     end
               default : begin
                           slv_reg0 <= slv_reg0;
                           slv_reg1 <= slv_reg1;
@@ -407,7 +408,7 @@ module ddr_data_axil_mngt #
                           slv_reg9 <= slv_reg9;
                           slv_reg10 <= slv_reg10;
                           slv_reg11 <= slv_reg11;
-                          slv_reg12 <= slv_reg12;
+                          // slv_reg12 <= slv_reg12;
                         end
             endcase
           end
@@ -519,6 +520,22 @@ module ddr_data_axil_mngt #
           slv_reg15 <= slv_reg15;
           slv_reg16 <= slv_reg16;
         end
+      end
+    end
+
+    //Read pps for synchronisation
+    reg pps_sync1;
+    initial begin
+      pps_sync1 <= 0;
+      slv_reg12 <= 0;
+    end
+    always @(posedge S_AXI_ACLK) begin
+      if(S_AXI_ARESETN == 1'b0) begin
+        slv_reg12 <= 0;
+        pps_sync1 <= 0;
+      end else begin
+        pps_sync1 <= pps_i;
+        slv_reg12 <= pps_sync1;
       end
     end
 

@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Hop Dinh
 // 
 // Create Date: 03/04/2024 03:02:51 PM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Generate the gate signal for APD. Include the tune and fine delays
 // 
 // Dependencies: 
 // 
@@ -106,6 +106,8 @@ ttl_reg_mngt # (
         .S_AXI_RREADY(s_axil_rready)
     );
 
+// Change clock domain for registers, from axil to 240MHz and 80MHz
+
 reg [2:0] ttl_params_240_r;
 reg [31:0] ttl_params_240;
 initial begin
@@ -135,7 +137,7 @@ always @(posedge clk80) begin
     end
 end
 
-//Reset mngt
+//Generate reset in 240MHz and 80MHz domain
 
 reg [2:0] ttl_rst80_r;
 reg [2:0] ttl_rst240_r;
@@ -171,7 +173,7 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk240_inst (
     .rstn_o(ttl_rstn240_o),
     .rst_o(ttl_rst240_o));
 
-//PPS trigger
+//Generate PPS trigger signal
 reg pps_trigger;
 reg pps_r;
 always @(posedge clk240) begin
@@ -186,15 +188,13 @@ always @(posedge clk240) begin
         end
     end
 end
-//generate the pulse
+//Generate the pulse, value of duty cycle and tune delay come from axil registers
 reg [4:0] counter;
 reg [7:0] bits;
 reg pulse;
 
 wire [3:0] delay_val;
 wire [3:0] duty_val;
-// assign duty_val = ttl_params_o[22:19];
-// assign delay_val = ttl_params_o[18:15];
 assign duty_val = ttl_params_240[22:19];
 assign delay_val = ttl_params_240[18:15];
 
@@ -253,30 +253,6 @@ assign resolution_slv2 = ttl_params_slv[30:17];
 //Passing domaine
 wire en_step, en_step_slv1, en_step_slv2;
 reg [2:0] ttl_trigger_enstep_r, ttl_trigger_enstep_slv1_r, ttl_trigger_enstep_slv2_r;
-// initial begin
-//     ttl_trigger_enstep_r <= 0;
-//     ttl_trigger_enstep_slv1_r <= 0;
-//     ttl_trigger_enstep_slv2_r <= 0;
-//     en_step <= 0;
-//     en_step_slv1 <= 0;
-//     en_step_slv2 <= 0;
-// end
-// always @(posedge clk80) begin
-//     ttl_trigger_enstep_r <= {ttl_trigger_enstep_r[1:0],ttl_trigger_enstep_o};
-//     ttl_trigger_enstep_slv1_r <= {ttl_trigger_enstep_slv1_r[1:0], ttl_trigger_enstep_slv1_o};
-//     ttl_trigger_enstep_slv2_r <= {ttl_trigger_enstep_slv2_r[1:0], ttl_trigger_enstep_slv2_o};
-//     if ((ttl_trigger_enstep_r[2] == 0) && (ttl_trigger_enstep_r[1] == 1)) begin
-//         en_step <= ttl_trigger_enstep_o;
-//     end
-//     if ((ttl_trigger_enstep_slv1_r[2] == 0) && (ttl_trigger_enstep_slv1_r[1] == 1)) begin
-//         en_step_slv1 <= ttl_trigger_enstep_slv1_o;
-//     end
-//     if ((ttl_trigger_enstep_slv2_r[2] == 0) && (ttl_trigger_enstep_slv2_r[1] == 1)) begin
-//         en_step_slv2 <= ttl_trigger_enstep_slv2_o;
-//     end
-
-// end
-
 initial begin
     ttl_trigger_enstep_r <= 0;
     ttl_trigger_enstep_slv1_r <= 0;
@@ -427,43 +403,8 @@ assign pulsein = pulse_delay_tune;
 
 
 
-ODELAYE3 #(
-.CASCADE("NONE"), // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
-.DELAY_FORMAT(DELAY_FORMAT), // (COUNT, TIME)
-.DELAY_TYPE(DELAY_TYPE), // Set the type of tap delay line (FIXED, VARIABLE, VAR_LOAD)
-.DELAY_VALUE(DELAY_VALUE), // Output delay tap setting
-.IS_CLK_INVERTED(1'b0), // Optional inversion for CLK
-.IS_RST_INVERTED(1'b0), // Optional inversion for RST
-.REFCLK_FREQUENCY(REFCLK_FREQUENCY), // IDELAYCTRL clock input frequency in MHz (200.0-800.0).
-.SIM_DEVICE("ULTRASCALE_PLUS"), // Set the device version for simulation functionality (ULTRASCALE,
-// ULTRASCALE_PLUS, ULTRASCALE_PLUS_ES1, ULTRASCALE_PLUS_ES2)
-.UPDATE_MODE(UPDATE_MODE) // Determines when updates to the delay will take effect (ASYNC, MANUAL,
-// SYNC)
-)
-ODELAYE3_inst_master (
-.CASC_OUT(), // 1-bit output: Cascade delay output to IDELAY input cascade
-.CNTVALUEOUT(), // 9-bit output: Counter value output
-.DATAOUT(pulsedelay), // 1-bit output: Delayed data from ODATAIN input port
-.CASC_IN(1'b0), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
-.CASC_RETURN(0), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
-.CE(ce), // 1-bit input: Active-High enable increment/decrement input
-.CLK(clk80), // 1-bit input: Clock input
-.CNTVALUEIN(), // 9-bit input: Counter value input
-.EN_VTC(en_vtc), // 1-bit input: Keep delay constant over VT
-.INC(inc), // 1-bit input: Increment/Decrement tap delay input
-.LOAD(load), // 1-bit input: Load DELAY_VALUE input
-.ODATAIN(pulsein), // 1-bit input: Data input
-.RST(ttl_rst80_o) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
-);
-
-// //Add cascade wires
-// wire cascade_out_1;
-// wire cascade_out_2;
-// wire cascade_return_1;
-// wire cascade_return_2;
-
 // ODELAYE3 #(
-// .CASCADE("MASTER"), // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
+// .CASCADE("NONE"), // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
 // .DELAY_FORMAT(DELAY_FORMAT), // (COUNT, TIME)
 // .DELAY_TYPE(DELAY_TYPE), // Set the type of tap delay line (FIXED, VARIABLE, VAR_LOAD)
 // .DELAY_VALUE(DELAY_VALUE), // Output delay tap setting
@@ -476,11 +417,11 @@ ODELAYE3_inst_master (
 // // SYNC)
 // )
 // ODELAYE3_inst_master (
-// .CASC_OUT(cascade_out_1), // 1-bit output: Cascade delay output to IDELAY input cascade
+// .CASC_OUT(), // 1-bit output: Cascade delay output to IDELAY input cascade
 // .CNTVALUEOUT(), // 9-bit output: Counter value output
 // .DATAOUT(pulsedelay), // 1-bit output: Delayed data from ODATAIN input port
 // .CASC_IN(1'b0), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
-// .CASC_RETURN(cascade_return_1), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
+// .CASC_RETURN(0), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
 // .CE(ce), // 1-bit input: Active-High enable increment/decrement input
 // .CLK(clk80), // 1-bit input: Clock input
 // .CNTVALUEIN(), // 9-bit input: Counter value input
@@ -491,66 +432,101 @@ ODELAYE3_inst_master (
 // .RST(ttl_rst80_o) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
 // );
 
+//Add cascade wires
+wire cascade_out_1;
+wire cascade_out_2;
+wire cascade_return_1;
+wire cascade_return_2;
 
-// IDELAYE3 #(
-//   .CASCADE("SLAVE_MIDDLE"),               // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
-//   .DELAY_FORMAT(DELAY_FORMAT),          // Units of the DELAY_VALUE (COUNT, TIME)
-//   .DELAY_SRC("CASC_IN"),          // Delay input (DATAIN, IDATAIN)
-//   .DELAY_TYPE(DELAY_TYPE),           // Set the type of tap delay line (FIXED, VARIABLE, VAR_LOAD)
-//   .DELAY_VALUE(DELAY_VALUE),                // Input delay value setting
-//   .IS_CLK_INVERTED(1'b0),         // Optional inversion for CLK
-//   .IS_RST_INVERTED(1'b0),         // Optional inversion for RST
-//   .REFCLK_FREQUENCY(REFCLK_FREQUENCY),       // IDELAYCTRL clock input frequency in MHz (200.0-800.0)
-//   .SIM_DEVICE("ULTRASCALE_PLUS"), // Set the device version for simulation functionality (ULTRASCALE,
-//                                   // ULTRASCALE_PLUS, ULTRASCALE_PLUS_ES1, ULTRASCALE_PLUS_ES2)
-//   .UPDATE_MODE(UPDATE_MODE)           // Determines when updates to the delay will take effect (ASYNC, MANUAL,
-//                                   // SYNC)
-// )
-// IDELAYE3_inst_slave (
-//   .CASC_OUT(cascade_out_2),       // 1-bit output: Cascade delay output to ODELAY input cascade
-//   .CNTVALUEOUT(), // 9-bit output: Counter value output
-//   .DATAOUT(cascade_return_1),         // 1-bit output: Delayed data output
-//   .CASC_IN(cascade_out_1),         // 1-bit input: Cascade delay input from slave ODELAY CASCADE_OUT
-//   .CASC_RETURN(cascade_return_2), // 1-bit input: Cascade delay returning from slave ODELAY DATAOUT
-//   .CE(ce_slv1),                   // 1-bit input: Active-High enable increment/decrement input
-//   .CLK(clk80),                 // 1-bit input: Clock input
-//   .CNTVALUEIN(),   // 9-bit input: Counter value input
-//   .DATAIN(),           // 1-bit input: Data input from the logic
-//   .EN_VTC(en_vtc_slv1),           // 1-bit input: Keep delay constant over VT
-//   .IDATAIN(),         // 1-bit input: Data input from the IOBUF
-//   .INC(inc_slv1),                 // 1-bit input: Increment / Decrement tap delay input
-//   .LOAD(load_slv1),               // 1-bit input: Load DELAY_VALUE input
-//   .RST(ttl_rst80_o)                  // 1-bit input: Asynchronous Reset to the DELAY_VALUE
-// );
+ODELAYE3 #(
+.CASCADE("MASTER"), // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
+.DELAY_FORMAT(DELAY_FORMAT), // (COUNT, TIME)
+.DELAY_TYPE(DELAY_TYPE), // Set the type of tap delay line (FIXED, VARIABLE, VAR_LOAD)
+.DELAY_VALUE(DELAY_VALUE), // Output delay tap setting
+.IS_CLK_INVERTED(1'b0), // Optional inversion for CLK
+.IS_RST_INVERTED(1'b0), // Optional inversion for RST
+.REFCLK_FREQUENCY(REFCLK_FREQUENCY), // IDELAYCTRL clock input frequency in MHz (200.0-800.0).
+.SIM_DEVICE("ULTRASCALE_PLUS"), // Set the device version for simulation functionality (ULTRASCALE,
+// ULTRASCALE_PLUS, ULTRASCALE_PLUS_ES1, ULTRASCALE_PLUS_ES2)
+.UPDATE_MODE(UPDATE_MODE) // Determines when updates to the delay will take effect (ASYNC, MANUAL,
+// SYNC)
+)
+ODELAYE3_inst_master (
+.CASC_OUT(cascade_out_1), // 1-bit output: Cascade delay output to IDELAY input cascade
+.CNTVALUEOUT(), // 9-bit output: Counter value output
+.DATAOUT(pulsedelay), // 1-bit output: Delayed data from ODATAIN input port
+.CASC_IN(1'b0), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
+.CASC_RETURN(cascade_return_1), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
+.CE(ce), // 1-bit input: Active-High enable increment/decrement input
+.CLK(clk80), // 1-bit input: Clock input
+.CNTVALUEIN(), // 9-bit input: Counter value input
+.EN_VTC(en_vtc), // 1-bit input: Keep delay constant over VT
+.INC(inc), // 1-bit input: Increment/Decrement tap delay input
+.LOAD(load), // 1-bit input: Load DELAY_VALUE input
+.ODATAIN(pulsein), // 1-bit input: Data input
+.RST(ttl_rst80_o) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
+);
 
-// ODELAYE3 #(
-// .CASCADE("SLAVE_END"), // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
-// .DELAY_FORMAT(DELAY_FORMAT), // (COUNT, TIME)
-// .DELAY_TYPE(DELAY_TYPE), // Set the type of tap delay line (FIXED, VARIABLE, VAR_LOAD)
-// .DELAY_VALUE(DELAY_VALUE), // Output delay tap setting
-// .IS_CLK_INVERTED(1'b0), // Optional inversion for CLK
-// .IS_RST_INVERTED(1'b0), // Optional inversion for RST
-// .REFCLK_FREQUENCY(REFCLK_FREQUENCY), // IDELAYCTRL clock input frequency in MHz (200.0-800.0).
-// .SIM_DEVICE("ULTRASCALE_PLUS"), // Set the device version for simulation functionality (ULTRASCALE,
-// // ULTRASCALE_PLUS, ULTRASCALE_PLUS_ES1, ULTRASCALE_PLUS_ES2)
-// .UPDATE_MODE(UPDATE_MODE) // Determines when updates to the delay will take effect (ASYNC, MANUAL,
-// // SYNC)
-// )
-// ODELAYE3_inst_slave (
-// .CASC_OUT(1'b0), // 1-bit output: Cascade delay output to IDELAY input cascade
-// .CNTVALUEOUT(), // 9-bit output: Counter value output
-// .DATAOUT(cascade_return_2), // 1-bit output: Delayed data from ODATAIN input port
-// .CASC_IN(cascade_out_2), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
-// .CASC_RETURN(1'b0), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
-// .CE(ce_slv2), // 1-bit input: Active-High enable increment/decrement input
-// .CLK(clk80), // 1-bit input: Clock input
-// .CNTVALUEIN(), // 9-bit input: Counter value input
-// .EN_VTC(en_vtc_slv2), // 1-bit input: Keep delay constant over VT
-// .INC(inc_slv2), // 1-bit input: Increment/Decrement tap delay input
-// .LOAD(load_slv2), // 1-bit input: Load DELAY_VALUE input
-// .ODATAIN(1'b0), // 1-bit input: Data input
-// .RST(ttl_rst80_o) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
-// );
+
+IDELAYE3 #(
+  .CASCADE("SLAVE_MIDDLE"),               // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
+  .DELAY_FORMAT(DELAY_FORMAT),          // Units of the DELAY_VALUE (COUNT, TIME)
+  .DELAY_SRC("CASC_IN"),          // Delay input (DATAIN, IDATAIN)
+  .DELAY_TYPE(DELAY_TYPE),           // Set the type of tap delay line (FIXED, VARIABLE, VAR_LOAD)
+  .DELAY_VALUE(DELAY_VALUE),                // Input delay value setting
+  .IS_CLK_INVERTED(1'b0),         // Optional inversion for CLK
+  .IS_RST_INVERTED(1'b0),         // Optional inversion for RST
+  .REFCLK_FREQUENCY(REFCLK_FREQUENCY),       // IDELAYCTRL clock input frequency in MHz (200.0-800.0)
+  .SIM_DEVICE("ULTRASCALE_PLUS"), // Set the device version for simulation functionality (ULTRASCALE,
+                                  // ULTRASCALE_PLUS, ULTRASCALE_PLUS_ES1, ULTRASCALE_PLUS_ES2)
+  .UPDATE_MODE(UPDATE_MODE)           // Determines when updates to the delay will take effect (ASYNC, MANUAL,
+                                  // SYNC)
+)
+IDELAYE3_inst_slave (
+  .CASC_OUT(cascade_out_2),       // 1-bit output: Cascade delay output to ODELAY input cascade
+  .CNTVALUEOUT(), // 9-bit output: Counter value output
+  .DATAOUT(cascade_return_1),         // 1-bit output: Delayed data output
+  .CASC_IN(cascade_out_1),         // 1-bit input: Cascade delay input from slave ODELAY CASCADE_OUT
+  .CASC_RETURN(cascade_return_2), // 1-bit input: Cascade delay returning from slave ODELAY DATAOUT
+  .CE(ce_slv1),                   // 1-bit input: Active-High enable increment/decrement input
+  .CLK(clk80),                 // 1-bit input: Clock input
+  .CNTVALUEIN(),   // 9-bit input: Counter value input
+  .DATAIN(),           // 1-bit input: Data input from the logic
+  .EN_VTC(en_vtc_slv1),           // 1-bit input: Keep delay constant over VT
+  .IDATAIN(),         // 1-bit input: Data input from the IOBUF
+  .INC(inc_slv1),                 // 1-bit input: Increment / Decrement tap delay input
+  .LOAD(load_slv1),               // 1-bit input: Load DELAY_VALUE input
+  .RST(ttl_rst80_o)                  // 1-bit input: Asynchronous Reset to the DELAY_VALUE
+);
+
+ODELAYE3 #(
+.CASCADE("SLAVE_END"), // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
+.DELAY_FORMAT(DELAY_FORMAT), // (COUNT, TIME)
+.DELAY_TYPE(DELAY_TYPE), // Set the type of tap delay line (FIXED, VARIABLE, VAR_LOAD)
+.DELAY_VALUE(DELAY_VALUE), // Output delay tap setting
+.IS_CLK_INVERTED(1'b0), // Optional inversion for CLK
+.IS_RST_INVERTED(1'b0), // Optional inversion for RST
+.REFCLK_FREQUENCY(REFCLK_FREQUENCY), // IDELAYCTRL clock input frequency in MHz (200.0-800.0).
+.SIM_DEVICE("ULTRASCALE_PLUS"), // Set the device version for simulation functionality (ULTRASCALE,
+// ULTRASCALE_PLUS, ULTRASCALE_PLUS_ES1, ULTRASCALE_PLUS_ES2)
+.UPDATE_MODE(UPDATE_MODE) // Determines when updates to the delay will take effect (ASYNC, MANUAL,
+// SYNC)
+)
+ODELAYE3_inst_slave (
+.CASC_OUT(1'b0), // 1-bit output: Cascade delay output to IDELAY input cascade
+.CNTVALUEOUT(), // 9-bit output: Counter value output
+.DATAOUT(cascade_return_2), // 1-bit output: Delayed data from ODATAIN input port
+.CASC_IN(cascade_out_2), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
+.CASC_RETURN(1'b0), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
+.CE(ce_slv2), // 1-bit input: Active-High enable increment/decrement input
+.CLK(clk80), // 1-bit input: Clock input
+.CNTVALUEIN(), // 9-bit input: Counter value input
+.EN_VTC(en_vtc_slv2), // 1-bit input: Keep delay constant over VT
+.INC(inc_slv2), // 1-bit input: Increment/Decrement tap delay input
+.LOAD(load_slv2), // 1-bit input: Load DELAY_VALUE input
+.ODATAIN(1'b0), // 1-bit input: Data input
+.RST(ttl_rst80_o) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
+);
 
 OBUFDS #(
       .IOSTANDARD("DEFAULT"), // Specify the output I/O standard

@@ -39,10 +39,10 @@ set_property IOSTANDARD LVDS_25 [get_ports ext_clk100_*]
 create_clock -period 5.000 -name clk200_net -waveform {0.000 2.500} [get_nets ext_clk200_o]
 
 
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/ibuf_clk100/O]
+#set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/ibuf_clk100/O]
 set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets Bob_top_i/clk_rst/clk_rst_mngt/inst/clk100_o]
 
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/clk10_o]
+#set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/clk10_o]
 set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets Bob_top_i/clk_rst/clk_rst_mngt/inst/clk10_o]
 
 #set_clock_groups -asynchronous -group [get_clocks refclk] -group [get_clocks clk_10]
@@ -53,21 +53,21 @@ create_clock -period 5.000 -name clk200 [get_ports ext_clk200_o]
 set_property PACKAGE_PIN U24 [get_ports {led[0]}]
 #set_property PACKAGE_PIN V19 [get_ports {led[1]}]
 set_property PACKAGE_PIN V19 [get_ports locked_pll]
-set_property PACKAGE_PIN T24 [get_ports {led[2]}]
-set_property PACKAGE_PIN U19 [get_ports {led[3]}]
+#set_property PACKAGE_PIN T24 [get_ports {led[2]}]
+#set_property PACKAGE_PIN U19 [get_ports {led[3]}]
 set_property IOSTANDARD LVCMOS18 [get_ports {led[0]}]
 #set_property IOSTANDARD LVCMOS18 [get_ports {led[1]}]
 set_property IOSTANDARD LVCMOS18 [get_ports locked_pll]
-set_property IOSTANDARD LVCMOS18 [get_ports {led[2]}]
-set_property IOSTANDARD LVCMOS18 [get_ports {led[3]}]
+#set_property IOSTANDARD LVCMOS18 [get_ports {led[2]}]
+#set_property IOSTANDARD LVCMOS18 [get_ports {led[3]}]
 
 
 ##DDR----------------------------------------------------------
 set_property PACKAGE_PIN J23 [get_ports ddr_sys_clk_p]
 set_property PACKAGE_PIN J24 [get_ports ddr_sys_clk_n]
 set_property IOSTANDARD LVDS [get_ports {ddr_sys_clk_p}]
-set property CLOCK_DEDICATED-ROUTE BACKBONE [get_net {c0_sys_clk_p_0_1}]
-set property CLOCK_DEDICATED-ROUTE BACKBONE [get_net {c0_sys_clk_n_0_1}]
+#set property CLOCK_DEDICATED-ROUTE BACKBONE [get_nets {c0_sys_clk_p_0_1}]
+#set property CLOCK_DEDICATED-ROUTE BACKBONE [get_nets {c0_sys_clk_n_0_1}]
 
 
 
@@ -164,7 +164,7 @@ set_property PACKAGE_PIN J9 [get_ports {ext_dac_ltc_ss[1]}]
 set_property PACKAGE_PIN H9 [get_ports {ext_dac_ltc_ss[2]}]
 
 set_property PACKAGE_PIN A9 [get_ports ext_clk200_o]
-set_property PACKAGE_PIN E10 [get_ports ext_tdc_rst]
+#set_property PACKAGE_PIN E10 [get_ports ext_tdc_rst]
 set_property PACKAGE_PIN E11 [get_ports fifo_gc_out_rst]
 set_property PACKAGE_PIN F12 [get_ports rd_gc_valid]
 
@@ -211,14 +211,14 @@ set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/
 
 set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg*_reg[*]] -to [get_clocks tdc_lclk]
 
-set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[0]] -to [get_cells Bob_top_i/tdc/AS6501_IF_0/inst/reg_enable_r_reg[0]]
+#set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[0]] -to [get_cells Bob_top_i/tdc/AS6501_IF_0/inst/reg_enable_r_reg[0]]
 
-set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[1]] -to [get_cells Bob_top_i/tdc/AS6501_IF_0/inst/reg_enable200_r_reg[0]]
+#set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[1]] -to [get_cells Bob_top_i/tdc/AS6501_IF_0/inst/reg_enable200_r_reg[0]]
 
 
-set_multicycle_path -setup 2 -from [get_clocks refclk] -to [get_pins Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/s_axis_tdata_reg[*]/CE]
+#set_multicycle_path -setup 2 -from [get_clocks refclk] -to [get_pins Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/s_axis_tdata_reg[*]/CE]
 
-set_multicycle_path -hold 1 -from [get_clocks refclk] -to [get_pins Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/s_axis_tdata_reg[*]/CE]
+#set_multicycle_path -hold 1 -from [get_clocks refclk] -to [get_pins Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/s_axis_tdata_reg[*]/CE]
 
 
 
@@ -264,4 +264,4 @@ set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_m
 
 set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[*]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_80_r_reg[0]]
 
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[*]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_slv_reg[*]]
+#set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[*]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_slv_reg[*]]

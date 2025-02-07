@@ -1,7 +1,7 @@
 module AS6501_IF (
     
     input           lclk_i,
-    input           lrstn_i,
+    // input           lrstn_i,
     input 			lrst_i,
     input           linterrupt_i,
     // Control register
@@ -41,10 +41,10 @@ module AS6501_IF (
     // input              m_axis_tready_gc,
     // output 			   fifo_gc_rst,
     //Debug
-    output wire [31:0] 	debug_tdc_tdata,
-    output wire 		debug_tdc_tvalid,
-    output wire [127:0] debug_m_axis_tdata,
-    output wire 		debug_m_axis_tvalid,
+    output wire [31:0] 	debug_tdc_data,
+    output wire 		debug_tdc_valid,
+    output wire [127:0] debug_m_axis_data,
+    output wire 		debug_m_axis_valid,
 
 
     //Signals for global counter
@@ -59,7 +59,7 @@ module AS6501_IF (
 
     //Debug
 
-    input clk5,
+    // input clk5,
     // input arstn,
     output tvalid200,
     output [31:0] tdata200,
@@ -159,11 +159,11 @@ module AS6501_IF (
     reg[31:0] 	tdc_tdata;
     reg 		tdc_tvalid;
 
-	assign debug_tdc_tdata = tdc_tdata;
-	assign debug_tdc_tvalid = tdc_tvalid;
+	assign debug_tdc_data = tdc_tdata;
+	assign debug_tdc_valid = tdc_tvalid;
 
-	assign debug_m_axis_tdata = m_axis_tdata;
-	assign debug_m_axis_tvalid = m_axis_tvalid;
+	assign debug_m_axis_data = m_axis_tdata;
+	assign debug_m_axis_valid = m_axis_tvalid;
     
 
 // State machine
@@ -482,10 +482,14 @@ always @(posedge clk200_i, posedge gc_rst) begin
 			end
 			WAIT_START: begin //Wait for the Start_gc commamd, put it to clk200 domain
 				start_gc_r <= {start_gc_r[1:0],start_gc_i};
-				if (start_gc_r[2] == 0 && start_gc_r[1] == 1) begin
+				// if (start_gc_r[2] == 0 && start_gc_r[1] == 1) begin
+				// 	start_gc_o <= 1'b1;
+				// 	state_gc <= DETECT_PPS;
+				// end
+				if (start_gc_r[2] == 1 && !pps_i) begin
 					start_gc_o <= 1'b1;
 					state_gc <= DETECT_PPS;
-				end
+				end else state_gc <= WAIT_START;
 			end
 			DETECT_PPS: begin //Wait for the next PPS edge, detect this edge 
 				pps_r <= pps_i;

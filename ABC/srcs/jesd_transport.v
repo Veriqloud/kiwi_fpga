@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Hop Dinh
 // 
 // Create Date: 11/15/2023 12:20:47 PM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Manage transport layer of jesd204 protocol
 // 
 // Dependencies: 
 // 
@@ -19,37 +19,9 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 07/07/2023 10:25:49 AM
-// Design Name: 
-// Module Name: fastdac_pcietojesd204
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
-`include "define.v"
 
 module jesd_transport
     #(
-        // Users to add parameters here
-
-        // User parameters ends
-        // Do not modify the parameters beyond this line
-
-
         // Parameters of Axi Slave Bus Interface s_axil
         parameter integer C_s_axil_DATA_WIDTH   = 32,
         parameter integer C_s_axil_ADDR_WIDTH   = 16
@@ -83,7 +55,6 @@ module jesd_transport
         input wire                                    s_axis_tresetn,
         input wire [127 : 0]                          s_axis_tdata,
         input wire                                    s_axis_tvalid,
-//      input wire s_axis_tlast,
         output wire                                   s_axis_tready,
 
         // Ports RNG test out
@@ -98,37 +69,11 @@ module jesd_transport
         output rd_en_4_shift,
         output [3:0] counter40,
         output [5:0] counter10,
-        // output amp1,
-        // output minus_amp1,
-        // output amp2,
-        // output minus_amp2,
-        // output sam0_9,
         output amp2,
         output [2:0] counter_3b,
-        // output sam1,
-        // output sam2,
-        // output sam3,
-        // output sam4,
-        // output minus_amp2_old,
-        //input rd_en_16_i,
-        //input rd_en_4_i,
         output reg [2:0] addr_state_dac0,
         output reg [2:0] seq_state_dac1,
         output reg [2:0] state_rng,
-        // output reg [63:0] fastdac_dpram_seq_data_dac1_int,
-        // output fastdac_dpram_seq_data_dac0_int, 
-        // output shift1_r,
-        // output tune_dac1,
-        //FIFO debug signals
-        // output wire full,
-        // output wire almost_full,
-        // output wire empty,
-        // output wire almost_empty,
-        // output wire wr_ack,
-        // output wire valid,
-        // output wire [8:0] rd_data_count,
-        // output wire [6:0] wr_data_count,
-
         
         // Ports of control (synchronization) & status
         input clk_pps,
@@ -174,8 +119,10 @@ module jesd_transport
     wire [14:0]         fastdac_dpram_max_addr_rng_dac1_int;
     wire               fastdac_rng_mode_i;
     wire               fastdac_dac1_mode_i;
+    wire               fastdac_dac0_mode_i;
     wire               fastdac_fb_mode_i;
     wire [15:0]        fastdac_up_offset_i;
+    wire [31:0]        division_sp_i;
     // wire [7:0]         fastdac_dpram_max_addr_pos_dac0_int;
     // wire [7:0]         fastdac_dpram_max_addr_pos_dac1_int;
     // wire [14:0]        fastdac_reg_alpha0_dac0_0_int;
@@ -208,7 +155,9 @@ module jesd_transport
         .fastdac_amp_dac2_o(fastdac_amp_dac2_i),
         .fastdac_fb_mode_o(fastdac_fb_mode_i),
         .fastdac_zero_mode_o(fastdac_zero_mode_i),
+        .fastdac_dac0_mode_o(fastdac_dac0_mode_i),
         .fastdac_up_offset_o(fastdac_up_offset_i),
+        .division_sp_o(division_sp_i),
         // .fastdac_dpram_max_addr_pos_dac0_o(fastdac_dpram_max_addr_pos_dac0_int),
         // .fastdac_dpram_max_addr_pos_dac1_o(fastdac_dpram_max_addr_pos_dac1_int),
         // .fastdac_reg_alpha0_dac0_0_o(fastdac_reg_alpha0_dac0_0_int),
@@ -264,9 +213,11 @@ module jesd_transport
     reg [3:0] shift1_r;
     reg rng_mode_r;
     reg dac1_mode_r;
+    reg dac0_mode_r;
     reg fb_mode_r;
     reg insert_zero_mode_r;
     reg [15:0] up_offset_r;
+    reg [31:0] division_sp_r;
     initial begin
         fastdac_amp_dac1_r <= 0;
         fastdac_amp_dac2_r <= 0;
@@ -274,9 +225,11 @@ module jesd_transport
         shift1_r <= 0;
         rng_mode_r <= 0;
         dac1_mode_r <= 0;
+        dac0_mode_r <= 0;
         fb_mode_r <= 0;
         insert_zero_mode_r <= 0;
         up_offset_r <= 0;
+        division_sp_r <= 200000000;
     end
     always @(posedge tx_core_clk) begin
             shift_shift1_r <= {shift_shift1_r[1:0],dac1_shift_en_o};
@@ -284,11 +237,13 @@ module jesd_transport
                 shift1_r <= shift1_i;
                 rng_mode_r <= fastdac_rng_mode_i;
                 dac1_mode_r <= fastdac_dac1_mode_i;
+                dac0_mode_r <= fastdac_dac0_mode_i;
                 fastdac_amp_dac1_r <= fastdac_amp_dac1_i;
                 fastdac_amp_dac2_r <= fastdac_amp_dac2_i;
                 fb_mode_r <= fastdac_fb_mode_i;
                 insert_zero_mode_r <= fastdac_zero_mode_i;
                 up_offset_r <= fastdac_up_offset_i;
+                division_sp_r <= division_sp_i;
             end
     end
 
@@ -786,28 +741,6 @@ assign offset = fb_mode_r? offset_val:0;
         assign sam4_a = {16'h8000,16'h8000,16'h8000,16'h8000};
                             
 
-    // 6 steps
-    // assign sam0 = shift1_r[2]
-    // ?(shift1_r[1]?sam0_6:(shift1_r[0]?sam0_5:sam0_4)):(shift1_r[1]
-    //     ?(shift1_r[0]?sam0_3:sam0_2):(shift1_r[0]?sam0_1:sam0_0));
-
-    // assign sam1 = shift1_r[2]
-    // ?(shift1_r[1]?sam1_6:(shift1_r[0]?sam1_5:sam1_4)):(shift1_r[1]
-    //     ?(shift1_r[0]?sam1_3:sam1_2):(shift1_r[0]?sam1_1:sam1_0));
-
-    // assign sam2 = shift1_r[2]
-    // ?(shift1_r[1]?sam2_6:(shift1_r[0]?sam2_5:sam2_4)):(shift1_r[1]
-    //     ?(shift1_r[0]?sam2_3:sam2_2):(shift1_r[0]?sam2_1:sam2_0));
-
-    // assign sam3 = shift1_r[2]
-    // ?(shift1_r[1]?sam3_6:(shift1_r[0]?sam3_5:sam3_4)):(shift1_r[1]
-    //     ?(shift1_r[0]?sam3_3:sam3_2):(shift1_r[0]?sam3_1:sam3_0));
-
-    // assign sam4 = shift1_r[2]
-    // ?(shift1_r[1]?sam4_6:(shift1_r[0]?sam4_5:sam4_4)):(shift1_r[1]
-    //     ?(shift1_r[0]?sam4_3:sam4_2):(shift1_r[0]?sam4_1:sam4_0));
-
-
     //10 steps   
 // shift1_r[3]? (shift1_r[1]? sam0_a: (shift1_r[0]? sam0_9:sam0_8))
 // :();
@@ -834,12 +767,17 @@ assign offset = fb_mode_r? offset_val:0;
 
     //Control dpram addr reading dac0 and samples of dac1
     reg [63:0] fastdac_dpram_seq_data_dac1_int; 
+    reg [63:0] fastdac_one_pulse_data_dac0_int;
     reg [3:0] counter_wait1;
     reg [3:0] counter_wait0;
+    reg [3:0] counter_wait2;
+    reg [31:0] counter_loop;
     // Declare states
     localparam S0 = 0, S1 = 1, S2 = 2, S3 =3, S4 = 4, S5 = 5, S6 = 6;
+    localparam T0 = 0, T1 = 1, T2 = 2, T3 = 3, T4 = 4, T5 = 5;;
     localparam R0 = 0, R1 = 1, R2 = 2, R3 = 3, R4 = 4, R5 = 5, R6 = 6, R7 = 7;
     reg [2:0] addr_state_dac0;
+    reg [2:0] single_addr_state_dac0;
     reg [2:0] seq_state_dac1;
 
     assign rd_en_16 = (counter10 == 0)?1:0;
@@ -854,10 +792,14 @@ assign offset = fb_mode_r? offset_val:0;
             counter40 <= 1<<4 - 1;
             counter_wait1 <= 0;
             counter_wait0 <= 0;
+            counter_wait2 <= 0;
+            counter_loop <= 0;
             fastdac_dpram_seq_addr_dac0_r <= 0;
             fastdac_dpram_seq_addr_dac1_r <= 0;
-            fastdac_dpram_seq_data_dac1_int <= 0;      
+            fastdac_dpram_seq_data_dac1_int <= 0;
+            fastdac_one_pulse_data_dac0_int <= 0;      
             addr_state_dac0 <= S0;
+            single_addr_state_dac0 <= T0;
             seq_state_dac1 <= R0;
       
         end else begin 
@@ -906,6 +848,49 @@ assign offset = fb_mode_r? offset_val:0;
                     default : ;
                 endcase
 
+                case (single_addr_state_dac0)
+                    T0 : begin
+                        // fastdac_one_pulse_data_dac0_int <= 64'hffffffffffffffff;
+                        fastdac_one_pulse_data_dac0_int <= 64'hffffffffffffffff;
+                        counter_wait2 <= 0;
+                        single_addr_state_dac0 <= T1;
+                    end
+                    T1 : begin
+                        counter_wait2 <= counter_wait2 + 1;
+                        if (counter_wait2 == 0) begin
+                            single_addr_state_dac0 <= T2;
+                        end
+                    end
+                    T2 : begin
+                        // fastdac_one_pulse_data_dac0_int <= 64'he000d000c000b000; //4 samples
+                        fastdac_one_pulse_data_dac0_int <= 64'hb000c000d000e000; //4 samples
+                        single_addr_state_dac0 <= T3;
+                    end
+                    T3 : begin
+                        // fastdac_one_pulse_data_dac0_int <= 64'ha000900080003267; //4 samples
+                        fastdac_one_pulse_data_dac0_int <= 64'h326780009000a000; //4 samples
+                        single_addr_state_dac0 <= T4;
+                    end
+                    T4 : begin
+                        // fastdac_one_pulse_data_dac0_int <= 64'h3267ffffffffffff;
+                        fastdac_one_pulse_data_dac0_int <= 64'hffffffffffff3267;
+                        single_addr_state_dac0 <= T5;
+                    end
+                    T5 : begin
+                        counter_loop <= counter_loop + 1;
+                        if (counter_loop <= division_sp_r - 6) begin  //division_sp define fq of sp. 
+                            // fastdac_one_pulse_data_dac0_int <= 64'hffffffffffffffff;
+                            fastdac_one_pulse_data_dac0_int <= 64'hffffffffffffffff;
+                            single_addr_state_dac0 <= T5;
+                            counter_wait2 <= 0;
+                        end else begin
+                            counter_loop <= 0;
+                            single_addr_state_dac0 <= T1;
+                        end
+                    end
+                    default : ;
+                endcase
+
                 case (seq_state_dac1)
                     R0 : begin
                         fastdac_dpram_seq_data_dac1_int <= 0;
@@ -950,10 +935,13 @@ assign offset = fb_mode_r? offset_val:0;
                 fastdac_dpram_seq_addr_dac0_r <= 0;
                 fastdac_dpram_seq_addr_dac1_r <= 0;
                 fastdac_dpram_seq_data_dac1_int <= 0;
+                fastdac_one_pulse_data_dac0_int <= 0;
                 counter10 <= 1<<6 -1;
                 counter40 <= 1<<4 -1;
                 counter_wait1 <= 0;
                 counter_wait0 <= 0;
+                counter_wait2 <= 0;
+                counter_loop <= 0;
             end    
         end
 
@@ -979,8 +967,13 @@ endfunction
 //rng_mode_r control source of randomness
 //0: fake rng, read rng from dpram
 //1: true rng. read rng from USB 
+//dac0_mode_r control if dac0 take data from dpram or directly data for one pulse
+//0: take data from dpram
+//1: direct input data to generate one pulse
 wire [63:0] fastdac_seq_data_dac1_int;
+wire [63:0] fastdac_seq_data_dac0_int;
 assign fastdac_seq_data_dac1_int = dac1_mode_r ? fastdac_dpram_seq_data_dac1_int:fastdac_dpram_seq_data_dac1_int_calib;
+assign fastdac_seq_data_dac0_int = dac0_mode_r ? fastdac_one_pulse_data_dac0_int:fastdac_dpram_seq_data_dac0_int;
 
 
 
@@ -988,78 +981,9 @@ reg [63:0] tx_tdata0;
 reg [63:0] tx_tdata1;
 
 always @(*) begin
-    tx_tdata0 = format_data_to_jesd204 (fastdac_dpram_seq_data_dac0_int);
+    tx_tdata0 = format_data_to_jesd204 (fastdac_seq_data_dac0_int);
     tx_tdata1 = format_data_to_jesd204 (fastdac_seq_data_dac1_int);
     tx_tdata [127:0] <= {tx_tdata1,tx_tdata0};
 end
 
 endmodule    
-
-
-
-
-// module jesd_transport(
-//     input tx_core_clock,
-//     input tx_core_rst,
-//     input tx_reset_done_i,
-//     input fastdac_sync_i,
-//     input tx_ready,
-//     output wire [127:0] tx_tdata
-//     );
-// reg [63:0] data_Q;
-// reg [63:0] data_I;
-
-// reg [2:0] frame;
-// localparam frame0 = 0, frame1 = 1, frame2 = 2, frame3 = 3, frame4 = 4, frame5 = 5;
-// assign tx_tdata = {data_Q,data_I};
-
-// always @(posedge tx_core_clock) begin
-
-//     if (tx_core_rst) begin
-//         data_Q <= 0;
-//         data_I <= 0;
-//         frame <= 0;
-//     end else begin
-//         if (tx_ready) begin
-//             case(frame)
-//                 frame0: begin
-//                     data_Q <= 64'h0000000080c0c040;
-//                     data_I <= 64'h00f0f00080ffff40;
-//                     frame <= frame1;
-//                 end
-//                 frame1: begin
-//                     data_Q <= 64'h00000000c0c04040;
-//                     data_I <= 64'h00000000c0c04040;
-//                     frame <= frame2;
-
-//                 end
-//                 frame2: begin
-//                     data_Q <= 64'hf0000000ff404080;
-//                     data_I <= 64'hf0000000ff404080;
-//                     frame <= frame3;
-//                 end
-//                 frame3: begin
-//                     data_Q <= 64'h000000f0404080ff;
-//                     data_I <= 64'h000000f0404080ff;
-//                     frame <= frame4;
-//                 end
-//                 frame4: begin
-//                     data_Q <= 64'h000000004080c0c0;
-//                     data_I <= 64'h000000004080c0c0;
-//                     frame <= frame5;
-//                 end
-//                 frame5: begin
-//                     data_Q <= 64'h0000000080c0c040;
-//                     data_I <= 64'h00f0f00080ffff40;
-//                     frame <= frame1;
-//                 end
-//             endcase
-//         end else begin
-//             data_Q <= 0;
-//             data_I <= 0;
-//             frame <= frame0;
-//         end
-//     end
-
-// end
-// endmodule

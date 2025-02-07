@@ -38,9 +38,9 @@
 		output wire        reg_enable200_o, 
 
 
-		input[1:0]        wr_fifo_full_i,
-		input[1:0]        rd_fifo_empty_i,
-		input[1:0]        fifo_idle_i,
+		// input[1:0]        wr_fifo_full_i,
+		// input[1:0]        rd_fifo_empty_i,
+		// input[1:0]        fifo_idle_i,
 
 		input[31:0]		  total_count_i,
 		input[31:0]		  click0_count_i,
@@ -160,9 +160,9 @@
 	    .shift_gc_back_o(shift_gc_back_o),
 	    .tdc_reg_enable_o(reg_enable_o),
 	    .tdc_reg_enable200_o(reg_enable200_o),
-	    .wr_fifo_full_i(wr_fifo_full_i),
-	    .rd_fifo_empty_i(rd_fifo_empty_i),
-	    .fifo_idle_i(fifo_idle_i),
+	    // .wr_fifo_full_i(wr_fifo_full_i),
+	    // .rd_fifo_empty_i(rd_fifo_empty_i),
+	    // .fifo_idle_i(fifo_idle_i),
 	    // .total_count_i(total_count_sync_i),
 	    // .click0_count_i(click0_count_sync_i),
 	    // .click1_count_i(click1_count_sync_i),

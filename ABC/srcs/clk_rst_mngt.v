@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Hop Dinh, Fabrice Faveneau
 // 
 // Create Date: 06/23/2023 02:21:48 PM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Buffers for differential signals, clocks. Generate resets and sync clockchip
 // 
 // Dependencies: 
 // 
@@ -48,6 +48,7 @@ module clk_rst_mngt
 		output wire  s_axil_rvalid,
 		input wire  s_axil_rready,
         input       s_axil_aclk,
+
         input       sys_reset_n,
         input       clk_ddr_axi_i,
         input       rst_ddr_axi_i,
@@ -61,17 +62,16 @@ module clk_rst_mngt
         input       fastdac_gt_powergood_i,
         input       fastdac_sysrefp_i,
         input       fastdac_sysrefn_i,
+        input       fastdac_syncoutp_i,
+        input       fastdac_syncoutn_i,
 
         input       pps_i,
-        output reg  clockchip_syncclockchip_o,
         output      fastdac_refclk_o,
         output      fastdac_coreclk_o,
         output      fastdac_corerst_o,
-
         output      fastdac_sysref_o,
-	    input wire  ext_sync_i,
-	    output wire fpga_turnkey_fastdac_sync_o,
-  // input clock10 and clock 100 and output to sync clockchip
+        output      fastdac_syncout_o,
+
   		input 		ext_clk10_p,
   		input		ext_clk10_n,
   		input		ext_clk100_p,
@@ -79,10 +79,10 @@ module clk_rst_mngt
         input       lclk_i,
   		output		clk10_o,
   		output		clk100_o,
-  		output reg	sync_ltc_o, //replace clockchip_syncclockchip_o
+  		output reg	sync_ltc_o, 
         output      tdc_rst_o,
         output      lrst_o,
-        // output      ttl_rst_o,
+
         output wire ttl_rst,
         output      gc_rst_o,
         output      gc_rstn_o,
@@ -130,9 +130,9 @@ wire fastdac_coreclk_int;
 IBUFDS_GTE4 # (.REFCLK_HROW_CK_SEL(2'b00)) refclk_ibuf_fastdac (.O(fastdac_refclk_o), .ODIV2(fastdac_coreclk_int), .I(fastdac_refclkp_i), .CEB(1'b0), .IB(fastdac_refclkn_i));
 //BUFG_GT     #(.SIM_DEVICE("ULTRASCALE_PLUS")) BUFG_GT_inst (.O(fastdac_coreclk_o),.CE(fpga_turnkey_fastdac_pgood),.CEMASK(fpga_turnkey_fastdac_pgood),.CLR(!sys_reset_n),.CLRMASK(!sys_reset_n),.DIV(3'b0),.I(fastdac_coreclk_int));
 BUFG_GT     #(.SIM_DEVICE("ULTRASCALE_PLUS")) BUFG_GT_inst (.O(fastdac_coreclk_o),.CE(fastdac_gt_powergood_i),.CEMASK(fastdac_gt_powergood_i),.CLR(!sys_reset_n),.CLRMASK(!sys_reset_n),.DIV(3'b0),.I(fastdac_coreclk_int));
-IBUFDS refclk_ibuf    (.IB(fastdac_sysrefn_i),.O(fastdac_sysref_o),.I(fastdac_sysrefp_i));
+IBUFDS sysref_ibuf    (.IB(fastdac_sysrefn_i),.O(fastdac_sysref_o),.I(fastdac_sysrefp_i));
 //reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_fastdac_corerst_inst (.clk_i(fastdac_coreclk_o),.rstn_i(sys_reset_n),.rst_o(fastdac_corerst_o));
-
+IBUFDS syncout_ibuf    (.IB(fastdac_syncoutn_i),.O(fastdac_syncout_o),.I(fastdac_syncoutp_i));
 
 
 reset_register #(.RST_ACTIVE_LEVEL("LOW")) reset_reg_axil_inst (.clk_i(s_axil_aclk),.rstn_i(sys_reset_n),.clk_o(clk_axil_o),.rstn_o(rstn_axil_o));
@@ -140,8 +140,6 @@ reset_register #(.RST_ACTIVE_LEVEL("LOW")) reset_reg_axil_inst (.clk_i(s_axil_ac
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_ddr_axi_inst (.clk_i(clk_ddr_axi_i),.rst_i(rst_ddr_axi_i),.clk_o(clk_ddr_axi_o),.rstn_o(rstn_ddr_axi_o),.rst_o(rst_ddr_axi_o));
 
 
-
-// Nov17 add this part to fix the sync_tlc
 
 wire clk10_int;
 wire clk100_int;
@@ -175,14 +173,12 @@ BUFGCE_clk100 (
 
 reg [2:0] fpga_turnkey_fastdac_rst_r;
 reg [2:0] tdc_rst_r;
-// reg [2:0] ttl_rst_r;
 reg [2:0] gc_rst_r;
 reg [2:0] lrst_i_r;
 reg [2:0] ddr_data_rst_r;
 initial begin
     fpga_turnkey_fastdac_rst_r <= 0;
     tdc_rst_r <= 0;
-    // ttl_rst_r <= 0;
     gc_rst_r <= 0;
     lrst_i_r <= 0;
     ddr_data_rst_r <= 1;
@@ -190,7 +186,6 @@ end
 always @(posedge fastdac_coreclk_o) begin
     fpga_turnkey_fastdac_rst_r <= {fpga_turnkey_fastdac_rst_r[1:0],fpga_turnkey_fastdac_rst};
     tdc_rst_r <= {tdc_rst_r[1:0],tdc_rst};
-    // ttl_rst_r <= {ttl_rst_r[1:0],ttl_rst};
     gc_rst_r <= {gc_rst_r[1:0],gc_rst};
     lrst_i_r <= {lrst_i_r[1:0],lrst_i};
     ddr_data_rst_r <= {ddr_data_rst_r[1:0], ddr_data_rst};
@@ -208,6 +203,7 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) tx_core_reset_inst (
     .rst_o(fastdac_corerst_o));
 
 wire tdc_rstn_o;
+wire tdc_rst_o;
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) tdc_reset_inst (
     .clk_i(fastdac_coreclk_o),
     .rst_i(tdc_rst_r[1]),
@@ -217,11 +213,6 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) tdc_reset_inst (
 
 wire lclk_o;
 wire lrstn_o;
-// reset_register #(.RST_ACTIVE_LEVEL("LOW")) lrstn_inst (
-//     .clk_i(lclk_i),
-//     .rstn_i(lrstn_i),
-//     .clk_o(lclk_o),
-//     .rstn_o(lrstn_o));
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) lrstn_inst (
     .clk_i(lclk_i),
     .rst_i(lrst_i_r[1]),
@@ -229,15 +220,8 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) lrstn_inst (
     .rstn_o(lrstn_o),
     .rst_o(lrst_o));
 
-// wire ttl_rstn_o;
-// reset_register #(.RST_ACTIVE_LEVEL("HIGH")) ttl_reset_inst (
-//     .clk_i(fastdac_coreclk_o),
-//     .rst_i(ttl_rst_r[1]),
-//     .clk_o(fastdac_coreclk),
-//     .rstn_o(ttl_rstn_o),
-//     .rst_o(ttl_rst_o));
-
 wire gc_rstn_o;
+wire gc_rst_o;
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) gc_reset_inst (
     .clk_i(fastdac_coreclk_o),
     .rst_i(gc_rst_r[1]),
@@ -247,14 +231,6 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) gc_reset_inst (
 
 wire ddr_data_rst_o;
 wire ddr_data_rstn_o;
-// reset_register #(.RST_ACTIVE_LEVEL("HIGH")) ddr_data_reset_inst (
-//     .clk_i(fastdac_coreclk_o),
-//     .rst_i(ddr_data_rst_r[1]),
-//     .clk_o(fastdac_coreclk),
-//     .rstn_o(ddr_data_rstn_o),
-//     .rst_o(ddr_data_rst_o));
-
-
 reset_register #(.RST_ACTIVE_LEVEL("LOW")) ddr_data_resetn_inst (
     .clk_i(fastdac_coreclk_o),
     .rstn_i(ddr_data_rst_r[1]),
@@ -415,7 +391,7 @@ reset_register #(.RST_ACTIVE_LEVEL("LOW")) ddr_data_resetn_inst (
 //      end
 //  end
 
-//New test
+
 reg sync_ltc_o;
 reg [2:0] clockchip_sync_r;
 reg [15:0] counter_clk;
@@ -426,7 +402,6 @@ initial begin
     pps_clk_r <= 0;
     clockchip_sync_r <= 3'b0;
 end
-
 
 always @(posedge clk10_o or negedge sys_reset_n) begin
    if (!sys_reset_n) begin

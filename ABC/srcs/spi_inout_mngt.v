@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud   
+// Engineer: Fabrice Faveneau
 // 
 // Create Date: 06/19/2023 11:15:04 AM
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Manage inout pins for SPI
 // 
 // Dependencies: 
 // 

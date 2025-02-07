@@ -22,7 +22,7 @@
 
 module AS6501_IF_tb();
     reg           lclk_i;
-    reg           lrstn_i;
+    reg           lrst_i;
     reg           linterrupt_i;
     // Control register
     reg           enable;
@@ -44,10 +44,10 @@ module AS6501_IF_tb();
 
 
     //Debug
-    wire [127:0]  s_axis_tdata;
-    wire          s_axis_tvalid;
-    wire [3:0]    s_axis_tuser;
-    reg           s_axis_tready;
+    wire [127:0]  m_axis_tdata;
+    wire          m_axis_tvalid;
+    wire [3:0]    m_axis_tuser;
+    reg           m_axis_tready;
     wire          fifo_calib_rst;
 
     // AXI-Stream to fifo_gc
@@ -57,12 +57,12 @@ module AS6501_IF_tb();
     // reg              s_axis_tready_gc;
     // wire             fifo_calib_rst;    
 
-    reg clk5;
+    // reg clk5;
     // reg arstn;
-    wire [31:0]   debug_tdc_tdata;
-    wire          debug_tdc_tvalid;
-    wire [127:0]  debug_s_axis_tdata;
-    wire          debug_s_axis_tvalid;
+    wire [31:0]   debug_tdc_data;
+    wire          debug_tdc_valid;
+    wire [127:0]  debug_m_axis_data;
+    wire          debug_m_axis_valid;
 
     //Signals for global counter
     reg clk200_i;
@@ -87,7 +87,7 @@ module AS6501_IF_tb();
 
     AS6501_IF AS6501_IF_inst(
         .lclk_i(lclk_i),
-        .lrstn_i(lrstn_i),
+        .lrst_i(lrst_i),
         .linterrupt_i(linterrupt_i),
         .enable(enable),
         .command_enable(command_enable),
@@ -102,22 +102,22 @@ module AS6501_IF_tb();
         .reg_enable200_i(reg_enable200_i),
         .frame_i(frame_i),
         .sdi_i(sdi_i),
-        .s_axis_tdata(s_axis_tdata),
-        .s_axis_tvalid(s_axis_tvalid),
-        .s_axis_tuser(s_axis_tuser),
-        .s_axis_tready(s_axis_tready),
+        .m_axis_tdata(m_axis_tdata),
+        .m_axis_tvalid(m_axis_tvalid),
+        .m_axis_tuser(m_axis_tuser),
+        .m_axis_tready(m_axis_tready),
         .fifo_calib_rst(fifo_calib_rst),
         // .s_axis_tdata_gc(s_axis_tdata_gc),
         // .s_axis_tuser_gc(s_axis_tuser_gc),
         // .s_axis_tvalid_gc(s_axis_tvalid_gc),
         // .s_axis_tready_gc(s_axis_tready_gc),
         // .fifo_calib_rst(fifo_calib_rst),
-        .clk5(clk5),
+        // .clk5(clk5),
         // .arstn(arstn),
-        .debug_tdc_tdata(debug_tdc_tdata),
-        .debug_tdc_tvalid(debug_tdc_tvalid),
-        .debug_s_axis_tdata(debug_s_axis_tdata),
-        .debug_s_axis_tvalid(debug_s_axis_tvalid),
+        .debug_tdc_data(debug_tdc_data),
+        .debug_tdc_valid(debug_tdc_valid),
+        .debug_m_axis_data(debug_m_axis_data),
+        .debug_m_axis_valid(debug_m_axis_valid),
         .clk200_i(clk200_i),
         .rd_en_4(rd_en_4),
         .gc_rst(gc_rst),
@@ -137,7 +137,7 @@ module AS6501_IF_tb();
 
     initial begin
         lclk_i = 1;
-        lrstn_i = 1;
+        lrst_i = 1;
         linterrupt_i = 0;
         enable = 0;
         command_enable = 1;
@@ -152,15 +152,14 @@ module AS6501_IF_tb();
         #5 reg_enable200_i = 1;
         frame_i = 0;
         sdi_i = 0;
-        s_axis_tready = 1;
+        m_axis_tready = 1;
         clk200_i = 0;
         rd_en_4 = 0;
         gc_rst = 0;
         start_gc_i = 0;
         pps_i = 0;
-        #100 lrstn_i = 0; //release lrst
+        #100 lrst_i = 0; //release lrst
         #20 enable = 1; //enable
-        #5 start_gc_i = 1;
         // #9000 pps_i = 1;
         #5 rd_en_4 = 1; // input rd_en_4
         forever begin
@@ -172,9 +171,13 @@ module AS6501_IF_tb();
 
     end
     initial begin
-        clk5 = 1;
+        start_gc_i = 0;
+        #10999995 start_gc_i = 1;
     end
-    always #100 clk5 = ~clk5;
+    // initial begin
+    //     clk5 = 1;
+    // end
+    // always #100 clk5 = ~clk5;
 // initial begin
 //     clk15 = 1;
 //     arstn = 0;

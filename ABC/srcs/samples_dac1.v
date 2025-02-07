@@ -72,6 +72,7 @@ module sample_dac1
         input wire [14:0]         fastdac_dpram_max_addr_rng_dac1_int,
         input wire               fastdac_rng_mode_i,
         input wire               fastdac_dac1_mode_i,
+        input wire               fastdac_dac0_mode_i,
         input wire               fb_mode_i,
         input wire [14:0]        up_offset_i,
 
@@ -156,6 +157,7 @@ module sample_dac1
     reg [3:0] shift1_r;
     reg rng_mode_r;
     reg dac1_mode_r;
+    reg dac0_mode_r;
     reg fb_mode_r;
     reg [14:0] up_offset_r;
     initial begin
@@ -165,6 +167,7 @@ module sample_dac1
         shift1_r <= 0;
         rng_mode_r <= 0;
         dac1_mode_r <= 0;
+        dac0_mode_r <= 0;
         fb_mode_r <= 0;
         up_offset_r <= 0;
     end
@@ -174,6 +177,7 @@ module sample_dac1
                 shift1_r <= shift1_i;
                 rng_mode_r <= fastdac_rng_mode_i;
                 dac1_mode_r <= fastdac_dac1_mode_i;
+                dac0_mode_r <= fastdac_dac0_mode_i;
                 fastdac_amp_dac1_r <= fastdac_amp_dac1_i;
                 fastdac_amp_dac2_r <= fastdac_amp_dac2_i;
                 fb_mode_r <= fb_mode_i;
@@ -676,13 +680,19 @@ assign offset = fb_mode_r ? offset_val:0;
         : (shift1_r[1]? (shift1_r[0]? sam4_3 : sam4_2) : (shift1_r[0]? sam4_1 : sam4_0)));
 
     //Control dpram addr reading dac0 and samples of dac1
+    //Control dpram addr reading dac0 and samples of dac1
     reg [63:0] fastdac_dpram_seq_data_dac1_int; 
+    reg [63:0] fastdac_one_pulse_data_dac0_int;
     reg [3:0] counter_wait1;
     reg [3:0] counter_wait0;
+    reg [3:0] counter_wait2;
+    reg [31:0] counter_loop;
     // Declare states
     localparam S0 = 0, S1 = 1, S2 = 2, S3 =3, S4 = 4, S5 = 5, S6 = 6;
+    localparam T0 = 0, T1 = 1, T2 = 2, T3 = 3, T4 = 4, T5 = 5;;
     localparam R0 = 0, R1 = 1, R2 = 2, R3 = 3, R4 = 4, R5 = 5, R6 = 6, R7 = 7;
     reg [2:0] addr_state_dac0;
+    reg [2:0] single_addr_state_dac0;
     reg [2:0] seq_state_dac1;
 
     assign rd_en_16 = (counter10 == 0)?1:0;
@@ -697,10 +707,14 @@ assign offset = fb_mode_r ? offset_val:0;
             counter40 <= 1<<4 - 1;
             counter_wait1 <= 0;
             counter_wait0 <= 0;
+            counter_wait2 <= 0;
+            counter_loop <= 0;
             fastdac_dpram_seq_addr_dac0_r <= 0;
             fastdac_dpram_seq_addr_dac1_r <= 0;
-            fastdac_dpram_seq_data_dac1_int <= 0;      
+            fastdac_dpram_seq_data_dac1_int <= 0;
+            fastdac_one_pulse_data_dac0_int <= 0;      
             addr_state_dac0 <= S0;
+            single_addr_state_dac0 <= T0;
             seq_state_dac1 <= R0;
       
         end else begin 
@@ -749,6 +763,44 @@ assign offset = fb_mode_r ? offset_val:0;
                     default : ;
                 endcase
 
+                case (single_addr_state_dac0)
+                    T0 : begin
+                        fastdac_one_pulse_data_dac0_int <= 64'hffffffffffffffff;
+                        counter_wait2 <= 0;
+                        single_addr_state_dac0 <= T1;
+                    end
+                    T1 : begin
+                        counter_wait2 <= counter_wait2 + 1;
+                        if (counter_wait2 == 0) begin
+                            single_addr_state_dac0 <= T2;
+                        end
+                    end
+                    T2 : begin
+                        fastdac_one_pulse_data_dac0_int <= 64'he000d000c000b000; //4 samples
+                        single_addr_state_dac0 <= T3;
+                    end
+                    T3 : begin
+                        fastdac_one_pulse_data_dac0_int <= 64'ha000900080003267; //4 samples
+                        single_addr_state_dac0 <= T4;
+                    end
+                    T4 : begin
+                        fastdac_one_pulse_data_dac0_int <= 64'h3267ffffffffffff;
+                        single_addr_state_dac0 <= T5;
+                    end
+                    T5 : begin
+                        counter_loop <= counter_loop + 1;
+                        if (counter_loop <= 20 - 6) begin
+                            fastdac_one_pulse_data_dac0_int <= 64'hffffffffffffffff;
+                            single_addr_state_dac0 <= T5;
+                            counter_wait2 <= 0;
+                        end else begin
+                            counter_loop <= 0;
+                            single_addr_state_dac0 <= T1;
+                        end
+                    end
+                    default : ;
+                endcase
+
                 case (seq_state_dac1)
                     R0 : begin
                         fastdac_dpram_seq_data_dac1_int <= 0;
@@ -793,10 +845,13 @@ assign offset = fb_mode_r ? offset_val:0;
                 fastdac_dpram_seq_addr_dac0_r <= 0;
                 fastdac_dpram_seq_addr_dac1_r <= 0;
                 fastdac_dpram_seq_data_dac1_int <= 0;
+                fastdac_one_pulse_data_dac0_int <= 0;
                 counter10 <= 1<<6 -1;
                 counter40 <= 1<<4 -1;
                 counter_wait1 <= 0;
                 counter_wait0 <= 0;
+                counter_wait2 <= 0;
+                counter_loop <= 0;
             end    
         end
 
@@ -823,7 +878,9 @@ endfunction
 //0: fake rng, read rng from dpram
 //1: true rng. read rng from USB 
 wire [63:0] fastdac_seq_data_dac1_int;
+wire [63:0] fastdac_seq_data_dac0_int;
 assign fastdac_seq_data_dac1_int = dac1_mode_r ? fastdac_dpram_seq_data_dac1_int:fastdac_dpram_seq_data_dac1_int_calib;
+assign fastdac_seq_data_dac0_int = dac0_mode_r ? fastdac_one_pulse_data_dac0_int:fastdac_dpram_seq_data_dac0_int;
 
 
 
@@ -831,7 +888,7 @@ reg [63:0] tx_tdata0;
 reg [63:0] tx_tdata1;
 
 always @(*) begin
-    tx_tdata0 = format_data_to_jesd204 (fastdac_dpram_seq_data_dac0_int);
+    tx_tdata0 = format_data_to_jesd204 (fastdac_seq_data_dac0_int);
     tx_tdata1 = format_data_to_jesd204 (fastdac_seq_data_dac1_int);
     tx_tdata [127:0] <= {tx_tdata1,tx_tdata0};
 end

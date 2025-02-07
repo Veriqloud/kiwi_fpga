@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau
 // 
 // Create Date: 11.10.2023 12:39:27
 // Design Name: 
@@ -9,7 +9,7 @@
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: 
+// Description: Wrapper of jesd204b protocol, link layer
 // 
 // Dependencies: 
 // 
