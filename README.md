@@ -11,7 +11,7 @@
 git clone git@github.com:Veriqloud/kiwi_fpga.git
 ```
 ### Build project and block design 
-Run these command in vivado Tcl console:
+Run these command in vivado Tcl console (if prompted due to invalid topmodule, select to automatically pick a top module and click OK):
 ```
 cd [your local directory]/ABC/
 ```
@@ -46,6 +46,10 @@ set design_name [get_bd_designs]
 make_wrapper -files [get_files Bob_top.bd] -top -import
 save_bd_design
 ```
+Select Bob_top_wrapper as top module.
+
+Ignore critical Warnings in Synthesis.
+
 After design is validated, succeed to create the wrapper, you can generate bitstream.
 ## Create TCL scripts (Optional)
 This is my flow to create the Tcl scripts. I want to separate project and block design so vivado won't copy the sources to local vivado project.
