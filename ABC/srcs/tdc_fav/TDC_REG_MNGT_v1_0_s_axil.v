@@ -17,7 +17,7 @@
 		// Users to add ports here
         // Control data output
 		output wire tdc_enable,
-		output wire start_gc_sim,
+		output wire start_gc_o,
 		output wire [31:0] stopa_sim_limit,
 		output wire        stopa_sim_enable_o,
 		output wire [15:0] tdc_index_stop_bitwise_o,
@@ -29,7 +29,7 @@
 		output wire tdc_reg_enable200_o,
 		output wire tdc_command_enable_o,
 		output wire [2:0] tdc_command_o,
-		output wire tdc_command_get_gc_o,
+		// output wire tdc_command_get_gc_o,
 
 
 		input[1:0]        wr_fifo_full_i,
@@ -153,7 +153,7 @@
 	// 
 	// Registers connections to output signal
 	assign tdc_enable = slv_reg0[0];
-	assign start_gc_sim = slv_reg2[0];
+	assign start_gc_o = slv_reg2[0];
 	assign tdc_index_stop_bitwise_o = slv_reg1[15:0];
 	assign stopa_sim_limit = slv_reg3[31:0];
 
@@ -166,7 +166,7 @@
 	assign stopa_sim_enable_o = slv_reg9[2];
 	assign tdc_command_enable_o = slv_reg10[0];
 	assign tdc_command_o = slv_reg8[2:0];
-	assign tdc_command_get_gc_o = slv_reg11[0];
+	// assign tdc_command_get_gc_o = slv_reg11[0];
 
 
 	
@@ -465,7 +465,7 @@
 	end
 
 	//Initial read registers
-	reg [2:0] data_count_valid_r;
+	(* ASYNC_REG = "TRUE" *) reg [2:0] data_count_valid_r;
 	initial begin
 		data_count_valid_r <= 0;
 		slv_reg16 <= 0;

@@ -39,7 +39,7 @@
         // Control register
         output fastdac_en_jesd_o,
         output ld_ddr_status_o,
-        output dac1_shift_en_o,
+        output fastdac_reg_en_o,
         // output slv_reg_wren,
         output [7:0] fastdac_dpram_max_addr_seq_dac0_o,
         output [7:0] fastdac_dpram_max_addr_seq_dac1_o,
@@ -204,7 +204,7 @@
 
 	// assign fastdac_reg_alpha0_dac0_0_o = slv_reg3[14:0];
 	// assign fastdac_reg_alpha0_dac0_1_o = slv_reg3[30:16];
-	assign dac1_shift_en_o = slv_reg3[0]; 
+	assign fastdac_reg_en_o = slv_reg3[0]; 
 	// assign fastdac_reg_alpha0_dac0_2_o = slv_reg4[14:0];
 	// assign fastdac_reg_alpha1_dac0_0_o = slv_reg4[30:16];
 	assign fastdac_dpram_max_addr_seq_dac0_o = slv_reg4[7:0];

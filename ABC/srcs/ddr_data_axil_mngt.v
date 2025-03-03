@@ -479,9 +479,9 @@ module ddr_data_axil_mngt #
     end
 
     //Read registers fofr monitoring
-    reg [2:0] current_dq_gc_valid_r;
-    reg [2:0] status_200_valid_r;
-    reg [2:0] status_250_valid_r;
+    (* ASYNC_REG = "TRUE" *) reg [2:0] current_dq_gc_valid_r;
+    (* ASYNC_REG = "TRUE" *) reg [2:0] status_200_valid_r;
+    (* ASYNC_REG = "TRUE" *) reg [2:0] status_250_valid_r;
     initial begin
       current_dq_gc_valid_r <= 0;
       status_200_valid_r <= 0;

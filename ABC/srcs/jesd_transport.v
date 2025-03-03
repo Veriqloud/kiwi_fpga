@@ -97,7 +97,7 @@ module jesd_transport
     // Includes registers and DPRAM
     wire               fastdac_en_jesd_int;
     // wire               ld_ddr_status_int;
-    wire               dac1_shift_en_o;
+    wire               reg_en_o;
     reg  [2:0]         fastdac_en_jesd_r;
     wire               fastdac_sequence_wen_int;
     wire [9:0]         fastdac_sequence_addr_int; 
@@ -143,7 +143,7 @@ module jesd_transport
         .C_S_AXI_ADDR_WIDTH(C_s_axil_ADDR_WIDTH)
     ) fastdac_axil_mngt_inst (
         .fastdac_en_jesd_o(fastdac_en_jesd_int),
-        .dac1_shift_en_o(dac1_shift_en_o),
+        .fastdac_reg_en_o(reg_en_o),
         // .ld_ddr_status_o(ld_ddr_status_int),
         .fastdac_dpram_max_addr_seq_dac0_o(fastdac_dpram_max_addr_seq_dac0_int),
         .fastdac_dpram_max_addr_seq_dac1_o(fastdac_dpram_max_addr_seq_dac1_int),
@@ -207,21 +207,29 @@ module jesd_transport
 
 
     //------ and shift_r need to be put to clk200 domaine---------------------------
+    (* ASYNC_REG = "TRUE" *) reg [2:0] reg_en_r;
+    reg [7:0]         fastdac_dpram_max_addr_seq_dac0_r;
+    reg [7:0]         fastdac_dpram_max_addr_seq_dac1_r;
+    reg [14:0]         fastdac_dpram_max_addr_rng_dac1_r;
+
+
     reg [31:0] fastdac_amp_dac1_r;
     reg [31:0] fastdac_amp_dac2_r;
-    reg [2:0] shift_shift1_r;
     reg [3:0] shift1_r;
     reg rng_mode_r;
-    reg dac1_mode_r;
+    reg dac1_mode_r;    
     reg dac0_mode_r;
     reg fb_mode_r;
     reg insert_zero_mode_r;
     reg [15:0] up_offset_r;
     reg [31:0] division_sp_r;
     initial begin
+        fastdac_dpram_max_addr_seq_dac0_r <= 0;
+        fastdac_dpram_max_addr_seq_dac1_r <= 0;
+        fastdac_dpram_max_addr_rng_dac1_r <= 0;
         fastdac_amp_dac1_r <= 0;
         fastdac_amp_dac2_r <= 0;
-        shift_shift1_r <= 0;
+        reg_en_r <= 0;
         shift1_r <= 0;
         rng_mode_r <= 0;
         dac1_mode_r <= 0;
@@ -232,8 +240,11 @@ module jesd_transport
         division_sp_r <= 200000000;
     end
     always @(posedge tx_core_clk) begin
-            shift_shift1_r <= {shift_shift1_r[1:0],dac1_shift_en_o};
-            if ((shift_shift1_r[2] == 0) && (shift_shift1_r[0] == 1)) begin
+            reg_en_r <= {reg_en_r[1:0],reg_en_o};
+            if ((reg_en_r[2] == 0) && (reg_en_r[0] == 1)) begin
+                fastdac_dpram_max_addr_seq_dac0_r <= fastdac_dpram_max_addr_seq_dac0_int;
+                fastdac_dpram_max_addr_seq_dac1_r <= fastdac_dpram_max_addr_seq_dac1_int;
+                fastdac_dpram_max_addr_rng_dac1_r <= fastdac_dpram_max_addr_rng_dac1_int;
                 shift1_r <= shift1_i;
                 rng_mode_r <= fastdac_rng_mode_i;
                 dac1_mode_r <= fastdac_dac1_mode_i;
@@ -277,8 +288,8 @@ module jesd_transport
     assign dout4_test = rng_dout4;
 
     fifo_16x4 fifo_rng_16x4_inst (
-      .rst(!s_axis_tresetn),                      // input wire rst
-      // .rst(tx_core_reset),                      // input wire rst
+    //   .rst(!s_axis_tresetn),                      // input wire rst
+      .rst(tx_core_reset),                      // input wire rst
       .wr_clk(tx_core_clk),                // input wire wr_clk
       .rd_clk(tx_core_clk),                // input wire rd_clk
       .din(dout16),                      // input wire [15 : 0] din
@@ -412,7 +423,7 @@ module jesd_transport
                 end
                 SR1: begin
                     if (rd_en_4 == 1) begin
-                        if (sequence_rng_addr_r == (fastdac_dpram_max_addr_rng_dac1_int-1)) begin //Max_addr=40
+                        if (sequence_rng_addr_r == (fastdac_dpram_max_addr_rng_dac1_r-1)) begin //Max_addr=40
                             sequence_rng_addr_r <= 0;
                         end else 
                             sequence_rng_addr_r <= sequence_rng_addr_r+1;                    
@@ -834,12 +845,12 @@ assign offset = fb_mode_r? offset_val:0;
                         addr_state_dac0 <= S3;
                     end
                     S3: begin
-                        if (fastdac_dpram_seq_addr_dac0_r == (fastdac_dpram_max_addr_seq_dac0_int-1)) begin
+                        if (fastdac_dpram_seq_addr_dac0_r == (fastdac_dpram_max_addr_seq_dac0_r-1)) begin
                             fastdac_dpram_seq_addr_dac0_r <= 0;
                         end else 
                             fastdac_dpram_seq_addr_dac0_r <= fastdac_dpram_seq_addr_dac0_r+1;
 
-                        if (fastdac_dpram_seq_addr_dac1_r == (fastdac_dpram_max_addr_seq_dac1_int-1)) begin
+                        if (fastdac_dpram_seq_addr_dac1_r == (fastdac_dpram_max_addr_seq_dac1_r-1)) begin
                             fastdac_dpram_seq_addr_dac1_r <= 0;
                         end else 
                             fastdac_dpram_seq_addr_dac1_r <= fastdac_dpram_seq_addr_dac1_r+1;

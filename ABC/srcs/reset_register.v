@@ -29,8 +29,8 @@ module reset_register
         output rstn_o,
         output rst_o
     );
-reg [1:0] rstn_r;
-reg [1:0] rst_r;
+(* ASYNC_REG = "TRUE" *) reg [1:0] rstn_r;
+(* ASYNC_REG = "TRUE" *) reg [1:0] rst_r;
     
 // AXI-LITE reset mngt
 initial

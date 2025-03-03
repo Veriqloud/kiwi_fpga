@@ -135,7 +135,7 @@ wire [47:0] debug_rc_gc_div;
 assign debug_rc_gc_div = read_count - gc_time_valid_div;
 //clock domain changing from 200MHz to 250MHz
 reg s_axis_tready_gc_200;
-reg [2:0] s_axis_tready_gc_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] s_axis_tready_gc_r;
 initial begin
     s_axis_tready_gc_r <= 0;
 end
@@ -178,16 +178,16 @@ fifo_gc_in_64x64 fifo_gc_in_inst (
 
 
 //Axil register receiver, change clock domain from axil 15MHz to 200MHz
-reg [2:0] start_write_ddr_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] reg_enable_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] start_write_ddr_r;
 reg start_write_ddr_o;
 reg [2:0] pps_r;
 reg [3:0] tvalid200_r;
-reg [2:0] command_enable_r;
-reg [2:0] command_alpha_enable_r;
-reg [2:0] command_gc_enable_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] command_enable_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] command_alpha_enable_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] command_gc_enable_r;
 reg [2:0] command_r;
 reg [2:0] command_gc_r;
-reg [2:0] reg_enable_r;
 reg [47:0] dq_gc_start_r;
 reg [31:0] threshold_r;
 reg [31:0] threshold_full_r;
@@ -271,8 +271,10 @@ always @(*) begin
         time_ref_gc = 4'd6;
     else if (tdata200[13:0] < 8750)
         time_ref_gc = 4'd7;
-    else 
+    else if (tdata200[13:0] < 10000)
         time_ref_gc = 4'd8;
+    else 
+        time_ref_gc = 4'd9;
 end
 wire [47:0] dq_gc_div64;
 assign dq_gc_div64 = ((dq_gc-12)>>6)<<6; //12 gcs is delay time from click to tvalid200
@@ -393,14 +395,6 @@ always @(posedge clk200_i) begin
             end
             WAIT_START: begin
                 start_write_ddr_r <= {start_write_ddr_r[1:0], start_write_ddr_i};
-                // if (start_write_ddr_r[2] == 0 && start_write_ddr_r[1] == 1) begin
-                //     start_write_ddr_o <= 1'b1;
-                //     state <= DETECT_PPS;
-                // end 
-                // else begin
-                //     state_alpha <= IDLE_AL;
-                //     state <= WAIT_START;
-                // end
                 if (start_write_ddr_r[2] == 1 && !pps_i) begin
                     start_write_ddr_o <= 1'b1;
                     state <= DETECT_PPS;
@@ -429,10 +423,15 @@ always @(posedge clk200_i) begin
                 end else begin
                     dq_gc <= dq_gc;
                 end
+                // command_gc_enable_r <= {command_gc_enable_r[1:0],command_gc_enable};
+                // if (command_gc_enable_r[2]) begin
+                //     fifo_gc_rst <= 1;
+                // end else fifo_gc_rst <= 0;
                 command_gc_enable_r <= {command_gc_enable_r[1:0],command_gc_enable};
-                if (command_gc_enable_r[2]) begin
+                if ((command_gc_enable_r[2]) && (dq_gc > fiber_delay_r)) begin
                     fifo_gc_rst <= 1;
                 end else fifo_gc_rst <= 0;
+
                 // Get gc_click from detection
                 if (tvalid200_r[2]== 0 && tvalid200_r[1] == 1) begin
                     dq_gc_time <= dq_gc_div64 + index_shift_gc + time_ref_gc;

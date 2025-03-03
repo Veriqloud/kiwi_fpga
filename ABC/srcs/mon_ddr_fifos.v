@@ -45,8 +45,9 @@ module mon_ddr_fifos(
 
 reg [25:0] counter_200;
 reg [25:0] counter_250;
-wire mon_trigger_200;
-assign mon_trigger_200 = (counter_200 >= 1 && counter_200 <= 99) ? 1:0;
+// wire mon_trigger_200;
+// assign mon_trigger_200 = (counter_200 >= 1 && counter_200 <= 99) ? 1:0;
+reg mon_trigger_200;
 
 wire [8:0] status_200;
 assign status_200 = {vfifo_idle,vfifo_full,vfifo_empty,gc_out_fifo_full,gc_in_fifo_empty,alpha_out_fifo_full};
@@ -61,6 +62,7 @@ end
 always @(posedge clk200_i) begin
     if (!ddr_data_rstn) begin
         counter_200 <= 0;
+        mon_trigger_200 <= 0;
         mon_trigger_200_r <= 0;
         status_200_o <= 0;
     end else begin
@@ -68,10 +70,16 @@ always @(posedge clk200_i) begin
         if (counter_200 > 199999) begin
             counter_200 <= 0;
         end
-        mon_trigger_200_r <= {mon_trigger_200_r[1:0],mon_trigger_200};
-        if (mon_trigger_200_r[2] == 0 && mon_trigger_200_r[1] == 1) begin
+        if (counter_200 >= 1 && counter_200 <= 99) begin
+            mon_trigger_200 <= 1;
+        end else mon_trigger_200 <= 0;
+        if (mon_trigger_200) begin
             status_200_o <= status_200;
         end else status_200_o <= status_200_o;
+        // mon_trigger_200_r <= {mon_trigger_200_r[1:0],mon_trigger_200};
+        // if (mon_trigger_200_r[2] == 0 && mon_trigger_200_r[1] == 1) begin
+        //     status_200_o <= status_200;
+        // end else status_200_o <= status_200_o;
     end
 end
 
@@ -81,8 +89,9 @@ assign status_250 = {gc_out_fifo_empty,gc_in_fifo_full,alpha_out_fifo_empty};
 
 wire status_250_valid_o;
 assign status_250_valid_o = mon_trigger_250_r[2];
+
 reg [2:0] status_250_o;
-reg [2:0] mon_trigger_250_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] mon_trigger_250_r;
 initial begin
     mon_trigger_250_r <= 0;
 end

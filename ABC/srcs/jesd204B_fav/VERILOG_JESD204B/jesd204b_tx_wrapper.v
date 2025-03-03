@@ -184,7 +184,7 @@ jesd204b_tx
     end 
     
     // Reset of GT transceiver
-    reg [11:0] vtx_reset_gt_r = 0;
+    (* ASYNC_REG = "TRUE" *) reg [11:0] vtx_reset_gt_r = 0;
     assign btx_reset_gt_o = vtx_reset_gt_r[11];
     always @(posedge s_axil_aclk, posedge tx_core_reset)
     begin

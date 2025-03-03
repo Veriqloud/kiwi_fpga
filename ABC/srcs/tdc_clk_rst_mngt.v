@@ -110,7 +110,7 @@ end
 reg [17:0] counter_apd_sim;
 wire stopa_sim;
 
-reg [2:0] sim_enable_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] sim_enable_r;
 reg [31:0] stopa_sim_limit;
 initial begin
     sim_enable_r <= 0;

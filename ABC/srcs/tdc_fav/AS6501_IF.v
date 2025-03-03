@@ -88,7 +88,7 @@ module AS6501_IF (
 );
 
 // Switch domain from aclk to lclk_i
-	reg [2:0] reg_enable_r;
+	(* ASYNC_REG = "TRUE" *) reg [2:0] reg_enable_r;
 	reg [15:0] index_stop_bitwise_r;
 
 	initial begin
@@ -102,7 +102,7 @@ module AS6501_IF (
 		end
 	end
 //Switch domain from aclk to clk200_i
-	reg [2:0] reg_enable200_r;
+	(* ASYNC_REG = "TRUE" *) reg [2:0] reg_enable200_r;
 	reg [15:0] shift_tdc_time_r;
 	reg [15:0] shift_gc_back_r;
 	reg [31:0] gate0_r;
@@ -199,7 +199,7 @@ module AS6501_IF (
 	   endcase
 	 end
 	//assign m_axis_tready       = 1'b1;
-	reg [2:0] enable_axi_r;
+	(* ASYNC_REG = "TRUE" *) reg [2:0] enable_axi_r;
 	reg [3:0] counter_stretch;
 
 	initial begin
@@ -301,7 +301,7 @@ module AS6501_IF (
 
 
 //Change to domain lclk_i to clk200_i
-reg [2:0] tvalid_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] tvalid_r;
 reg tvalid200;
 reg [31:0] tdata200;
 reg [6:0] rd_en_4_r;
@@ -365,8 +365,10 @@ always @(*) begin
 		time_ref_gc = 4'd6;
 	else if (tdata200[13:0] < 8750)
 		time_ref_gc = 4'd7;
-	else 
+	else if (tdata200[13:0] < 10000)
 		time_ref_gc = 4'd8;
+	else 
+		time_ref_gc = 4'd9;
 end
 wire [47:0] gc_div64;
 assign gc_div64 = ((gc-12)>>6)<<6; //12 gcs is delay time from click to tvalid200
@@ -377,13 +379,13 @@ assign gc_div64 = ((gc-12)>>6)<<6; //12 gcs is delay time from click to tvalid20
 reg [2:0] state_gc;
 parameter IDLE = 0, WAIT_START = 1, DETECT_PPS = 2, START = 3;
 
-reg [2:0] start_gc_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] start_gc_r;
 reg start_gc_o;
 reg [2:0] pps_r;
 reg [3:0] tvalid200_r;
 reg fifo_calib_rst;
 //Axil command
-reg [2:0] command_enable_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] command_enable_r;
 // reg fifo_gc_rst;
 initial begin
 	start_gc_r <= 0;
@@ -408,8 +410,10 @@ wire count_en;
 assign count_en = (counter_mon_en > 0 && counter_mon_en <= 20000000)?1:0;
 
 //Valid signal indicates the count value is valid, stretched to 2-3 cycle of axil_clk (15MHz)
-wire data_count_valid_o;
-assign data_count_valid_o = (counter_mon_en >= 1 && counter_mon_en <= 59) ? 1:0;
+// wire data_count_valid_o;
+// assign data_count_valid_o = (counter_mon_en >= 1 && counter_mon_en <= 59) ? 1:0;
+// Should not have combinational logic before CDC sync, put the source reg to source clock domain
+reg data_count_valid_o;
 
 wire tvalid200_en;
 wire tvalid200_g0_en;
@@ -439,7 +443,7 @@ always @(posedge clk200_i, posedge gc_rst) begin
 		// m_axis_tdata_gc <= 0;
 		// m_axis_tvalid_gc <= 0;
 		// fifo_gc_rst <= 0;
-
+		data_count_valid_o <= 0;
 		counter_mon_en <= 0;
 		total_count_o <= 0;
 		total_count <= 0;
@@ -468,6 +472,7 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				total_count <= 0;
 				total_count_valid <= 0;
 
+				data_count_valid_o <= 0;
 				click0_count_o <= 0;
 				click0_count <= 0;
 				click1_count_o <= 0;
@@ -508,6 +513,11 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				counter_mon_en <= counter_mon_en + 1; //Define the time for monitoring
 				if (counter_mon_en > 19999999) begin //19999999 for 0.1s
 					counter_mon_en <= 0;
+				end
+				if ((counter_mon_en >= 1) && (counter_mon_en <= 59)) begin
+					data_count_valid_o <= 1;
+				end else begin
+					data_count_valid_o <= 0;
 				end
 				if (count_en && tvalid200_en) begin
 					total_count <= total_count + 1;

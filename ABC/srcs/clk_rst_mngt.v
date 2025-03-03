@@ -22,72 +22,72 @@
 
 module clk_rst_mngt
     #(
-    parameter TDC_REFCLK_DIVISOR = 20, //Number of 200MHz clk every tdc_refclk
-    parameter N_TDC_REFCLK = 8, //Number of tdc clk every RSTIDX
-    parameter integer C_s_axil_DATA_WIDTH	= 32,
-	parameter integer C_s_axil_ADDR_WIDTH	= 10)
+      parameter TDC_REFCLK_DIVISOR = 20, //Number of 200MHz clk every tdc_refclk
+      parameter N_TDC_REFCLK = 8, //Number of tdc clk every RSTIDX
+      parameter integer C_s_axil_DATA_WIDTH	= 32,
+      parameter integer C_s_axil_ADDR_WIDTH	= 10)
     (
-        // Ports of Axi Slave Bus Interface s_axil
-		input wire [C_s_axil_ADDR_WIDTH-1 : 0] s_axil_awaddr,
-		input wire [2 : 0] s_axil_awprot,
-		input wire  s_axil_awvalid,
-		output wire  s_axil_awready,
-		input wire [C_s_axil_DATA_WIDTH-1 : 0] s_axil_wdata,
-		input wire [(C_s_axil_DATA_WIDTH/8)-1 : 0] s_axil_wstrb,
-		input wire  s_axil_wvalid,
-		output wire  s_axil_wready,
-		output wire [1 : 0] s_axil_bresp,
-		output wire  s_axil_bvalid,
-		input wire  s_axil_bready,
-		input wire [C_s_axil_ADDR_WIDTH-1 : 0] s_axil_araddr,
-		input wire [2 : 0] s_axil_arprot,
-		input wire  s_axil_arvalid,
-		output wire  s_axil_arready,
-		output wire [C_s_axil_DATA_WIDTH-1 : 0] s_axil_rdata,
-		output wire [1 : 0] s_axil_rresp,
-		output wire  s_axil_rvalid,
-		input wire  s_axil_rready,
-        input       s_axil_aclk,
+      // Ports of Axi Slave Bus Interface s_axil
+      input wire [C_s_axil_ADDR_WIDTH-1 : 0] s_axil_awaddr,
+      input wire [2 : 0] s_axil_awprot,
+      input wire  s_axil_awvalid,
+      output wire  s_axil_awready,
+      input wire [C_s_axil_DATA_WIDTH-1 : 0] s_axil_wdata,
+      input wire [(C_s_axil_DATA_WIDTH/8)-1 : 0] s_axil_wstrb,
+      input wire  s_axil_wvalid,
+      output wire  s_axil_wready,
+      output wire [1 : 0] s_axil_bresp,
+      output wire  s_axil_bvalid,
+      input wire  s_axil_bready,
+      input wire [C_s_axil_ADDR_WIDTH-1 : 0] s_axil_araddr,
+      input wire [2 : 0] s_axil_arprot,
+      input wire  s_axil_arvalid,
+      output wire  s_axil_arready,
+      output wire [C_s_axil_DATA_WIDTH-1 : 0] s_axil_rdata,
+      output wire [1 : 0] s_axil_rresp,
+      output wire  s_axil_rvalid,
+      input wire  s_axil_rready,
+      input       s_axil_aclk,
 
-        input       sys_reset_n,
-        input       clk_ddr_axi_i,
-        input       rst_ddr_axi_i,
-        output      clk_axil_o,
-        output      rstn_axil_o,
-        output      clk_ddr_axi_o,
-        output      rstn_ddr_axi_o,
-        output      rst_ddr_axi_o,
-        input       fastdac_refclkp_i,
-        input       fastdac_refclkn_i,
-        input       fastdac_gt_powergood_i,
-        input       fastdac_sysrefp_i,
-        input       fastdac_sysrefn_i,
-        input       fastdac_syncoutp_i,
-        input       fastdac_syncoutn_i,
+      input       sys_reset_n,
+      input       clk_ddr_axi_i,
+      input       rst_ddr_axi_i,
+      output      clk_axil_o,
+      output      rstn_axil_o,
+      output      clk_ddr_axi_o,
+      output      rstn_ddr_axi_o,
+      output      rst_ddr_axi_o,
+      input       fastdac_refclkp_i,
+      input       fastdac_refclkn_i,
+      input       fastdac_gt_powergood_i,
+      input       fastdac_sysrefp_i,
+      input       fastdac_sysrefn_i,
+      input       fastdac_syncoutp_i,
+      input       fastdac_syncoutn_i,
 
-        input       pps_i,
-        output      fastdac_refclk_o,
-        output      fastdac_coreclk_o,
-        output      fastdac_corerst_o,
-        output      fastdac_sysref_o,
-        output      fastdac_syncout_o,
+      input       pps_i,
+      output      fastdac_refclk_o,
+      output      fastdac_coreclk_o,
+      output      fastdac_corerst_o,
+      output      fastdac_sysref_o,
+      output      fastdac_syncout_o,
 
-  		input 		ext_clk10_p,
-  		input		ext_clk10_n,
-  		input		ext_clk100_p,
-  		input		ext_clk100_n,
-        input       lclk_i,
-  		output		clk10_o,
-  		output		clk100_o,
-  		output reg	sync_ltc_o, 
-        output      tdc_rst_o,
-        output      lrst_o,
+      input 		ext_clk10_p,
+      input		ext_clk10_n,
+      input		ext_clk100_p,
+      input		ext_clk100_n,
+      input       lclk_i,
+      output		clk10_o,
+      output		clk100_o,
+      output reg	sync_ltc_o, 
+      output      tdc_rst_o,
+      output      lrst_o,
 
-        output wire ttl_rst,
-        output      gc_rst_o,
-        output      gc_rstn_o,
-        output      ddr_data_rst_o,
-        output      ddr_data_rstn_o
+      output wire ttl_rst,
+      output      gc_rst_o,
+      output      gc_rstn_o,
+      output      ddr_data_rst_o,
+      output      ddr_data_rstn_o
 
     );
 
@@ -95,34 +95,34 @@ fpga_turnkey_reg_mngt # (
 		.C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_s_axil_ADDR_WIDTH)
 	) fpga_turnkey_reg_mngt_inst (
-        .gc_rst_o(gc_rst),
-		.clockchip_sync_o(clockchip_sync),
-        .ttl_rst_o(ttl_rst),
-        .tdc_rst_o(tdc_rst),
-        .lrst_o(lrst_i),
-		.fpga_turnkey_fastdac_rst_o(fpga_turnkey_fastdac_rst),
-        .ddr_data_rst_o(ddr_data_rst),
-		.S_AXI_ACLK(s_axil_aclk),
-		.S_AXI_ARESETN(rstn_axil_o),
-		.S_AXI_AWADDR(s_axil_awaddr),
-		.S_AXI_AWPROT(s_axil_awprot),
-		.S_AXI_AWVALID(s_axil_awvalid),
-		.S_AXI_AWREADY(s_axil_awready),
-		.S_AXI_WDATA(s_axil_wdata),
-		.S_AXI_WSTRB(s_axil_wstrb),
-		.S_AXI_WVALID(s_axil_wvalid),
-		.S_AXI_WREADY(s_axil_wready),
-		.S_AXI_BRESP(s_axil_bresp),
-		.S_AXI_BVALID(s_axil_bvalid),
-		.S_AXI_BREADY(s_axil_bready),
-		.S_AXI_ARADDR(s_axil_araddr),
-		.S_AXI_ARPROT(s_axil_arprot),
-		.S_AXI_ARVALID(s_axil_arvalid),
-		.S_AXI_ARREADY(s_axil_arready),
-		.S_AXI_RDATA(s_axil_rdata),
-		.S_AXI_RRESP(s_axil_rresp),
-		.S_AXI_RVALID(s_axil_rvalid),
-		.S_AXI_RREADY(s_axil_rready)
+      .gc_rst_o(gc_rst),
+      .clockchip_sync_o(clockchip_sync),
+      .ttl_rst_o(ttl_rst),
+      .tdc_rst_o(tdc_rst),
+      .lrst_o(lrst_i),
+      .fpga_turnkey_fastdac_rst_o(fpga_turnkey_fastdac_rst),
+      .ddr_data_rst_o(ddr_data_rst),
+      .S_AXI_ACLK(s_axil_aclk),
+      .S_AXI_ARESETN(rstn_axil_o),
+      .S_AXI_AWADDR(s_axil_awaddr),
+      .S_AXI_AWPROT(s_axil_awprot),
+      .S_AXI_AWVALID(s_axil_awvalid),
+      .S_AXI_AWREADY(s_axil_awready),
+      .S_AXI_WDATA(s_axil_wdata),
+      .S_AXI_WSTRB(s_axil_wstrb),
+      .S_AXI_WVALID(s_axil_wvalid),
+      .S_AXI_WREADY(s_axil_wready),
+      .S_AXI_BRESP(s_axil_bresp),
+      .S_AXI_BVALID(s_axil_bvalid),
+      .S_AXI_BREADY(s_axil_bready),
+      .S_AXI_ARADDR(s_axil_araddr),
+      .S_AXI_ARPROT(s_axil_arprot),
+      .S_AXI_ARVALID(s_axil_arvalid),
+      .S_AXI_ARREADY(s_axil_arready),
+      .S_AXI_RDATA(s_axil_rdata),
+      .S_AXI_RRESP(s_axil_rresp),
+      .S_AXI_RVALID(s_axil_rvalid),
+      .S_AXI_RREADY(s_axil_rready)
 	);
 
 wire fastdac_coreclk_int;
@@ -136,8 +136,9 @@ IBUFDS syncout_ibuf    (.IB(fastdac_syncoutn_i),.O(fastdac_syncout_o),.I(fastdac
 
 
 reset_register #(.RST_ACTIVE_LEVEL("LOW")) reset_reg_axil_inst (.clk_i(s_axil_aclk),.rstn_i(sys_reset_n),.clk_o(clk_axil_o),.rstn_o(rstn_axil_o));
-//reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_axil_inst (.clk_i(s_axil_aclk),.rstn_i(rst_ddr_axi_i),.clk_o(clk_axil_o),.rstn_o(rstn_axil_o));
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_ddr_axi_inst (.clk_i(clk_ddr_axi_i),.rst_i(rst_ddr_axi_i),.clk_o(clk_ddr_axi_o),.rstn_o(rstn_ddr_axi_o),.rst_o(rst_ddr_axi_o));
+wire rstn_syncc_o;
+reset_register #(.RST_ACTIVE_LEVEL("LOW")) reset_reg_clk10_inst (.clk_i(clk10_o),.rstn_i(sys_reset_n),.clk_o(clk10_o_o),.rstn_o(rstn_syncc_o));
 
 
 
@@ -171,11 +172,12 @@ BUFGCE_clk100 (
 //---------------------------------------------------------------------
 
 
-reg [2:0] fpga_turnkey_fastdac_rst_r;
-reg [2:0] tdc_rst_r;
-reg [2:0] gc_rst_r;
-reg [2:0] lrst_i_r;
-reg [2:0] ddr_data_rst_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] fpga_turnkey_fastdac_rst_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] tdc_rst_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] gc_rst_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] lrst_i_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] ddr_data_rst_r;
+
 initial begin
     fpga_turnkey_fastdac_rst_r <= 0;
     tdc_rst_r <= 0;
@@ -393,7 +395,7 @@ reset_register #(.RST_ACTIVE_LEVEL("LOW")) ddr_data_resetn_inst (
 
 
 reg sync_ltc_o;
-reg [2:0] clockchip_sync_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] clockchip_sync_r;
 reg [15:0] counter_clk;
 
 reg pps_clk_r;
@@ -403,8 +405,8 @@ initial begin
     clockchip_sync_r <= 3'b0;
 end
 
-always @(posedge clk10_o or negedge sys_reset_n) begin
-   if (!sys_reset_n) begin
+always @(posedge clk10_o) begin
+   if (!rstn_syncc_o) begin
       clockchip_sync_r <= 0;
       sync_ltc_o <= 0;
 

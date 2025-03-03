@@ -108,7 +108,7 @@ ttl_reg_mngt # (
 
 // Change clock domain for registers, from axil to 240MHz and 80MHz
 
-reg [2:0] ttl_params_240_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_params_240_r;
 reg [31:0] ttl_params_240;
 initial begin
     ttl_params_240_r <= 0;
@@ -121,7 +121,7 @@ always @(posedge clk240) begin
     end
 end
 
-reg [2:0] ttl_params_80_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_params_80_r;
 reg [31:0] ttl_params_80;
 reg [31:0] ttl_params_slv;
 initial begin
@@ -139,8 +139,8 @@ end
 
 //Generate reset in 240MHz and 80MHz domain
 
-reg [2:0] ttl_rst80_r;
-reg [2:0] ttl_rst240_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_rst80_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_rst240_r;
 initial begin
     ttl_rst80_r <= 0;
     ttl_rst240_r <= 0;
@@ -252,7 +252,9 @@ assign resolution_slv1 = ttl_params_slv[14:1];
 assign resolution_slv2 = ttl_params_slv[30:17];
 //Passing domaine
 wire en_step, en_step_slv1, en_step_slv2;
-reg [2:0] ttl_trigger_enstep_r, ttl_trigger_enstep_slv1_r, ttl_trigger_enstep_slv2_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_trigger_enstep_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_trigger_enstep_slv1_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_trigger_enstep_slv2_r;
 initial begin
     ttl_trigger_enstep_r <= 0;
     ttl_trigger_enstep_slv1_r <= 0;

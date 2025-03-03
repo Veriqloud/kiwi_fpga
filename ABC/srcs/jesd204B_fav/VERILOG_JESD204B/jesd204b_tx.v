@@ -119,8 +119,8 @@ module jesd204b_tx
     reg [31:0]          vila_counter_r;
     reg                 blmfc_r;
     reg [2:0]           v4overF;
-    reg [2:0]           vtx_enable_r =0;
-    reg [2:0]           vtx_reset_done_r =0; 
+    (* ASYNC_REG = "TRUE" *) reg [2:0]           vtx_enable_r =0;
+    (* ASYNC_REG = "TRUE" *) reg [2:0]           vtx_reset_done_r =0; 
  
     always@(posedge tx_core_clk)
     begin
@@ -348,10 +348,10 @@ module jesd204b_tx
     //              Lmfc management            //
     /////////////////////////////////////////////
     /////////////////////////////////////////////
-    reg [2:0]       vtx_sysref_r = 0;
+    (* ASYNC_REG = "TRUE" *) reg [2:0]       vtx_sysref_r = 0;
     reg             bfirst_event_detected_int = 0;
-    reg [1:0]       btx_sync_r = 0;
-    reg [2:0]       bsysref_required_r = 0;
+    (* ASYNC_REG = "TRUE" *) reg [1:0]       btx_sync_r = 0;
+    (* ASYNC_REG = "TRUE" *) reg [2:0]       bsysref_required_r = 0;
 
     always@(posedge tx_core_clk, posedge tx_core_reset)
     begin   

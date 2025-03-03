@@ -4,7 +4,6 @@ create_clock -period 10.000 -name sys_clk [get_ports sys_clk_p]
 set_property PACKAGE_PIN T6 [get_ports sys_clk_n]
 set_property PACKAGE_PIN T7 [get_ports sys_clk_p]
 
-
 set_false_path -from [get_ports sys_rst_n]
 set_property PULLUP true [get_ports sys_rst_n]
 set_property IOSTANDARD LVCMOS12 [get_ports sys_rst_n]
@@ -20,35 +19,31 @@ set_property PACKAGE_PIN AD19 [get_ports ext_fastdac_sysref_n]
 set_property IOSTANDARD LVDS [get_ports ext_fastdac_sysref_*]
 set_property DIFF_TERM_ADV TERM_100 [get_ports ext_fastdac_sysref_*]
 
-#set_property PACKAGE_PIN AA14 [get_ports ext_clk10_p]
-#set_property PACKAGE_PIN AB14 [get_ports ext_clk10_n]
-#set_property IOSTANDARD LVDS_25 [get_ports ext_clk10_*]
-#set_property DIFF_TERM_ADV TERM_100 [get_ports ext_clk10_*]
-
 create_clock -period 100.000 -name clk_10 [get_ports ext_clk10_p]
 set_property PACKAGE_PIN B19 [get_ports ext_clk10_p]
 set_property PACKAGE_PIN B20 [get_ports ext_clk10_n]
 set_property IOSTANDARD LVDS [get_ports ext_clk10_*]
 
+create_clock -period 10.000 -name clk_100 [get_ports ext_clk100_p]
 set_property PACKAGE_PIN AB15 [get_ports ext_clk100_p]
 set_property PACKAGE_PIN AB16 [get_ports ext_clk100_n]
 set_property IOSTANDARD LVDS_25 [get_ports ext_clk100_*]
 #set_property DIFF_TERM_ADV TERM_100 [get_ports ext_clk100_*]
 
-#create clock to test the FREQ_HZ
-create_clock -period 5.000 -name clk200_net -waveform {0.000 2.500} [get_nets ext_clk200_o]
+create_clock -period 5.000 -name tdc_lclk -waveform {0.000 2.500} [get_ports ext_tdc_lclko_p]
+# create_generated_clock -period 5.000 -name tdc_lclk -source [get_clocks refclk] [get_ports ext_tdc_lclko_p]
+set_property PACKAGE_PIN AD21 [get_ports ext_tdc_lclko_p]
+set_property PACKAGE_PIN AE21 [get_ports ext_tdc_lclko_n]
+set_property IOSTANDARD LVDS [get_ports ext_tdc_lclko_*]
+set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_lclko_*]
 
 
 #set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/ibuf_clk100/O]
 set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets Bob_top_i/clk_rst/clk_rst_mngt/inst/clk100_o]
-
 #set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/clk10_o]
 set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets Bob_top_i/clk_rst/clk_rst_mngt/inst/clk10_o]
 
-#set_clock_groups -asynchronous -group [get_clocks refclk] -group [get_clocks clk_10]
 
-##Internal clock nets------------------------------------------
-create_clock -period 5.000 -name clk200 [get_ports ext_clk200_o]
 ##Leds---------------------------------------------------------
 set_property PACKAGE_PIN U24 [get_ports {led[0]}]
 #set_property PACKAGE_PIN V19 [get_ports {led[1]}]
@@ -127,14 +122,6 @@ set_property PACKAGE_PIN AB21 [get_ports ext_tdc_lclki_p]
 set_property PACKAGE_PIN AC21 [get_ports ext_tdc_lclki_n]
 set_property IOSTANDARD LVDS [get_ports ext_tdc_lclki_*]
 #set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_lclki_*]
-
-create_clock -period 5.000 -name tdc_lclk -waveform {0.000 2.500} [get_ports ext_tdc_lclko_p]
-set_property PACKAGE_PIN AD21 [get_ports ext_tdc_lclko_p]
-set_property PACKAGE_PIN AE21 [get_ports ext_tdc_lclko_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_lclko_*]
-set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_lclko_*]
-
-
 ##Bank 84
 
 
@@ -195,73 +182,114 @@ set_property PACKAGE_PIN AC5 [get_ports {ext_fastdac_txp_out[3]}]
 set_property PACKAGE_PIN AC4 [get_ports {ext_fastdac_txn_out[3]}]
 
 
-###SET CONSTRAINTS RESETS
-set_false_path -from [get_clocks mmcm_clkout1] -to [get_clocks refclk]
-set_false_path -from [get_clocks mmcm_clkout1] -to [get_clocks clk_out1_Bob_top_clk_wiz_0_0]
-set_false_path -from [get_clocks mmcm_clkout1] -to [get_clocks clk_out2_Bob_top_clk_wiz_0_0]
+###RENAME THE GENERATED CLOCKS
+set wiz_clkout1 [get_clocks -of_objects [get_pins Bob_top_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0]]
+set wiz_clkout2 [get_clocks -of_objects [get_pins Bob_top_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT1]]
+# set mmcm_ddr_clkout [get_clocks -of_objects [get_pins Bob_top_i/ddr4/ddr4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT1]]
+set mmcm_clkout1 [get_clocks -of_objects [get_pins Bob_top_i/ddr4/ddr4_0/inst/u_ddr4_infrastructure/gen_mmcme4.u_mmcme_adv_inst/CLKOUT1]]
+set xdma_axi_aclk [get_clocks -of_objects [get_pins Bob_top_i/xdma_0/inst/pcie4_ip_i/inst/Bob_top_xdma_0_0_pcie4_ip_gt_top_i/diablo_gt.diablo_gt_phy_wrapper/phy_clk_i/bufg_gt_coreclk/O]]
+
+##Set clock groups----------------------------------------------
+set_clock_groups -asynchronous -group [get_clocks tdc_lclk] -group [get_clocks refclk] 
+set_clock_groups -asynchronous -group [get_clocks refclk] -group [get_clocks sysrefclk]
+set_clock_groups -asynchronous -group [get_clocks mmcm_clkout1] -group [get_clocks refclk]
+
+###SET CONSTRAINTS CLK_RST_MNGT
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg2_reg[0]/C}] -to [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/gc_rst_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg0_reg[1]/C}] -to [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_fastdac_rst_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg4_reg[0]/C}] -to [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/ddr_data_rst_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[1]/C}] -to [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/lrst_i_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[0]/C}] -to [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/tdc_rst_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_rst240_r_reg[0]/D}] 
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_rst80_r_reg[0]/D}]
+# set_false_path -from $mmcm_ddr_clkout -to [get_clocks clk_10]
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/clockchip_sync_r_reg[0]/D}]
 
 ### SET CONSTRAINTS DDR_DATA
-#set_false_path -from [get_clocks refclk] -to [get_clocks mmcm_clkout1]
-#set_false_path -from [get_clocks xdma_0_axi_aclk] -to [get_clocks mmcm_clkout1]
-#set_false_path -from [get_clocks refclk] -to [get_clocks xdma_0_axi_aclk]
+# set_false_path -from [get_clocks refclk] -to $xdma_axi_aclk
+set_false_path -from [get_pins {Bob_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_200_reg/C}] -to [get_pins {Bob_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_250_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_250_r_reg[2]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/status_250_valid_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/mon_ddr_fifos_0/inst/status_250_o_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg14_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/mon_ddr_fifos_0/inst/status_200_o_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg13_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/current_dq_gc_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg15_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/current_dq_gc_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg16_reg[*]/D}]
+set_false_path -from [get_pins Bob_top_i/ddr4/ddr_data_0/inst/s_axis_tready_gc_200_reg/C] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/s_axis_tready_gc_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/command_enable_r_reg[2]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/current_dq_gc_valid_r_reg[0]/D}]
+# set_false_path -from [get_clocks refclk] -to $mmcm_ddr_clkout
+# set_false_path -from $xdma_axi_aclk -to $mmcm_ddr_clkout
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/reg_enable_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/start_write_ddr_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg1_reg[0]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/command_enable_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg2_reg[3]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/command_gc_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg2_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/command_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg6_reg[0]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/command_alpha_enable_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg6_reg[1]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/pair_delay_r_reg/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/command_gc_enable_r_reg[0]/D}]
 
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg4_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/dq_gc_start_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg5_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/dq_gc_start_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg8_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/threshold_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg9_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/threshold_full_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg10_reg[*]/C}] -to [get_pins {Bob_top_i/ddr4/ddr_data_0/inst/fiber_delay_r_reg[*]/D}]
 ###SET CONSTRAINTS TDC
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg0_reg[0]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/enable_axi_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[0]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/reg_enable_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[1]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/reg_enable200_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg1_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/index_stop_bitwise_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg4_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/gate0_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg5_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/gate1_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg6_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/shift_tdc_time_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg7_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/shift_gc_back_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg8_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/command_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg10_reg[0]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/command_enable_r_reg[0]/*/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg2_reg[0]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/start_gc_r_reg[0]/D}]
 
-set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg*_reg[*]] -to [get_clocks refclk]
 
-set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg*_reg[*]] -to [get_clocks tdc_lclk]
+set_false_path -from [get_pins Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/data_count_valid_o_reg/C] -to [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/data_count_valid_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/click0_count_o_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg15_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/click1_count_o_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg14_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/total_count_o_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg16_reg[*]/D}]
+
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg3_reg[*]/C}] -to [get_pins {Bob_top_i/tdc/clk_rst_buffer/tdc_clk_rst_mngt_0/inst/stopa_sim_limit_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[2]/C}] -to [get_pins {Bob_top_i/tdc/clk_rst_buffer/tdc_clk_rst_mngt_0/inst/sim_enable_r_reg[*]/D}]
 
 #set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[0]] -to [get_cells Bob_top_i/tdc/AS6501_IF_0/inst/reg_enable_r_reg[0]]
-
 #set_false_path -from [get_cells Bob_top_i/tdc/tdc_mngt/TDC_REG_MNGT_v1_0_0/inst/TDC_REG_MNGT_v1_0_s_axil_inst/slv_reg9_reg[1]] -to [get_cells Bob_top_i/tdc/AS6501_IF_0/inst/reg_enable200_r_reg[0]]
-
-
 #set_multicycle_path -setup 2 -from [get_clocks refclk] -to [get_pins Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/s_axis_tdata_reg[*]/CE]
-
 #set_multicycle_path -hold 1 -from [get_clocks refclk] -to [get_pins Bob_top_i/tdc/tdc_mngt/AS6501_IF_0/inst/s_axis_tdata_reg[*]/CE]
 
-
-
 ###SET CONSTRAINTS FASTDAC
+## JESD204B_TX_WRAPPER
 set_false_path -through [get_pins Bob_top_i/fastdac/jesd204b_tx_wrapper_0/inst/tx_core_reset] -to [get_pins Bob_top_i/fastdac/jesd204b_tx_wrapper_0/inst/vtx_reset_gt_r_*/PRE]
-
 set _shared_i0 [get_cells Bob_top_i/fastdac/jesd204b_tx_wrapper_0/inst/jesd204b_reg_mngt/slv_reg*_*]
 set_false_path -from $_shared_i0 -to [get_clocks refclk]
 set_false_path -from [get_clocks refclk] -to $_shared_i0 
 
-#set _shared_i1 [get_cells Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg*_*]
-#set _shared_i2 [get_cells Bob_top_i/fastdac/jesd_transport_0/inst/shift_shift1_r_reg[0]]
+## JESD_TRANSPORT
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/up_offset_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/shift1_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg2_reg[*]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_amp_dac1_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/reg_en_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg4_reg[*]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_dpram_max_addr_seq_dac0_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg4_reg[*]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_dpram_max_addr_seq_dac1_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins Bob_top_i/fastdac/jesd_transport_0/inst/rng_mode_r_reg/D]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg5_reg[1]/C}] -to [get_pins Bob_top_i/fastdac/jesd_transport_0/inst/dac1_mode_r_reg/D]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg5_reg[2]/C}] -to [get_pins Bob_top_i/fastdac/jesd_transport_0/inst/fb_mode_r_reg/D]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg5_reg[3]/C}] -to [get_pins Bob_top_i/fastdac/jesd_transport_0/inst/insert_zero_mode_r_reg/D]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg5_reg[4]/C}] -to [get_pins Bob_top_i/fastdac/jesd_transport_0/inst/dac0_mode_r_reg/D]
 
-#set_false_path -from $_shared_i1 -to $_shared_i2
-#set_false_path -from $_shared_i2 -to $_shared_i1
-
-
-set_false_path -from [get_cells Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg1_reg[*]] -to [get_cells Bob_top_i/fastdac/jesd_transport_0/inst/shift1_r_reg[*]]
-
-set_false_path -from [get_cells Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg2_reg[*]] -to [get_clocks refclk]
-
-set_false_path -from [get_cells Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg*_reg[*]] -to [get_clocks refclk]
-
-set_false_path -from [get_cells Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg3_reg[0]] -to [get_cells Bob_top_i/fastdac/jesd_transport_0/inst/shift_shift1_r_reg[0]]
-
-
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg6_reg[*]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_amp_dac2_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg7_reg[*]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_dpram_max_addr_rng_dac1_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg8_reg[*]/C}] -to [get_pins {Bob_top_i/fastdac/jesd_transport_0/inst/division_sp_r_reg[*]/D}]
 ###SET CONSTRAINTS TTL
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg0_reg[0]] -to [get_clocks clk_out2_Bob_top_clk_wiz_0_0]
+## 1-bit CDC
+set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg2_reg[0]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_params_240_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg2_reg[0]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_params_80_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_trigger_enstep_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg4_reg[0]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_trigger_enstep_slv1_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_trigger_enstep_slv2_r_reg[0]/D}]
 
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg4_reg[0]] -to [get_clocks clk_out2_Bob_top_clk_wiz_0_0]
-
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg5_reg[0]] -to [get_clocks clk_out2_Bob_top_clk_wiz_0_0]
-
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[*]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_240_r_reg[0]]
-
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[*]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_240_reg[*]]
-
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[*]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_80_reg[*]]
-
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg2_reg[0]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_240_r_reg[0]]
-
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg2_reg[0]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_80_r_reg[0]]
-
-set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[*]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_80_r_reg[0]]
-
-#set_false_path -from [get_cells Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[*]] -to [get_cells Bob_top_i/ttl_gate_apd_0/inst/ttl_params_slv_reg[*]]
+## multi-bit CDC
+set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_params_240_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_params_80_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[*]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_params_slv_reg[*]/D}]
