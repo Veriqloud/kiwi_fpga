@@ -370,6 +370,7 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   create_bd_pin -dir I lrst_i
   create_bd_pin -dir I -type clk m_axi_tclk
   create_bd_pin -dir I m_axi_trstn
+  create_bd_pin -dir O -from 3 -to 0 q_gc_time_valid_mod16
   create_bd_pin -dir I rd_en_4
   create_bd_pin -dir I -type clk s_axil_aclk
   create_bd_pin -dir I -type rst s_axil_aresetn
@@ -451,6 +452,7 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   connect_bd_net -net AS6501_IF_0_gc [get_bd_pins gc] [get_bd_pins AS6501_IF_0/gc]
   connect_bd_net -net AS6501_IF_0_gc_time_valid [get_bd_pins gc_time_valid] [get_bd_pins AS6501_IF_0/gc_time_valid]
   connect_bd_net -net AS6501_IF_0_index_shift_gc [get_bd_pins index_shift_gc] [get_bd_pins AS6501_IF_0/index_shift_gc]
+  connect_bd_net -net AS6501_IF_0_q_gc_time_valid_mod16 [get_bd_pins q_gc_time_valid_mod16] [get_bd_pins AS6501_IF_0/q_gc_time_valid_mod16]
   connect_bd_net -net AS6501_IF_0_start_gc_o [get_bd_pins start_gc_o] [get_bd_pins AS6501_IF_0/start_gc_o]
   connect_bd_net -net AS6501_IF_0_tdata200 [get_bd_pins tdata200] [get_bd_pins AS6501_IF_0/tdata200]
   connect_bd_net -net AS6501_IF_0_tdata200_mod [get_bd_pins tdata200_mod] [get_bd_pins AS6501_IF_0/tdata200_mod]
@@ -461,7 +463,6 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   connect_bd_net -net ILVDS_TDC_0_O_lclk [get_bd_pins lclk_i] [get_bd_pins AS6501_IF_0/lclk_i]
   connect_bd_net -net ILVDS_TDC_0_O_sdiA [get_bd_pins sdi_i] [get_bd_pins AS6501_IF_0/sdi_i]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_command_enable_o [get_bd_pins AS6501_IF_0/command_enable] [get_bd_pins TDC_REG_MNGT_v1_0_0/command_enable_o]
-  connect_bd_net -net TDC_REG_MNGT_v1_0_0_command_get_gc_o [get_bd_pins TDC_REG_MNGT_v1_0_0/command_get_gc_o]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_command_o [get_bd_pins AS6501_IF_0/command_i] [get_bd_pins TDC_REG_MNGT_v1_0_0/command_o]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_gate0_o [get_bd_pins AS6501_IF_0/gate0_i] [get_bd_pins TDC_REG_MNGT_v1_0_0/gate0_o]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_gate1_o [get_bd_pins AS6501_IF_0/gate1_i] [get_bd_pins TDC_REG_MNGT_v1_0_0/gate1_o]
@@ -470,7 +471,7 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_reg_enable_o [get_bd_pins AS6501_IF_0/reg_enable_tdc_i] [get_bd_pins TDC_REG_MNGT_v1_0_0/reg_enable_o]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_shift_gc_back_o [get_bd_pins AS6501_IF_0/shift_gc_back_i] [get_bd_pins TDC_REG_MNGT_v1_0_0/shift_gc_back_o]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_shift_tdc_time_o [get_bd_pins AS6501_IF_0/shift_tdc_time_i] [get_bd_pins TDC_REG_MNGT_v1_0_0/shift_tdc_time_o]
-  connect_bd_net -net TDC_REG_MNGT_v1_0_0_start_gc_sim [get_bd_pins AS6501_IF_0/start_gc_i] [get_bd_pins TDC_REG_MNGT_v1_0_0/start_gc_sim]
+  connect_bd_net -net TDC_REG_MNGT_v1_0_0_start_gc_sim [get_bd_pins AS6501_IF_0/start_gc_i] [get_bd_pins TDC_REG_MNGT_v1_0_0/start_gc_o]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_stopa_sim_enable_o [get_bd_pins stopa_sim_enable_o] [get_bd_pins TDC_REG_MNGT_v1_0_0/stopa_sim_enable_o]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_stopa_sim_limit [get_bd_pins stopa_sim_limit] [get_bd_pins TDC_REG_MNGT_v1_0_0/stopa_sim_limit]
   connect_bd_net -net TDC_REG_MNGT_v1_0_0_tdc_enable [get_bd_pins AS6501_IF_0/enable] [get_bd_pins TDC_REG_MNGT_v1_0_0/tdc_enable]
@@ -693,6 +694,7 @@ proc create_hier_cell_tdc { parentCell nameHier } {
   create_bd_pin -dir O -from 31 -to 0 gate_pos2
   create_bd_pin -dir O -from 31 -to 0 gate_pos3
   create_bd_pin -dir I -type rst gc_rst
+  create_bd_pin -dir O -from 47 -to 0 gc_time_valid
   create_bd_pin -dir IO -from 1 -to 0 ioss_io_0
   create_bd_pin -dir I linterrupt_i_0
   create_bd_pin -dir I lrst_i
@@ -701,6 +703,7 @@ proc create_hier_cell_tdc { parentCell nameHier } {
   create_bd_pin -dir O pps_trigger
   create_bd_pin -dir O probe_tdc_refclk
   create_bd_pin -dir O probe_tdc_rstidx
+  create_bd_pin -dir O -from 3 -to 0 q_gc_time_valid_mod16
   create_bd_pin -dir I rd_en_4
   create_bd_pin -dir I -from 3 -to 0 rng_value
   create_bd_pin -dir O rst_jic_0
@@ -803,8 +806,9 @@ proc create_hier_cell_tdc { parentCell nameHier } {
   connect_bd_net -net tdc_mngt_gate_pos2 [get_bd_pins gate_pos2] [get_bd_pins tdc_mngt/gate_pos2]
   connect_bd_net -net tdc_mngt_gate_pos3 [get_bd_pins gate_pos3] [get_bd_pins tdc_mngt/gate_pos3]
   connect_bd_net -net tdc_mngt_gc [get_bd_pins system_ila_tdc/probe6] [get_bd_pins tdc_mngt/gc]
-  connect_bd_net -net tdc_mngt_gc_time_valid [get_bd_pins system_ila_tdc/probe7] [get_bd_pins tdc_mngt/gc_time_valid]
+  connect_bd_net -net tdc_mngt_gc_time_valid [get_bd_pins gc_time_valid] [get_bd_pins system_ila_tdc/probe7] [get_bd_pins tdc_mngt/gc_time_valid]
   connect_bd_net -net tdc_mngt_index_shift_gc [get_bd_pins system_ila_tdc/probe20] [get_bd_pins tdc_mngt/index_shift_gc]
+  connect_bd_net -net tdc_mngt_q_gc_time_valid_mod16 [get_bd_pins q_gc_time_valid_mod16] [get_bd_pins tdc_mngt/q_gc_time_valid_mod16]
   connect_bd_net -net tdc_mngt_start_gc_o [get_bd_pins system_ila_tdc/probe0] [get_bd_pins tdc_mngt/start_gc_o]
   connect_bd_net -net tdc_mngt_stopa_sim_enable_o [get_bd_pins clk_rst_buffer/stopa_sim_enable_i] [get_bd_pins tdc_mngt/stopa_sim_enable_o]
   connect_bd_net -net tdc_mngt_tdata200 [get_bd_pins tdata200] [get_bd_pins system_ila_tdc/probe3] [get_bd_pins tdc_mngt/tdata200]
@@ -961,7 +965,9 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   create_bd_pin -dir I -from 31 -to 0 gate_pos1
   create_bd_pin -dir I -from 31 -to 0 gate_pos2
   create_bd_pin -dir I -from 31 -to 0 gate_pos3
+  create_bd_pin -dir I -from 47 -to 0 gc_time_valid
   create_bd_pin -dir O gt_powergood
+  create_bd_pin -dir I -from 3 -to 0 q_gc_time_valid_mod16
   create_bd_pin -dir I -type clk qpll0_refclk_0
   create_bd_pin -dir O -from 0 -to 0 rd_en_4
   create_bd_pin -dir O -from 3 -to 0 rng_value
@@ -1059,6 +1065,7 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   connect_bd_net -net gate_pos1_1 [get_bd_pins gate_pos1] [get_bd_pins jesd_transport_0/gate_pos1]
   connect_bd_net -net gate_pos2_1 [get_bd_pins gate_pos2] [get_bd_pins jesd_transport_0/gate_pos2]
   connect_bd_net -net gate_pos3_1 [get_bd_pins gate_pos3] [get_bd_pins jesd_transport_0/gate_pos3]
+  connect_bd_net -net gc_time_valid_1 -boundary_type lower [get_bd_pins gc_time_valid]
   connect_bd_net -net jesd204_phy_0_gt_powergood [get_bd_pins gt_powergood] [get_bd_pins jesd204_phy_0/gt_powergood]
   connect_bd_net -net jesd204_phy_0_tx_reset_done [get_bd_pins jesd204_phy_0/tx_reset_done] [get_bd_pins jesd204b_tx_wrapper_0/btx_reset_done_i] [get_bd_pins jesd_transport_0/tx_reset_done_i]
   connect_bd_net -net jesd204_phy_0_txn_out [get_bd_pins ext_fastdac_txn_out] [get_bd_pins jesd204_phy_0/txn_out]
@@ -1084,6 +1091,7 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   connect_bd_net -net jesd_transport_0_seq_state_dac1 [get_bd_pins ila_fastdac/probe4] [get_bd_pins jesd_transport_0/seq_state_dac1]
   connect_bd_net -net jesd_transport_0_state_rng [get_bd_pins ila_fastdac/probe5] [get_bd_pins jesd_transport_0/state_rng]
   connect_bd_net -net jesd_transport_0_tx_tdata [get_bd_pins jesd204b_tx_wrapper_0/vtx_tdata_i] [get_bd_pins jesd_transport_0/tx_tdata]
+  connect_bd_net -net q_gc_time_valid_mod16_1 [get_bd_pins q_gc_time_valid_mod16] [get_bd_pins jesd_transport_0/q_gc_time_valid_mod16]
   connect_bd_net -net qpll0_refclk_0_1 [get_bd_pins qpll0_refclk_0] [get_bd_pins jesd204_phy_0/qpll0_refclk]
   connect_bd_net -net s_axi_aclk_1 [get_bd_pins s_axi_aclk] [get_bd_pins jesd204b_tx_wrapper_0/s_axil_aclk] [get_bd_pins jesd_transport_0/s_axil_aclk]
   connect_bd_net -net s_axi_aresetn_1 [get_bd_pins s_axi_aresetn] [get_bd_pins jesd204b_tx_wrapper_0/s_axil_aresetn] [get_bd_pins jesd_transport_0/s_axil_aresetn]
@@ -1921,6 +1929,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net ext_pps_1 [get_bd_ports ext_pps] [get_bd_pins clk_rst/ext_pps] [get_bd_pins ddr4/ext_pps] [get_bd_pins fastdac/ext_pps] [get_bd_pins tdc/ext_pps] [get_bd_pins ttl_gate_apd_0/pps_i]
   connect_bd_net -net fastdac_gt_powergood [get_bd_pins clk_rst/fastdac_gt_powergood_i] [get_bd_pins fastdac/gt_powergood]
   connect_bd_net -net gc_rst_1 [get_bd_pins clk_rst/gc_rst_o] [get_bd_pins tdc/gc_rst]
+  connect_bd_net -net gc_time_valid_1 [get_bd_pins fastdac/gc_time_valid] [get_bd_pins tdc/gc_time_valid]
   connect_bd_net -net jesd204_phy_0_txn_out [get_bd_ports ext_fastdac_txn_out] [get_bd_pins fastdac/ext_fastdac_txn_out]
   connect_bd_net -net jesd204_phy_0_txp_out [get_bd_ports ext_fastdac_txp_out] [get_bd_pins fastdac/ext_fastdac_txp_out]
   connect_bd_net -net linterrupt_i_0_1 [get_bd_ports linterrupt_i] [get_bd_pins tdc/linterrupt_i_0]
@@ -1929,6 +1938,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net pcierefclk_0_ODIV2 [get_bd_pins pcierefclk_0/ODIV2] [get_bd_pins xdma_0/sys_clk]
   connect_bd_net -net probe18_1 [get_bd_pins fastdac/dout4_test] [get_bd_pins tdc/dout4_test]
   connect_bd_net -net probe7_1 [get_bd_pins ddr4/rd_en_4] [get_bd_pins fastdac/rd_en_4] [get_bd_pins tdc/rd_en_4]
+  connect_bd_net -net q_gc_time_valid_mod16_1 [get_bd_pins fastdac/q_gc_time_valid_mod16] [get_bd_pins tdc/q_gc_time_valid_mod16]
   connect_bd_net -net rng_data_1 [get_bd_pins ddr4/rng_data] [get_bd_pins fastdac/rng_value] [get_bd_pins tdc/rng_value]
   connect_bd_net -net sync_ltc_0_sync_ltc [get_bd_ports ext_sync_ltc] [get_bd_pins clk_rst/ext_sync_ltc]
   connect_bd_net -net sys_clk_n_1 [get_bd_ports sys_clk_n] [get_bd_pins pcierefclk_0/IB]
