@@ -48,6 +48,7 @@ module sample_dac1_tb();
     reg               fastdac_dac0_mode_i;
     reg fb_mode_i;
     reg [14:0] up_offset_i;
+    reg insert_zero;
     reg tvalid200;
     reg [15:0] tdata200_mod;
     reg [31:0] gate_pos0;
@@ -84,6 +85,7 @@ sample_dac1 sample_dac1_inst(
     .fb_mode_i(fb_mode_i),
     .fastdac_dac0_mode_i(fastdac_dac0_mode_i),
     .up_offset_i(up_offset_i),
+    .insert_zero(insert_zero),
     .tvalid200(tvalid200),
     .tdata200_mod(tdata200_mod),
     .gate_pos0(gate_pos0),
@@ -133,6 +135,7 @@ initial begin
     fastdac_dac1_mode_i = 1;
     fastdac_dac0_mode_i = 1;
     fb_mode_i = 1;
+    insert_zero = 1;
     up_offset_i = 15'h4000;
     #500 dac1_shift_en_o = 1;
 end

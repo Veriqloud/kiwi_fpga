@@ -72,6 +72,8 @@ module AS6501_IF (
     output [3:0] time_ref_gc,
     output [5:0] index_shift_gc,
 
+	//Ouput ports to jesd_transport module
+	output [3:0] q_gc_time_valid_mod16,
     //Output ports to ddr_data module
     output wire [15:0] tdata200_mod,
     output wire [31:0] gate_pos0,
@@ -164,6 +166,8 @@ module AS6501_IF (
 
 	assign debug_m_axis_data = m_axis_tdata;
 	assign debug_m_axis_valid = m_axis_tvalid;
+
+	assign q_gc_time_valid_mod16 = {m_axis_tdata[34:32],m_axis_tdata[80]};
     
 
 // State machine
@@ -554,10 +558,6 @@ always @(posedge clk200_i, posedge gc_rst) begin
 					gc_time_valid <= gc_div64 + index_shift_gc + time_ref_gc;
 				end else gc_time_valid <= gc_time_valid;
 				if (tvalid200_r[3] == 0 && tvalid200_r[2] == 1) begin
-					// gc_time_valid <= gc_div64 + index_shift_gc + time_ref_gc;
-					// if (gc_time_valid > gc) begin
-					// 	gc_time_valid <= gc_time_valid - 64;
-					// end else gc_time_valid <= gc_time_valid;
 					if (command_r == 3'b001) begin	//no gate
 						fifo_calib_rst <= 0;
 						click_result <= 2'b11;

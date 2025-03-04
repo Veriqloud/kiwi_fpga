@@ -83,6 +83,7 @@ module jesd_transport
         input [31:0] gate_pos1,
         input [31:0] gate_pos2,
         input [31:0] gate_pos3,
+        input [3:0] q_gc_time_valid_mod16,
 
         // Ports of AXI-s master(alpha argument)
         input                                         tx_core_clk,
@@ -123,6 +124,7 @@ module jesd_transport
     wire               fastdac_fb_mode_i;
     wire [15:0]        fastdac_up_offset_i;
     wire [31:0]        division_sp_i;
+    wire [3:0]        fastdac_zero_pos_i;
     // wire [7:0]         fastdac_dpram_max_addr_pos_dac0_int;
     // wire [7:0]         fastdac_dpram_max_addr_pos_dac1_int;
     // wire [14:0]        fastdac_reg_alpha0_dac0_0_int;
@@ -158,6 +160,7 @@ module jesd_transport
         .fastdac_dac0_mode_o(fastdac_dac0_mode_i),
         .fastdac_up_offset_o(fastdac_up_offset_i),
         .division_sp_o(division_sp_i),
+        .fastdac_zero_pos_o(fastdac_zero_pos_i),
         // .fastdac_dpram_max_addr_pos_dac0_o(fastdac_dpram_max_addr_pos_dac0_int),
         // .fastdac_dpram_max_addr_pos_dac1_o(fastdac_dpram_max_addr_pos_dac1_int),
         // .fastdac_reg_alpha0_dac0_0_o(fastdac_reg_alpha0_dac0_0_int),
@@ -223,6 +226,7 @@ module jesd_transport
     reg insert_zero_mode_r;
     reg [15:0] up_offset_r;
     reg [31:0] division_sp_r;
+    reg [3:0] zero_pos_r;
     initial begin
         fastdac_dpram_max_addr_seq_dac0_r <= 0;
         fastdac_dpram_max_addr_seq_dac1_r <= 0;
@@ -238,6 +242,7 @@ module jesd_transport
         insert_zero_mode_r <= 0;
         up_offset_r <= 0;
         division_sp_r <= 200000000;
+        zero_pos_r <= 0;
     end
     always @(posedge tx_core_clk) begin
             reg_en_r <= {reg_en_r[1:0],reg_en_o};
@@ -255,6 +260,7 @@ module jesd_transport
                 insert_zero_mode_r <= fastdac_zero_mode_i;
                 up_offset_r <= fastdac_up_offset_i;
                 division_sp_r <= division_sp_i;
+                zero_pos_r <= fastdac_zero_pos_i;
             end
     end
 
@@ -486,6 +492,7 @@ module jesd_transport
 reg [15:0] offset_val;
 reg [3:0] counter_valid;
 wire [15:0] down_offset_r;
+reg [4:0] tvalid200_r;
 
 
 assign down_offset_r = 17'h10000 - up_offset_r;
@@ -494,36 +501,33 @@ always @(posedge tx_core_clk) begin
         offset_val <= 0;
         counter_valid <= 0;
     end else begin
-        if (tvalid200) begin
-            counter_valid <= counter_valid + 1;
-            if (counter_valid == 1) begin
-                if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (offset_val >= down_offset_r)) begin
-                    offset_val <= offset_val - 15'h20;
-                    if (offset_val == down_offset_r) begin
-                        offset_val <= up_offset_r;
-                    end
-                end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (offset_val <= up_offset_r)) begin
-                    offset_val <= offset_val - 15'h20;
-                    if (offset_val == 16'h0020) begin
-                        offset_val <= 0;
-                    end
-                end else if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (offset_val <= up_offset_r)) begin
-                    offset_val <= offset_val + 15'h20;
-                    if (offset_val == up_offset_r) begin
-                        offset_val <= down_offset_r;
-                    end
-                end else if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (offset_val >= down_offset_r)) begin
-                    offset_val <= offset_val + 15'h20;
-                    if (offset_val == 16'hffe0) begin
-                        offset_val <= 0;
-                    end
-                end      
-            end else begin
-                offset_val <= offset_val;
-            end
+        tvalid200_r <= {tvalid200_r[3:0],tvalid200};
+        if (tvalid200_r[4] == 0 && tvalid200_r[3] == 1) begin
+            // counter_valid <= counter_valid + 1;
+            // if (counter_valid == 1) begin
+            if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (offset_val >= down_offset_r) && (q_gc_time_valid_mod16 == 4'h0)) begin
+                offset_val <= offset_val - 15'h20;
+                if (offset_val == down_offset_r) begin
+                    offset_val <= up_offset_r;
+                end
+            end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (offset_val <= up_offset_r) && (q_gc_time_valid_mod16 == 4'h0)) begin
+                offset_val <= offset_val - 15'h20;
+                if (offset_val == 16'h0020) begin
+                    offset_val <= 0;
+                end
+            end else if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (offset_val <= up_offset_r) && (q_gc_time_valid_mod16 == 4'h0)) begin
+                offset_val <= offset_val + 15'h20;
+                if (offset_val == up_offset_r) begin
+                    offset_val <= down_offset_r;
+                end
+            end else if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (offset_val >= down_offset_r) && (q_gc_time_valid_mod16 == 4'h0)) begin
+                offset_val <= offset_val + 15'h20;
+                if (offset_val == 16'hffe0) begin
+                    offset_val <= 0;
+                end
+            end      
         end else begin
             offset_val <= offset_val;
-            counter_valid <= 0;
         end
     end
 end
@@ -597,12 +601,24 @@ assign offset = fb_mode_r? offset_val:0;
                 
             end else if (rd_en_4_shift[0] == 1 && insert_zero_mode_r == 1) begin
                 counter_3b <= counter_3b + 1;
-                if (counter_3b >= 6 && counter_3b<7) begin
+                if (counter_3b == zero_pos_r[3:1] && zero_pos_r[0] == 1) begin
                     case(rng_value[3:2])
                         2'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
                         2'h1: begin amp1 <= amp1_r; minus_amp1 <= minus_amp1_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
                         2'h2: begin amp1 <= amp2_r; minus_amp1 <= minus_amp2_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
                         2'h3: begin amp1 <= amp3_r; minus_amp1 <= minus_amp3_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
+                    endcase
+                    amp1_old <= amp1;
+                    minus_amp1_old <= minus_amp1;
+                    amp2_old <= amp2;
+                    minus_amp2_old <= minus_amp2;                                            
+                // end else if (counter_3b >= 6 && counter_3b<7 && pos == 0) begin
+                end else if (counter_3b == zero_pos_r[3:1] && zero_pos_r[0] == 0) begin
+                    case(rng_value[1:0])
+                        2'h0: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp0_r; minus_amp2 <= minus_amp0_r; end
+                        2'h1: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp1_r; minus_amp2 <= minus_amp1_r; end
+                        2'h2: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp2_r; minus_amp2 <= minus_amp2_r; end
+                        2'h3: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp3_r; minus_amp2 <= minus_amp3_r; end
                     endcase
                     amp1_old <= amp1;
                     minus_amp1_old <= minus_amp1;
