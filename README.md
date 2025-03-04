@@ -63,3 +63,7 @@ Removes everything regarding HDL wrapper and block design file (.bd). Save the p
 ### Create block_design.tcl
 File -> Export -> Export Block Design
 
+## Release
+- You can get full project without building from Tcl script in Released Source ABC_Prj.zip. This is local Vivado project.
+- unzip and start building your bitstream !
+
