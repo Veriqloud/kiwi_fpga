@@ -67,7 +67,7 @@ module ddr_data_tb();
     wire        fifo_gc_rst;
 
     //AXI-Stream slave ports for receiving dq_gc, click result from xdma
-    reg          s_gc_aclk;
+    reg          s_axis_gc_clk;
     reg          s_gc_aresetn;
     reg [63:0]   s_axis_tdata_gc;
     wire         s_axis_tready_gc;
@@ -94,7 +94,7 @@ module ddr_data_tb();
     wire start_save_alpha;
     wire read_done;
     wire [31:0] dq_gc_start_r_debug;
-    wire [47:0] delta_time_count;
+    // wire [47:0] delta_time_count;
 
 ddr_data ddr_data_int(
     .clk200_i(clk200_i),
@@ -130,7 +130,7 @@ ddr_data ddr_data_int(
     .m_axis_tready_gc(m_axis_tready_gc),
     .m_axis_tvalid_gc(m_axis_tvalid_gc),
     .fifo_gc_rst(fifo_gc_rst),
-    .s_gc_aclk(s_gc_aclk),
+    .s_axis_gc_clk(s_axis_gc_clk),
     .s_gc_aresetn(s_gc_aresetn),
     .s_axis_tdata_gc(s_axis_tdata_gc),
     .s_axis_tready_gc(s_axis_tready_gc),
@@ -144,14 +144,14 @@ ddr_data ddr_data_int(
     .state_alpha(state_alpha),
     .tdata_gc(tdata_gc),
     .s_axis_tvalid_gc_debug(s_axis_tvalid_gc_debug),
-    .read_done(read_done),
-    .delta_time_count(delta_time_count)
+    .read_done(read_done)
+    // .delta_time_count(delta_time_count)
     // .current_dq_gc_debug(current_dq_gc_debug) 
     ); 
 
 initial begin
     clk200_i = 1;
-    s_gc_aclk = 1;
+    s_axis_gc_clk = 1;
     // ddr_data_rstn = 0;
     s_gc_aresetn = 0;
     pps_i = 0;
@@ -174,7 +174,7 @@ end
 
 //Define the clocks and pps
 always #2.5 clk200_i = ~clk200_i;
-always #2 s_gc_aclk = ~s_gc_aclk;
+always #2 s_axis_gc_clk = ~s_axis_gc_clk;
 initial begin
     #90000 pps_i = 1;
     forever begin
@@ -262,10 +262,10 @@ initial begin
     tdata200_mod = 0;
     #95260 tvalid200 = 1;
     forever begin
+        tdata200 = $random;
+        tdata200_mod = tdata200%625;
         #25 begin 
             tvalid200 = 0;
-            tdata200 = $random;
-            tdata200_mod = tdata200%625;
         end
         #19975 tvalid200 = 1;
     end 

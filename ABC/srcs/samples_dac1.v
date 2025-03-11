@@ -373,6 +373,8 @@ module sample_dac1
     reg [15:0] minus_amp2_r;
     reg [15:0] amp3_r;
     reg [15:0] minus_amp3_r;
+    reg [15:0] amp_zero_r;
+    reg [15:0] minus_amp_zero_r;
 
     wire [63:0] sam0,sam1,sam2,sam3,sam4;
     wire [63:0] sam0_0,sam1_0,sam2_0,sam3_0,sam4_0;
@@ -442,10 +444,13 @@ assign offset = fb_mode_r ? offset_val:0;
     wire [15:0] ext_amp1;
     wire [15:0] ext_amp2;
     wire [15:0] ext_amp3;
+    wire [15:0] zero_amp;
+
     assign ext_amp0 = fastdac_amp_dac1_r[15:0] + offset;
     assign ext_amp1 = fastdac_amp_dac1_r[31:16] + offset;
     assign ext_amp2 = fastdac_amp_dac2_r[15:0] + offset;
     assign ext_amp3 = fastdac_amp_dac2_r[31:16] + offset;
+    assign zero_amp = offset;
 
     always @(ext_amp0,ext_amp1,ext_amp2,ext_amp3) begin
     // always @(*) begin
@@ -457,6 +462,8 @@ assign offset = fb_mode_r ? offset_val:0;
         minus_amp2_r = 16'h8000 - ext_amp2; //16'h4000
         amp3_r       = 16'h8000 + ext_amp3; //16'hffff
         minus_amp3_r = 16'h8000 - ext_amp3; //16'h0000         
+        amp_zero_r   = 16'h8000 + zero_amp;
+        minus_amp_zero_r = 16'h8000 - zero_amp; 
     end
 
 
@@ -511,11 +518,16 @@ assign offset = fb_mode_r ? offset_val:0;
                 // if (counter_3b >= 6 && counter_3b<7 && pos == 1) begin
                 if (counter_3b == zero_pos_r[3:1] && zero_pos_r[0] == 1) begin
                     case(rng_value[3:2])
-                        2'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
-                        2'h1: begin amp1 <= amp1_r; minus_amp1 <= minus_amp1_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
-                        2'h2: begin amp1 <= amp2_r; minus_amp1 <= minus_amp2_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
-                        2'h3: begin amp1 <= amp3_r; minus_amp1 <= minus_amp3_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
-                    endcase
+                        // 2'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
+                        // 2'h1: begin amp1 <= amp1_r; minus_amp1 <= minus_amp1_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
+                        // 2'h2: begin amp1 <= amp2_r; minus_amp1 <= minus_amp2_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
+                        // 2'h3: begin amp1 <= amp3_r; minus_amp1 <= minus_amp3_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
+                        2'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= amp_zero_r; minus_amp2 <= minus_amp_zero_r; end
+                        2'h1: begin amp1 <= amp1_r; minus_amp1 <= minus_amp1_r; amp2 <= amp_zero_r; minus_amp2 <= minus_amp_zero_r; end
+                        2'h2: begin amp1 <= amp2_r; minus_amp1 <= minus_amp2_r; amp2 <= amp_zero_r; minus_amp2 <= minus_amp_zero_r; end
+                        2'h3: begin amp1 <= amp3_r; minus_amp1 <= minus_amp3_r; amp2 <= amp_zero_r; minus_amp2 <= minus_amp_zero_r; end
+
+                endcase
                     amp1_old <= amp1;
                     minus_amp1_old <= minus_amp1;
                     amp2_old <= amp2;
@@ -523,11 +535,16 @@ assign offset = fb_mode_r ? offset_val:0;
                 // end else if (counter_3b >= 6 && counter_3b<7 && pos == 0) begin
                 end else if (counter_3b == zero_pos_r[3:1] && zero_pos_r[0] == 0) begin
                     case(rng_value[1:0])
-                        2'h0: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp0_r; minus_amp2 <= minus_amp0_r; end
-                        2'h1: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp1_r; minus_amp2 <= minus_amp1_r; end
-                        2'h2: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp2_r; minus_amp2 <= minus_amp2_r; end
-                        2'h3: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp3_r; minus_amp2 <= minus_amp3_r; end
-                    endcase
+                        // 2'h0: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp0_r; minus_amp2 <= minus_amp0_r; end
+                        // 2'h1: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp1_r; minus_amp2 <= minus_amp1_r; end
+                        // 2'h2: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp2_r; minus_amp2 <= minus_amp2_r; end
+                        // 2'h3: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp3_r; minus_amp2 <= minus_amp3_r; end
+                        2'h0: begin amp1 <= amp_zero_r; minus_amp1 <= minus_amp_zero_r; amp2 <= amp0_r; minus_amp2 <= minus_amp0_r; end
+                        2'h1: begin amp1 <= amp_zero_r; minus_amp1 <= minus_amp_zero_r; amp2 <= amp1_r; minus_amp2 <= minus_amp1_r; end
+                        2'h2: begin amp1 <= amp_zero_r; minus_amp1 <= minus_amp_zero_r; amp2 <= amp2_r; minus_amp2 <= minus_amp2_r; end
+                        2'h3: begin amp1 <= amp_zero_r; minus_amp1 <= minus_amp_zero_r; amp2 <= amp3_r; minus_amp2 <= minus_amp3_r; end
+
+                endcase
                     amp1_old <= amp1;
                     minus_amp1_old <= minus_amp1;
                     amp2_old <= amp2;
