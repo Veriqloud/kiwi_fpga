@@ -437,13 +437,13 @@ always @(posedge clk200_i) begin
                     dq_gc_time <= dq_gc_div64 + index_shift_gc + time_ref_gc;
                 end else dq_gc_time <= dq_gc_time;
                 if (tvalid200_r[3] == 0 && tvalid200_r[2] == 1) begin
-                    if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625)) begin
+                    if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625) && (dq_gc_time[2:0] != 3'b000)) begin
                         m_axis_tdata_gc <= {2'b00,dq_gc_time}; //2'b00: click_result|q_pos
                         m_axis_tvalid_gc <= 1'b1;
                     end else if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (tdata200_mod_dq >=625 && tdata200_mod_dq <1250)) begin
                         m_axis_tdata_gc <= {2'b01,dq_gc_time};
                         m_axis_tvalid_gc <= 1'b1;
-                    end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625)) begin
+                    end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625) && (dq_gc_time[2:0] != 3'b000)) begin
                         m_axis_tdata_gc <= {2'b10,dq_gc_time};
                         m_axis_tvalid_gc <= 1'b1;
                     end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (tdata200_mod_dq >=625 && tdata200_mod_dq <1250)) begin
