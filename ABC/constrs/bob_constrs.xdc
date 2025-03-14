@@ -293,3 +293,10 @@ set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_m
 set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_params_240_reg[*]/D}]
 set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_params_80_reg[*]/D}]
 set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[*]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_params_slv_reg[*]/D}]
+
+## CONSTRAINING FOR FPGA FLASH CONFIGURATION
+set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN disable [current_design]
+set_property CONFIG_MODE SPIx4 [current_design]
+set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
+set_property BITSTREAM.CONFIG.SPI_FALL_EDGE YES [current_design]
+set_property BITSTREAM.CONFIG.CONFIGRATE 85.0 [current_design]
