@@ -56,6 +56,7 @@ module sample_dac1
         input                                         tx_core_reset,
         output reg [127 : 0]                          tx_tdata,
         input wire                                    tx_tready,
+        input pps_i,
 
         input wire               dac1_shift_en_o,
         input wire               fastdac_sequence_wen_int,
@@ -475,6 +476,19 @@ assign offset = fb_mode_r ? offset_val:0;
     wire [3:0] zero_pos_r;
     assign zero_pos_r = 4'd14;
     reg [2:0] rd_en_4_shift;
+
+    // always @(posedge tx_core_clk) begin
+    //     if (tx_core_reset) begin
+    //         counter_3b <= 3'd7;
+    //         rd_en_4_shift <= 0;
+    //     end else begin
+    //         rd_en_4_shift <= {rd_en_4_shift[1:0],rd_en_4};
+    //         if (rd_en_4_shift[0] == 1) begin
+    //             counter_3b <= counter_3b + 1;
+    //         end                    
+    //     end
+    // end
+
     always @(posedge tx_core_clk) begin
         if (tx_core_reset) begin
             amp1 <= 0;
@@ -489,6 +503,9 @@ assign offset = fb_mode_r ? offset_val:0;
             counter_3b <= 3'd7;
         end else begin
             rd_en_4_shift <= {rd_en_4_shift[1:0],rd_en_4};
+            if (rd_en_4_shift[0] == 1) begin
+                counter_3b <= counter_3b + 1;
+            end
             if (rd_en_4_shift[0] == 1 && insert_zero == 0) begin
                 case (rng_value)
                     4'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= amp0_r; minus_amp2 <= minus_amp0_r; end            
@@ -514,14 +531,9 @@ assign offset = fb_mode_r ? offset_val:0;
                 minus_amp2_old <= minus_amp2;                     
                 
             end else if (rd_en_4_shift[0] == 1 && insert_zero == 1) begin
-                counter_3b <= counter_3b + 1;
-                // if (counter_3b >= 6 && counter_3b<7 && pos == 1) begin
+                // counter_3b <= counter_3b + 1;
                 if (counter_3b == zero_pos_r[3:1] && zero_pos_r[0] == 1) begin
                     case(rng_value[3:2])
-                        // 2'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
-                        // 2'h1: begin amp1 <= amp1_r; minus_amp1 <= minus_amp1_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
-                        // 2'h2: begin amp1 <= amp2_r; minus_amp1 <= minus_amp2_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
-                        // 2'h3: begin amp1 <= amp3_r; minus_amp1 <= minus_amp3_r; amp2 <= 16'h8000; minus_amp2 <= 16'h8000; end
                         2'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= amp_zero_r; minus_amp2 <= minus_amp_zero_r; end
                         2'h1: begin amp1 <= amp1_r; minus_amp1 <= minus_amp1_r; amp2 <= amp_zero_r; minus_amp2 <= minus_amp_zero_r; end
                         2'h2: begin amp1 <= amp2_r; minus_amp1 <= minus_amp2_r; amp2 <= amp_zero_r; minus_amp2 <= minus_amp_zero_r; end
@@ -532,13 +544,8 @@ assign offset = fb_mode_r ? offset_val:0;
                     minus_amp1_old <= minus_amp1;
                     amp2_old <= amp2;
                     minus_amp2_old <= minus_amp2;                                            
-                // end else if (counter_3b >= 6 && counter_3b<7 && pos == 0) begin
                 end else if (counter_3b == zero_pos_r[3:1] && zero_pos_r[0] == 0) begin
                     case(rng_value[1:0])
-                        // 2'h0: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp0_r; minus_amp2 <= minus_amp0_r; end
-                        // 2'h1: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp1_r; minus_amp2 <= minus_amp1_r; end
-                        // 2'h2: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp2_r; minus_amp2 <= minus_amp2_r; end
-                        // 2'h3: begin amp1 <= 16'h8000; minus_amp1 <= 16'h8000; amp2 <= amp3_r; minus_amp2 <= minus_amp3_r; end
                         2'h0: begin amp1 <= amp_zero_r; minus_amp1 <= minus_amp_zero_r; amp2 <= amp0_r; minus_amp2 <= minus_amp0_r; end
                         2'h1: begin amp1 <= amp_zero_r; minus_amp1 <= minus_amp_zero_r; amp2 <= amp1_r; minus_amp2 <= minus_amp1_r; end
                         2'h2: begin amp1 <= amp_zero_r; minus_amp1 <= minus_amp_zero_r; amp2 <= amp2_r; minus_amp2 <= minus_amp2_r; end

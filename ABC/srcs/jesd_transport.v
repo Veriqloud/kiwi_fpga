@@ -565,9 +565,22 @@ assign offset = fb_mode_r? offset_val:0;
 
 
     reg [2:0] counter_3b;
-    // wire insert_zero;
-    // assign insert_zero = 1;
+    reg pps_r;
     reg [2:0] rd_en_4_shift;
+
+    //Counte counter_3b, aligned to tx_tready
+    // always @(posedge tx_core_clk) begin
+    //     if (tx_core_reset) begin
+    //         counter_3b <= 3'd7;
+    //         rd_en_4_shift <= 0;
+    //     end else begin
+    //         rd_en_4_shift <= {rd_en_4_shift[1:0],rd_en_4};
+    //         if (rd_en_4_shift[0] == 1) begin
+    //             counter_3b <= counter_3b + 1;
+    //         end                    
+    //     end
+    // end
+
     always @(posedge tx_core_clk) begin
         if (tx_core_reset) begin
             amp1 <= 0;
@@ -582,6 +595,9 @@ assign offset = fb_mode_r? offset_val:0;
             counter_3b <= 3'd7;
         end else begin
             rd_en_4_shift <= {rd_en_4_shift[1:0],rd_en_4};
+            if (rd_en_4_shift[0] == 1) begin
+                counter_3b <= counter_3b + 1;
+            end
             if (rd_en_4_shift[0] == 1 && insert_zero_mode_r == 0) begin
                 case (rng_value)
                     4'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= amp0_r; minus_amp2 <= minus_amp0_r; end            
@@ -607,7 +623,7 @@ assign offset = fb_mode_r? offset_val:0;
                 minus_amp2_old <= minus_amp2;                     
                 
             end else if (rd_en_4_shift[0] == 1 && insert_zero_mode_r == 1) begin
-                counter_3b <= counter_3b + 1;
+                // counter_3b <= counter_3b + 1;
                 if (counter_3b == zero_pos_r[3:1] && zero_pos_r[0] == 1) begin
                     case(rng_value[3:2])
                         2'h0: begin amp1 <= amp0_r; minus_amp1 <= minus_amp0_r; amp2 <= amp_zero_r; minus_amp2 <= minus_amp_zero_r; end

@@ -30,6 +30,7 @@ module sample_dac1_tb();
     reg                                    tx_core_reset;
     wire  [127 : 0]                        tx_tdata;
     reg                                    tx_tready;
+    reg                                    pps_i;
     reg               dac1_shift_en_o;
     reg               fastdac_sequence_wen_int;
     reg [9:0]         fastdac_sequence_addr_int;
@@ -67,6 +68,7 @@ sample_dac1 sample_dac1_inst(
     .tx_core_reset(tx_core_reset),
     .tx_tdata(tx_tdata),
     .tx_tready(tx_tready),
+    .pps_i(pps_i),
     .dac1_shift_en_o(dac1_shift_en_o),
     .fastdac_sequence_wen_int(fastdac_sequence_wen_int),
     .fastdac_sequence_addr_int(fastdac_sequence_addr_int),
@@ -142,7 +144,14 @@ end
 
 initial begin
     tx_tready = 0;
-    #2000 tx_tready = 1;
+    #20000 tx_tready = 1;
+end
+initial begin
+    pps_i = 0;
+    forever begin
+        #2000 pps_i = 1;
+        #100 pps_i = 0;
+    end
 end
 
 initial begin
