@@ -48,6 +48,7 @@ module ddr_data_axil_mngt #
         output wire [31:0] threshold_full_o,
         output wire [31:0] fiber_delay_o,
         output wire pair_delay_o,
+        output wire [15:0] ab_fiber_delay_o,
         input [31:0] current_dq_gc_lsb_i,
         input [16:0] current_dq_gc_msb_i,
         input        current_dq_gc_valid_i,
@@ -182,6 +183,7 @@ module ddr_data_axil_mngt #
     assign threshold_full_o = slv_reg9[31:0];
     assign fiber_delay_o = slv_reg10[31:0];
     assign pair_delay_o = slv_reg6[1];
+    assign ab_fiber_delay_o = slv_reg11[15:0];
 
 //  assign fpga_turnkey_fastdac_sel_o = slv_reg0[1];
 //  assign fpga_turnkey_fastdac_sync_o = slv_reg1[0];

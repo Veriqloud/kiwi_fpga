@@ -57,13 +57,13 @@ module clk_rst_mngt
       output      clk_ddr_axi_o,
       output      rstn_ddr_axi_o,
       output      rst_ddr_axi_o,
-      input       fastdac_refclkp_i,
-      input       fastdac_refclkn_i,
+      input       fastdac_refclki_p,
+      input       fastdac_refclki_n,
       input       fastdac_gt_powergood_i,
-      input       fastdac_sysrefp_i,
-      input       fastdac_sysrefn_i,
-      input       fastdac_syncoutp_i,
-      input       fastdac_syncoutn_i,
+      input       fastdac_sysref_p,
+      input       fastdac_sysref_n,
+      input       fastdac_syncout_p,
+      input       fastdac_syncout_n,
 
       input       pps_i,
       output      fastdac_refclk_o,
@@ -127,12 +127,12 @@ fpga_turnkey_reg_mngt # (
 
 wire fastdac_coreclk_int;
 // FAST DAC Ref clock buffer
-IBUFDS_GTE4 # (.REFCLK_HROW_CK_SEL(2'b00)) refclk_ibuf_fastdac (.O(fastdac_refclk_o), .ODIV2(fastdac_coreclk_int), .I(fastdac_refclkp_i), .CEB(1'b0), .IB(fastdac_refclkn_i));
+IBUFDS_GTE4 # (.REFCLK_HROW_CK_SEL(2'b00)) refclk_ibuf_fastdac (.O(fastdac_refclk_o), .ODIV2(fastdac_coreclk_int), .I(fastdac_refclki_p), .CEB(1'b0), .IB(fastdac_refclki_n));
 //BUFG_GT     #(.SIM_DEVICE("ULTRASCALE_PLUS")) BUFG_GT_inst (.O(fastdac_coreclk_o),.CE(fpga_turnkey_fastdac_pgood),.CEMASK(fpga_turnkey_fastdac_pgood),.CLR(!sys_reset_n),.CLRMASK(!sys_reset_n),.DIV(3'b0),.I(fastdac_coreclk_int));
 BUFG_GT     #(.SIM_DEVICE("ULTRASCALE_PLUS")) BUFG_GT_inst (.O(fastdac_coreclk_o),.CE(fastdac_gt_powergood_i),.CEMASK(fastdac_gt_powergood_i),.CLR(!sys_reset_n),.CLRMASK(!sys_reset_n),.DIV(3'b0),.I(fastdac_coreclk_int));
-IBUFDS sysref_ibuf    (.IB(fastdac_sysrefn_i),.O(fastdac_sysref_o),.I(fastdac_sysrefp_i));
+IBUFDS sysref_ibuf    (.IB(fastdac_sysref_n),.O(fastdac_sysref_o),.I(fastdac_sysref_p));
 //reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_fastdac_corerst_inst (.clk_i(fastdac_coreclk_o),.rstn_i(sys_reset_n),.rst_o(fastdac_corerst_o));
-IBUFDS syncout_ibuf    (.IB(fastdac_syncoutn_i),.O(fastdac_syncout_o),.I(fastdac_syncoutp_i));
+IBUFDS syncout_ibuf    (.IB(fastdac_syncout_n),.O(fastdac_syncout_o),.I(fastdac_syncout_p));
 
 
 reset_register #(.RST_ACTIVE_LEVEL("LOW")) reset_reg_axil_inst (.clk_i(s_axil_aclk),.rstn_i(sys_reset_n),.clk_o(clk_axil_o),.rstn_o(rstn_axil_o));

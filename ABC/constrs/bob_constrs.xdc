@@ -9,33 +9,33 @@ set_property PULLUP true [get_ports sys_rst_n]
 set_property IOSTANDARD LVCMOS12 [get_ports sys_rst_n]
 set_property PACKAGE_PIN E22 [get_ports sys_rst_n]
 
-create_clock -period 5.000 -name refclk -waveform {0.000 2.500} [get_ports ext_fastdac_refclk_p]
-set_property PACKAGE_PIN AB6 [get_ports ext_fastdac_refclk_n]
-set_property PACKAGE_PIN AB7 [get_ports ext_fastdac_refclk_p]
+create_clock -period 5.000 -name refclk -waveform {0.000 2.500} [get_ports cr_ext_cr_fastdac_refclki_p]
+set_property PACKAGE_PIN AB6 [get_ports cr_ext_cr_fastdac_refclki_n]
+set_property PACKAGE_PIN AB7 [get_ports cr_ext_cr_fastdac_refclki_p]
 
-create_clock -period 320.000 -name sysrefclk -waveform {0.000 161.000} [get_ports ext_fastdac_sysref_p]
-set_property PACKAGE_PIN AC19 [get_ports ext_fastdac_sysref_p]
-set_property PACKAGE_PIN AD19 [get_ports ext_fastdac_sysref_n]
-set_property IOSTANDARD LVDS [get_ports ext_fastdac_sysref_*]
-set_property DIFF_TERM_ADV TERM_100 [get_ports ext_fastdac_sysref_*]
+create_clock -period 320.000 -name sysrefclk -waveform {0.000 161.000} [get_ports cr_ext_cr_fastdac_sysref_p]
+set_property PACKAGE_PIN AC19 [get_ports cr_ext_cr_fastdac_sysref_p]
+set_property PACKAGE_PIN AD19 [get_ports cr_ext_cr_fastdac_sysref_n]
+set_property IOSTANDARD LVDS [get_ports cr_ext_cr_fastdac_sysref_*]
+set_property DIFF_TERM_ADV TERM_100 [get_ports cr_ext_cr_fastdac_sysref_*]
 
-create_clock -period 100.000 -name clk_10 [get_ports ext_clk10_p]
-set_property PACKAGE_PIN B19 [get_ports ext_clk10_p]
-set_property PACKAGE_PIN B20 [get_ports ext_clk10_n]
-set_property IOSTANDARD LVDS [get_ports ext_clk10_*]
+create_clock -period 100.000 -name clk_10 [get_ports cr_ext_cr_ext_clk10_p]
+set_property PACKAGE_PIN B19 [get_ports cr_ext_cr_ext_clk10_p]
+set_property PACKAGE_PIN B20 [get_ports cr_ext_cr_ext_clk10_n]
+set_property IOSTANDARD LVDS [get_ports cr_ext_cr_ext_clk10_*]
 
-create_clock -period 10.000 -name clk_100 [get_ports ext_clk100_p]
-set_property PACKAGE_PIN AB15 [get_ports ext_clk100_p]
-set_property PACKAGE_PIN AB16 [get_ports ext_clk100_n]
-set_property IOSTANDARD LVDS_25 [get_ports ext_clk100_*]
+create_clock -period 10.000 -name clk_100 [get_ports cr_ext_cr_ext_clk100_p]
+set_property PACKAGE_PIN AB15 [get_ports cr_ext_cr_ext_clk100_p]
+set_property PACKAGE_PIN AB16 [get_ports cr_ext_cr_ext_clk100_n]
+set_property IOSTANDARD LVDS_25 [get_ports cr_ext_cr_ext_clk100_*]
 #set_property DIFF_TERM_ADV TERM_100 [get_ports ext_clk100_*]
 
-create_clock -period 5.000 -name tdc_lclk -waveform {0.000 2.500} [get_ports ext_tdc_lclko_p]
+create_clock -period 5.000 -name tdc_lclk -waveform {0.000 2.500} [get_ports tdc_ext_in_lclk_p]
 # create_generated_clock -period 5.000 -name tdc_lclk -source [get_clocks refclk] [get_ports ext_tdc_lclko_p]
-set_property PACKAGE_PIN AD21 [get_ports ext_tdc_lclko_p]
-set_property PACKAGE_PIN AE21 [get_ports ext_tdc_lclko_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_lclko_*]
-set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_lclko_*]
+set_property PACKAGE_PIN AD21 [get_ports tdc_ext_in_lclk_p]
+set_property PACKAGE_PIN AE21 [get_ports tdc_ext_in_lclk_n]
+set_property IOSTANDARD LVDS [get_ports tdc_ext_in_lclk_*]
+set_property DIFF_TERM_ADV TERM_100 [get_ports tdc_ext_in_lclk_*]
 
 
 #set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/ibuf_clk100/O]
@@ -69,11 +69,11 @@ set_property IOSTANDARD LVDS [get_ports {ddr_sys_clk_p}]
 ##IOs------------------------------------
 ##Bank 64,65,67
 ##Fastdac
-set_property PACKAGE_PIN AD16 [get_ports ext_fastdac_sync_p]
-set_property PACKAGE_PIN AE16 [get_ports ext_fastdac_sync_n]
-set_property IOSTANDARD LVDS [get_ports ext_fastdac_sync_*]
-set_property DIFF_TERM_ADV TERM_100 [get_ports ext_fastdac_sync_*]
-set_property IOB TRUE [get_ports ext_fastdac_sync_*]
+set_property PACKAGE_PIN AD16 [get_ports cr_ext_cr_fastdac_syncout_p]
+set_property PACKAGE_PIN AE16 [get_ports cr_ext_cr_fastdac_syncout_n]
+set_property IOSTANDARD LVDS [get_ports cr_ext_cr_fastdac_syncout_*]
+set_property DIFF_TERM_ADV TERM_100 [get_ports cr_ext_cr_fastdac_syncout_*]
+set_property IOB TRUE [get_ports cr_ext_cr_fastdac_syncout_*]
 
 ##TTL gate
 set_property IOSTANDARD LVDS [get_ports {pulse_p}]
@@ -87,41 +87,54 @@ set_property IOSTANDARD LVDS [get_ports {pulse_rep_n}]
 set_property PACKAGE_PIN AB20 [get_ports {pulse_rep_n}]
 
 #TDC OUTPUT
-set_property PACKAGE_PIN AD20 [get_ports ext_tdc_refclk_p]
-set_property PACKAGE_PIN AE20 [get_ports ext_tdc_refclk_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_refclk_*]
+#set_property PACKAGE_PIN AD20 [get_ports ext_tdc_refclk_p]
+#set_property PACKAGE_PIN AE20 [get_ports ext_tdc_refclk_n]
+#set_property IOSTANDARD LVDS [get_ports ext_tdc_refclk_*]
 
-set_property PACKAGE_PIN AF18 [get_ports ext_tdc_rstidxp_p]
-set_property PACKAGE_PIN AF19 [get_ports ext_tdc_rstidxp_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_rstidxp_*]
+#set_property PACKAGE_PIN AF18 [get_ports ext_tdc_rstidxp_p]
+#set_property PACKAGE_PIN AF19 [get_ports ext_tdc_rstidxp_n]
+#set_property IOSTANDARD LVDS [get_ports ext_tdc_rstidxp_*]
+
+#set_property PACKAGE_PIN AB21 [get_ports ext_tdc_lclki_p]
+#set_property PACKAGE_PIN AC21 [get_ports ext_tdc_lclki_n]
+#set_property IOSTANDARD LVDS [get_ports ext_tdc_lclki_*]
+
+set_property PACKAGE_PIN AD20 [get_ports tdc_ext_clkrst_tdc_refclk_p]
+set_property PACKAGE_PIN AE20 [get_ports tdc_ext_clkrst_tdc_refclk_n]
+set_property IOSTANDARD LVDS [get_ports tdc_ext_clkrst_tdc_refclk_*]
+
+set_property PACKAGE_PIN AF18 [get_ports tdc_ext_clkrst_tdc_rstidxp_p]
+set_property PACKAGE_PIN AF19 [get_ports tdc_ext_clkrst_tdc_rstidxp_n]
+set_property IOSTANDARD LVDS [get_ports tdc_ext_clkrst_tdc_rstidxp_*]
+
+set_property PACKAGE_PIN AB21 [get_ports tdc_ext_clkrst_tdc_lclki_p]
+set_property PACKAGE_PIN AC21 [get_ports tdc_ext_clkrst_tdc_lclki_n]
+set_property IOSTANDARD LVDS [get_ports tdc_ext_clkrst_tdc_lclki_*]
 
 set_property PACKAGE_PIN H13 [get_ports linterrupt_i]
 
 #TDC INPUT
-set_property PACKAGE_PIN AB25 [get_ports ext_tdc_sdi_A_p]
-set_property PACKAGE_PIN AB26 [get_ports ext_tdc_sdi_A_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_sdi_*]
-set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_sdi_*]
+set_property PACKAGE_PIN AB25 [get_ports tdc_ext_in_sdia_p]
+set_property PACKAGE_PIN AB26 [get_ports tdc_ext_in_sdia_n]
+set_property IOSTANDARD LVDS [get_ports tdc_ext_in_sdia_*]
+set_property DIFF_TERM_ADV TERM_100 [get_ports tdc_ext_in_sdia_*]
 
-set_property PACKAGE_PIN AD23 [get_ports ext_tdc_frame_A_p]
-set_property PACKAGE_PIN AE23 [get_ports ext_tdc_frame_A_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_frame_*]
-set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_frame_*]
+set_property PACKAGE_PIN AD23 [get_ports tdc_ext_in_framea_p]
+set_property PACKAGE_PIN AE23 [get_ports tdc_ext_in_framea_n]
+set_property IOSTANDARD LVDS [get_ports tdc_ext_in_framea_*]
+set_property DIFF_TERM_ADV TERM_100 [get_ports tdc_ext_in_framea_*]
 
-set_property PACKAGE_PIN AC26 [get_ports ext_tdc_sdi_B_p]
-set_property PACKAGE_PIN AD26 [get_ports ext_tdc_sdi_B_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_sdi_*]
-set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_sdi_*]
+set_property PACKAGE_PIN AC26 [get_ports tdc_ext_in_sdib_p]
+set_property PACKAGE_PIN AD26 [get_ports tdc_ext_in_sdib_n]
+set_property IOSTANDARD LVDS [get_ports tdc_ext_in_sdib_*]
+set_property DIFF_TERM_ADV TERM_100 [get_ports tdc_ext_in_sdib_*]
 
-set_property PACKAGE_PIN AE25 [get_ports ext_tdc_frame_B_p]
-set_property PACKAGE_PIN AE26 [get_ports ext_tdc_frame_B_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_frame_*]
-set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_frame_*]
+set_property PACKAGE_PIN AE25 [get_ports tdc_ext_in_frameb_p]
+set_property PACKAGE_PIN AE26 [get_ports tdc_ext_in_frameb_n]
+set_property IOSTANDARD LVDS [get_ports tdc_ext_in_frameb_*]
+set_property DIFF_TERM_ADV TERM_100 [get_ports tdc_ext_in_frameb_*]
 
-set_property PACKAGE_PIN AB21 [get_ports ext_tdc_lclki_p]
-set_property PACKAGE_PIN AC21 [get_ports ext_tdc_lclki_n]
-set_property IOSTANDARD LVDS [get_ports ext_tdc_lclki_*]
-#set_property DIFF_TERM_ADV TERM_100 [get_ports ext_tdc_lclki_*]
+
 ##Bank 84
 
 
@@ -133,22 +146,20 @@ set_property IOSTANDARD LVCMOS33 [get_ports ext_pps]
 
 
 ##SPI buses
-set_property PACKAGE_PIN G11 [get_ports ext_tdc_miso]
-set_property PACKAGE_PIN H11 [get_ports ext_tdc_mosi]
-set_property PACKAGE_PIN D10 [get_ports ext_tdc_sck]
-set_property PACKAGE_PIN C9 [get_ports {ext_tdc_ss[0]}]
-set_property PACKAGE_PIN K10 [get_ports {ext_tdc_ss[1]}]
-
-#set_property PULLUP true [get_ports ext_rst_jic]
-set_property PACKAGE_PIN J15 [get_ports ext_rst_jic]
+set_property PACKAGE_PIN G11 [get_ports com_ext_spi_tdc_miso_io]
+set_property PACKAGE_PIN H11 [get_ports com_ext_spi_tdc_mosi_io]
+set_property PACKAGE_PIN D10 [get_ports com_ext_spi_tdc_sck_io]
+set_property PACKAGE_PIN C9 [get_ports {com_ext_spi_tdc_ss_io[0]}]
+set_property PACKAGE_PIN K10 [get_ports {com_ext_spi_tdc_ss_io[1]}]
+set_property PACKAGE_PIN J15 [get_ports rst_jic]
 
 
-set_property PACKAGE_PIN C11 [get_ports ext_dac_ltc_miso]
-set_property PACKAGE_PIN B11 [get_ports ext_dac_ltc_mosi]
-set_property PACKAGE_PIN D11 [get_ports ext_dac_ltc_sck]
-set_property PACKAGE_PIN D9 [get_ports {ext_dac_ltc_ss[0]}]
-set_property PACKAGE_PIN J9 [get_ports {ext_dac_ltc_ss[1]}]
-set_property PACKAGE_PIN H9 [get_ports {ext_dac_ltc_ss[2]}]
+set_property PACKAGE_PIN C11 [get_ports com_ext_spi_dl_miso_io]
+set_property PACKAGE_PIN B11 [get_ports com_ext_spi_dl_mosi_io]
+set_property PACKAGE_PIN D11 [get_ports com_ext_spi_dl_sck_io]
+set_property PACKAGE_PIN D9 [get_ports {com_ext_spi_dl_ss_io[0]}]
+set_property PACKAGE_PIN J9 [get_ports {com_ext_spi_dl_ss_io[1]}]
+set_property PACKAGE_PIN H9 [get_ports {com_ext_spi_dl_ss_io[2]}]
 
 set_property PACKAGE_PIN A9 [get_ports ext_clk200_o]
 #set_property PACKAGE_PIN E10 [get_ports ext_tdc_rst]

@@ -33,20 +33,21 @@ module ddr_data_reg_mngt #
     (
         input clk200_i,
         input pps_i,
-        output wire start_write_ddr_o,
-        output wire command_enable_o,
-        output wire command_alpha_enable_o,
-        output wire command_gc_enable_o,
-        output wire [2:0] command_o,
-        output wire command_gc_o,
-        output wire reg_enable_o,
-        output wire [47:0] dq_gc_start_o,
-        output wire [31:0] threshold_o,
-        output wire [31:0] threshold_full_o,
-        output wire [31:0] fiber_delay_o,
-        output wire pair_delay_o,
-        input wire [47:0] current_dq_gc_i,
-        input wire        current_dq_gc_valid_i,
+        output wire mr_start_write_ddr_i,
+        output wire mr_command_enable,
+        output wire mr_command_alpha_enable,
+        output wire mr_command_gc_enable,
+        output wire [2:0] mr_command_i,
+        output wire mr_command_gc_i,
+        output wire mr_reg_enable_i,
+        output wire [47:0] mr_dq_gc_start_i,
+        output wire [31:0] mr_threshold_i,
+        output wire [31:0] mr_threshold_full_i,
+        output wire [31:0] mr_fiber_delay_i,
+        output wire mr_pair_delay_i,
+        output wire [15:0] mr_ab_fiber_delay_i,
+        input wire [47:0] mr_current_dq_gc,
+        input wire        mr_current_dq_gc_valid,
         input wire [8:0] ddr_fifos_status_i,
         input wire status_200_valid_i,
         input wire [2:0] fifos_status_i,
@@ -106,8 +107,8 @@ module ddr_data_reg_mngt #
 
 wire [31:0] current_dq_gc_lsb_i;
 wire [31:0] current_dq_gc_msb_i;
-assign current_dq_gc_lsb_i = current_dq_gc_i[31:0];
-assign current_dq_gc_msb_i = current_dq_gc_i[47:32];
+assign current_dq_gc_lsb_i = mr_current_dq_gc[31:0];
+assign current_dq_gc_msb_i = mr_current_dq_gc[47:32];
 
 
 // //Monitoring ddr_status
@@ -144,22 +145,23 @@ ddr_data_axil_mngt # (
     .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
     .C_S_AXI_ADDR_WIDTH(C_s_axil_ADDR_WIDTH)
   ) ddr_data_axil_mngt_inst (
-    .start_write_ddr_o(start_write_ddr_o),
-    .command_enable_o(command_enable_o),
-    .command_alpha_enable_o(command_alpha_enable_o),
-    .command_gc_enable_o(command_gc_enable_o),
-    .command_o(command_o),
-    .command_gc_o(command_gc_o),
-    .reg_enable_o(reg_enable_o),
+    .start_write_ddr_o(mr_start_write_ddr_i),
+    .command_enable_o(mr_command_enable),
+    .command_alpha_enable_o(mr_command_alpha_enable),
+    .command_gc_enable_o(mr_command_gc_enable),
+    .command_o(mr_command_i),
+    .command_gc_o(mr_command_gc_i),
+    .reg_enable_o(mr_reg_enable_i),
     .dq_gc_start_lsb_o(dq_gc_start_lsb_o),
     .dq_gc_start_msb_o(dq_gc_start_msb_o),
-    .threshold_o(threshold_o),
-    .threshold_full_o(threshold_full_o),
-    .fiber_delay_o(fiber_delay_o),
-    .pair_delay_o(pair_delay_o),
+    .threshold_o(mr_threshold_i),
+    .threshold_full_o(mr_threshold_full_i),
+    .fiber_delay_o(mr_fiber_delay_i),
+    .pair_delay_o(mr_pair_delay_i),
+    .ab_fiber_delay_o(mr_ab_fiber_delay_i),
     .current_dq_gc_lsb_i(current_dq_gc_lsb_i),
     .current_dq_gc_msb_i(current_dq_gc_msb_i),
-    .current_dq_gc_valid_i(current_dq_gc_valid_i),
+    .current_dq_gc_valid_i(mr_current_dq_gc_valid),
     .ddr_fifos_status_i(ddr_fifos_status_i),
     .status_200_valid_i(status_200_valid_i),
     .fifos_status_i(fifos_status_i),

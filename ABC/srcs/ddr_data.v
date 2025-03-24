@@ -38,22 +38,23 @@ module ddr_data(
     input [31:0]    gate_pos2,
     input [31:0]    gate_pos3,
     //AXIL control ports
-    input           start_write_ddr_i,
-    input [2:0]     command_i, 
-    input           command_gc_i,
-    input           command_enable,
-    input           command_alpha_enable,
-    input           command_gc_enable,
-    input           reg_enable_i,
-    input [47:0]    dq_gc_start_i,
-    input [31:0]    threshold_i,
-    input [31:0]    threshold_full_i,
-    input [31:0]    fiber_delay_i,
-    input           pair_delay_i,
+    input           sr_start_write_ddr_i,
+    input [2:0]     sr_command_i, 
+    input           sr_command_gc_i,
+    input           sr_command_enable,
+    input           sr_command_alpha_enable,
+    input           sr_command_gc_enable,
+    input           sr_reg_enable_i,
+    input [47:0]    sr_dq_gc_start_i,
+    input [31:0]    sr_threshold_i,
+    input [31:0]    sr_threshold_full_i,
+    input [31:0]    sr_fiber_delay_i,
+    input           sr_pair_delay_i,
+    input [15:0]    sr_ab_fiber_delay_i,
 
     //AXIL output monitoring ports
-    output [47:0]   current_dq_gc,
-    output          current_dq_gc_valid,
+    output [47:0]   sr_current_dq_gc,
+    output          sr_current_dq_gc_valid,
 
     //AXI-Stream master ports for sending alpha to ddr
     output reg [255:0]                        m_axis_tdata,
@@ -125,7 +126,7 @@ module ddr_data(
 wire [31:0] threshold_full_debug;
 wire [31:0] threshold_wait;
 assign s_axis_tvalid_gc_debug = s_axis_tvalid_gc;
-assign current_dq_gc_debug = current_dq_gc[3:0];
+assign current_dq_gc_debug = sr_current_dq_gc[3:0];
 assign dq_gc_start_r_debug = dq_gc_start_r[47:6];
 assign threshold_full_debug = threshold_full_r;
 // assign threshold_wait = dq_gc_start_r[47:32];
@@ -193,6 +194,7 @@ reg [31:0] threshold_r;
 reg [31:0] threshold_full_r;
 reg [31:0] fiber_delay_r;
 reg pair_delay_r;
+reg [15:0] ab_fiber_delay_r;
 
 initial begin
     pps_r <= 0;
@@ -210,18 +212,20 @@ initial begin
     threshold_full_r <= 32'b0;
     fiber_delay_r <= 32'b0;
     pair_delay_r <= 0;
+    ab_fiber_delay_r <= 16'b0;
 end
 
 always @(posedge clk200_i) begin
-    reg_enable_r <= {reg_enable_r[1:0], reg_enable_i};
+    reg_enable_r <= {reg_enable_r[1:0], sr_reg_enable_i};
     if(reg_enable_r[2] == 0 && reg_enable_r[1] == 1) begin
-        command_r <= command_i;
-        command_gc_r <= command_gc_i;
-        dq_gc_start_r <= dq_gc_start_i;
-        threshold_r <= threshold_i;
-        threshold_full_r <= threshold_full_i;
-        fiber_delay_r <= fiber_delay_i;
-        pair_delay_r <= pair_delay_i;
+        command_r <= sr_command_i;
+        command_gc_r <= sr_command_gc_i;
+        dq_gc_start_r <= sr_dq_gc_start_i;
+        threshold_r <= sr_threshold_i;
+        threshold_full_r <= sr_threshold_full_i;
+        fiber_delay_r <= sr_fiber_delay_i;
+        pair_delay_r <= sr_pair_delay_i;
+        ab_fiber_delay_r <= sr_ab_fiber_delay_i;
     end
 end
 
@@ -241,7 +245,7 @@ reg read_done;
 reg rd_en_gc;
 reg rd_en_gc_test;
 reg [31:0] count_wait_long;
-reg [47:0] current_dq_gc;
+reg [47:0] sr_current_dq_gc;
 reg [51:0] counter_datout;
 reg [31:0] counter_wait;
 reg [31:0] counter_rd_en_gc;
@@ -299,8 +303,8 @@ assign gc_time_valid_mod = gc_time_valid[5:0];
 assign q_pos = (pair_delay_r == 1)?(tdata_gc[48]):(~tdata_gc[48]); 
 
 
-wire current_dq_gc_valid;
-assign current_dq_gc_valid = command_enable_r[2];
+wire sr_current_dq_gc_valid;
+assign sr_current_dq_gc_valid = command_enable_r[2];
 
 //State machine 
 reg [2:0] state;
@@ -335,7 +339,7 @@ always @(posedge clk200_i) begin
         rd_en_gc <= 0;
         rd_en_gc_test <= 0;
         count_wait_long <= 0;
-        current_dq_gc <= 0;
+        sr_current_dq_gc <= 0;
         counter_datout <= 0;
         counter_wait <= 0;
         counter_rd_en_gc <= 0;
@@ -375,7 +379,7 @@ always @(posedge clk200_i) begin
                 pack_done <= 0;
                 read_done <= 0;
                 rd_en_gc <= 0;
-                current_dq_gc <= 0;
+                sr_current_dq_gc <= 0;
                 counter_datout <= 0;
                 counter_wait <= 0;
                 counter_rd_en_gc <= 0;
@@ -394,7 +398,7 @@ always @(posedge clk200_i) begin
                 state_alpha <= IDLE_AL;
             end
             WAIT_START: begin
-                start_write_ddr_r <= {start_write_ddr_r[1:0], start_write_ddr_i};
+                start_write_ddr_r <= {start_write_ddr_r[1:0], sr_start_write_ddr_i};
                 if (start_write_ddr_r[2] == 1 && !pps_i) begin
                     start_write_ddr_o <= 1'b1;
                     state <= DETECT_PPS;
@@ -427,8 +431,8 @@ always @(posedge clk200_i) begin
                 // if (command_gc_enable_r[2]) begin
                 //     fifo_gc_rst <= 1;
                 // end else fifo_gc_rst <= 0;
-                command_gc_enable_r <= {command_gc_enable_r[1:0],command_gc_enable};
-                if ((command_gc_enable_r[2]) && (dq_gc > fiber_delay_r)) begin
+                command_gc_enable_r <= {command_gc_enable_r[1:0],sr_command_gc_enable};
+                if ((command_gc_enable_r[2]) && (dq_gc > ab_fiber_delay_r)) begin
                     fifo_gc_rst <= 1;
                 end else fifo_gc_rst <= 0;
 
@@ -489,10 +493,10 @@ always @(posedge clk200_i) begin
 
                 //Get current global counter
                 //if (command_r == 3'b010) begin
-                command_enable_r <= {command_enable_r[1:0],command_enable};
+                command_enable_r <= {command_enable_r[1:0],sr_command_enable};
                 if(command_enable_r[2] == 0 && command_enable_r[1] == 1) begin
-                    current_dq_gc <= dq_gc;
-                end else current_dq_gc <= current_dq_gc;
+                    sr_current_dq_gc <= dq_gc;
+                end else sr_current_dq_gc <= sr_current_dq_gc;
                 //end
 
                 //Pack data to save in ddr, verify number of write and read are matched
@@ -663,7 +667,7 @@ always @(posedge clk200_i) begin
     end else begin
         if (command_r == 3'b011) begin //Read_angle from set_current_gc
             fifo_alpha_rst <= 1'b0;
-            command_alpha_enable_r <= {command_alpha_enable_r[1:0], command_alpha_enable};
+            command_alpha_enable_r <= {command_alpha_enable_r[1:0], sr_command_alpha_enable};
             if (command_alpha_enable_r[2]) begin
                 fifo_alpha_rst <= 1'b1;
                 if (read_count >= dq_gc_start_r[47:6]) begin

@@ -5,21 +5,21 @@ module AS6501_IF (
     input 			lrst_i,
     input           linterrupt_i,
     // Control register
-    input           enable,
-    input           command_enable,
-    input [2:0]		command_i,
+    input           sr_enable,
+    input           sr_command_enable,
+    input [2:0]		sr_command_i,
     //input 			command_get_gc,
     // input  [6:0]    AS6501_BURST_SIZE_i,
     // input  [5:0]    index_bitwise_i,
     // input  [5:0]    stop_bitwise_i,
-    input 			start_gc_i,
-    input [15:0]	index_stop_bitwise_i,
-    input [31:0]	gate0_i,
-    input [31:0] 	gate1_i,
-    input  [15:0]   shift_tdc_time_i,
-    input  [15:0]	shift_gc_back_i,
-    input 			reg_enable_tdc_i,
-    input 			reg_enable200_i,
+    input 			sr_start_gc_i,
+    input [15:0]	sr_index_stop_bitwise_i,
+    input [31:0]	sr_gate0_i,
+    input [31:0] 	sr_gate1_i,
+    input  [15:0]   sr_shift_tdc_time_i,
+    input  [15:0]	sr_shift_gc_back_i,
+    input 			sr_reg_enable_tdc,
+    input 			sr_reg_enable200,
 
 
     // Stop A
@@ -81,11 +81,11 @@ module AS6501_IF (
     output wire [31:0] gate_pos2,
     output wire [31:0] gate_pos3,
     //Output ports
-    output [31:0] total_count_o,
-    output [31:0] click0_count_o,
-    output [31:0] click1_count_o,
+    output [31:0] sr_total_count_o,
+    output [31:0] sr_click0_count_o,
+    output [31:0] sr_click1_count_o,
     output [31:0] total_count,
-    output data_count_valid_o
+    output sr_data_count_valid_o
 
 );
 
@@ -98,9 +98,9 @@ module AS6501_IF (
 	end
 
 	always @(posedge lclk_i) begin
-		reg_enable_r <= {reg_enable_r[1:0],reg_enable_tdc_i};
+		reg_enable_r <= {reg_enable_r[1:0],sr_reg_enable_tdc};
 		if(reg_enable_r[2] == 0 && reg_enable_r[1] == 1) begin
-			index_stop_bitwise_r <= index_stop_bitwise_i;
+			index_stop_bitwise_r <= sr_index_stop_bitwise_i;
 		end
 	end
 //Switch domain from aclk to clk200_i
@@ -120,13 +120,13 @@ module AS6501_IF (
 	end
 
 	always @(posedge clk200_i) begin
-		reg_enable200_r <= {reg_enable200_r[1:0],reg_enable200_i};
+		reg_enable200_r <= {reg_enable200_r[1:0],sr_reg_enable200};
 		if(reg_enable200_r[2] == 0 && reg_enable200_r[1] == 1) begin
-			shift_gc_back_r <= shift_gc_back_i;
-			shift_tdc_time_r <= shift_tdc_time_i;
-			gate0_r <= gate0_i;
-			gate1_r <= gate1_i;
-			command_r <= command_i;	
+			shift_gc_back_r <= sr_shift_gc_back_i;
+			shift_tdc_time_r <= sr_shift_tdc_time_i;
+			gate0_r <= sr_gate0_i;
+			gate1_r <= sr_gate1_i;
+			command_r <= sr_command_i;	
 		end	
 	end
 //Assign internal reg/wire to external register	
@@ -231,7 +231,7 @@ module AS6501_IF (
 		end else begin
 		    
 		    linterrupt_r[2:0] <= {linterrupt_r[1:0],linterrupt_i};
-		    enable_axi_r      <= {enable_axi_r[1:0],enable};
+		    enable_axi_r      <= {enable_axi_r[1:0],sr_enable};
 		    sdi_r             <= sdi_i;
 		    sdi_2r            <= sdi_r;
             frame_r           <= frame_i;
@@ -400,12 +400,12 @@ end
 
 
 //Axil registers
-reg [31:0] total_count_o;
+reg [31:0] sr_total_count_o;
 reg [31:0] total_count;
 reg total_count_valid;
-reg [31:0] click0_count_o;
+reg [31:0] sr_click0_count_o;
 reg [31:0] click0_count;
-reg [31:0] click1_count_o;
+reg [31:0] sr_click1_count_o;
 reg [31:0] click1_count;
 
 reg [31:0] counter_mon_en;
@@ -417,7 +417,7 @@ assign count_en = (counter_mon_en > 0 && counter_mon_en <= 20000000)?1:0;
 // wire data_count_valid_o;
 // assign data_count_valid_o = (counter_mon_en >= 1 && counter_mon_en <= 59) ? 1:0;
 // Should not have combinational logic before CDC sync, put the source reg to source clock domain
-reg data_count_valid_o;
+reg sr_data_count_valid_o;
 
 wire tvalid200_en;
 wire tvalid200_g0_en;
@@ -447,15 +447,15 @@ always @(posedge clk200_i, posedge gc_rst) begin
 		// m_axis_tdata_gc <= 0;
 		// m_axis_tvalid_gc <= 0;
 		// fifo_gc_rst <= 0;
-		data_count_valid_o <= 0;
+		sr_data_count_valid_o <= 0;
 		counter_mon_en <= 0;
-		total_count_o <= 0;
+		sr_total_count_o <= 0;
 		total_count <= 0;
 		total_count_valid <= 0;
 
-		click0_count_o <= 0;
+		sr_click0_count_o <= 0;
 		click0_count <= 0;
-		click1_count_o <= 0;
+		sr_click1_count_o <= 0;
 		click1_count <= 0;
 
 		state_gc <= IDLE;
@@ -472,14 +472,14 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				// counter_valid <= 0;
 
 				counter_mon_en <= 0;
-				total_count_o <= 0;
+				sr_total_count_o <= 0;
 				total_count <= 0;
 				total_count_valid <= 0;
 
-				data_count_valid_o <= 0;
-				click0_count_o <= 0;
+				sr_data_count_valid_o <= 0;
+				sr_click0_count_o <= 0;
 				click0_count <= 0;
-				click1_count_o <= 0;
+				sr_click1_count_o <= 0;
 				click1_count <= 0;
 
 				click_result <= 0;
@@ -490,7 +490,7 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				state_gc <= WAIT_START;
 			end
 			WAIT_START: begin //Wait for the Start_gc commamd, put it to clk200 domain
-				start_gc_r <= {start_gc_r[1:0],start_gc_i};
+				start_gc_r <= {start_gc_r[1:0],sr_start_gc_i};
 				// if (start_gc_r[2] == 0 && start_gc_r[1] == 1) begin
 				// 	start_gc_o <= 1'b1;
 				// 	state_gc <= DETECT_PPS;
@@ -519,40 +519,40 @@ always @(posedge clk200_i, posedge gc_rst) begin
 					counter_mon_en <= 0;
 				end
 				if ((counter_mon_en >= 1) && (counter_mon_en <= 59)) begin
-					data_count_valid_o <= 1;
+					sr_data_count_valid_o <= 1;
 				end else begin
-					data_count_valid_o <= 0;
+					sr_data_count_valid_o <= 0;
 				end
 				if (count_en && tvalid200_en) begin
 					total_count <= total_count + 1;
-					total_count_o <= total_count_o;
+					sr_total_count_o <= sr_total_count_o;
 				end else if (count_en && ~tvalid200_en) begin
 					total_count <= total_count;
-					total_count_o <= total_count_o;
+					sr_total_count_o <= sr_total_count_o;
 				end else begin
 					total_count <= 0;
-					total_count_o <= total_count;
+					sr_total_count_o <= total_count;
 					// total_count_valid <= 1;
 				end
 				if (count_en && tvalid200_g0_en) begin
 					click0_count <= click0_count + 1;
-					click0_count_o <= click0_count_o;
+					sr_click0_count_o <= sr_click0_count_o;
 				end else if (count_en && ~tvalid200_g0_en) begin
 					click0_count <= click0_count;
-					click0_count_o <= click0_count_o;
+					sr_click0_count_o <= sr_click0_count_o;
 				end else begin
 					click0_count <= 0;
-					click0_count_o <= click0_count;
+					sr_click0_count_o <= click0_count;
 				end
 				if (count_en && tvalid200_g1_en) begin
 					click1_count <= click1_count + 1;
-					click1_count_o <= click1_count_o;
+					sr_click1_count_o <= sr_click1_count_o;
 				end else if (count_en && ~tvalid200_g1_en) begin
 					click1_count <= click1_count;
-					click1_count_o <= click1_count_o;
+					sr_click1_count_o <= sr_click1_count_o;
 				end else begin
 					click1_count <= 0;
-					click1_count_o <= click1_count;
+					sr_click1_count_o <= click1_count;
 				end
 				if (tvalid200_r[2] == 0 && tvalid200_r[1] == 1) begin
 					gc_time_valid <= gc_div64 + index_shift_gc + time_ref_gc;
@@ -561,7 +561,7 @@ always @(posedge clk200_i, posedge gc_rst) begin
 					if (command_r == 3'b001) begin	//no gate
 						fifo_calib_rst <= 0;
 						click_result <= 2'b11;
-						command_enable_r <= {command_enable_r[1:0],command_enable};
+						command_enable_r <= {command_enable_r[1:0],sr_command_enable};
 						if (command_enable_r[2]) begin
 							fifo_calib_rst <= 1;
 							// gc_time_valid <= gc_div64 + index_shift_gc + time_ref_gc;
@@ -575,7 +575,7 @@ always @(posedge clk200_i, posedge gc_rst) begin
 						end
 					end else if (command_r == 3'b010) begin //with gate
 						fifo_calib_rst <= 0;
-						command_enable_r <= {command_enable_r[1:0],command_enable};
+						command_enable_r <= {command_enable_r[1:0],sr_command_enable};
 						if (command_enable_r[2]) begin
 							fifo_calib_rst <= 1;
 							if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625))begin

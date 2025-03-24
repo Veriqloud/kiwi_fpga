@@ -21,31 +21,31 @@
 
 
 module ILVDS_TDC(
-    input IB_lclk_n,
-    input I_lclk_p,
+    input lclk_n,
+    input lclk_p,
     output O_lclk,
 
-    input IB_frameA_n,
-    input I_frameA_p,
+    input frameA_n,
+    input frameA_p,
     output O_frameA,
     
-    input IB_frameB_n,
-    input I_frameB_p,
+    input frameB_n,
+    input frameB_p,
     output O_frameB,
 
-    input IB_sdiA_n,
-    input I_sdiA_p,
+    input sdiA_n,
+    input sdiA_p,
     output O_sdiA,
 
-    input IB_sdiB_n,
-    input I_sdiB_p,
+    input sdiB_n,
+    input sdiB_p,
     output O_sdiB
 
 );
     
-IBUFDS tdc_lclk_ibuf    (.IB(IB_lclk_n),.O(O_lclk),.I(I_lclk_p));
-IBUFDS tdc_frameA_ibuf    (.IB(IB_frameA_n),.O(O_frameA),.I(I_frameA_p));
-IBUFDS tdc_frameB_ibuf    (.IB(IB_frameB_n),.O(O_frameB),.I(I_frameB_p));
-IBUFDS tdc_sdiA_ibuf    (.IB(IB_sdiA_n),.O(O_sdiA),.I(I_sdiA_p));
-IBUFDS tdc_sdiB_ibuf    (.IB(IB_sdiB_n),.O(O_sdiB),.I(I_sdiB_p));
+IBUFDS tdc_lclk_ibuf    (.IB(lclk_n),.O(O_lclk),.I(lclk_p));
+IBUFDS tdc_frameA_ibuf    (.IB(frameA_n),.O(O_frameA),.I(frameA_p));
+IBUFDS tdc_frameB_ibuf    (.IB(frameB_n),.O(O_frameB),.I(frameB_p));
+IBUFDS tdc_sdiA_ibuf    (.IB(sdiA_n),.O(O_sdiA),.I(sdiA_p));
+IBUFDS tdc_sdiB_ibuf    (.IB(sdiB_n),.O(O_sdiB),.I(sdiB_p));
 endmodule

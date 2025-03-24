@@ -56,22 +56,27 @@ module spi_inout_mngt
     // inout ioss_io_sda,
     // SPI PORT OUTPUT
     // MOSI
-    inout          i0_io,
-    inout          i1_io,
-    inout[NBR_OF_SLAVE-1:0]     ioss_io,
-    inout          iosck_io
+//    inout          i0_io,
+//    inout          i1_io,
+//    inout[NBR_OF_SLAVE-1:0]     ioss_io,
+//    inout          iosck_io
+    inout          mosi_io,
+    inout          miso_io,
+    inout[NBR_OF_SLAVE-1:0]     ss_io,
+    inout          sck_io
+    
     );
     assign rst_jic = 1'b1;
-	IOBUF QSPI_IO0_TDC  (.O(out0_o),.IO(i0_io),.I(in0_i),.T(in0t_i));
-	IOBUF QSPI_IO1_TDC  (.O(out1_o),.IO(i1_io),.I(in1_i),.T(in1t_i));
-	IOBUF QSPI_SCK_TDC  (.O(sck_o),.IO(iosck_io),.I(sck_i),.T(sckt_i));
+	IOBUF QSPI_IO0_TDC  (.O(out0_o),.IO(mosi_io),.I(in0_i),.T(in0t_i));
+	IOBUF QSPI_IO1_TDC  (.O(out1_o),.IO(miso_io),.I(in1_i),.T(in1t_i));
+	IOBUF QSPI_SCK_TDC  (.O(sck_o),.IO(sck_io),.I(sck_i),.T(sckt_i));
     //IOBUF for Select of Sda
     // IOBUF QSPI_SS_SDA  (.O(ss_o_sda),.IO(ioss_io_sda),.I(ss_i_sda),.T(sst_i_sda));
 
     
     genvar i;
     generate for (i = 0; i < NBR_OF_SLAVE ; i = i + 1) begin: tristate
-        IOBUF QSPI_SS_TDC  (.O(ss_o[i]),.IO(ioss_io[i]),.I(ss_i[i]),.T(sst_i));
+        IOBUF QSPI_SS_TDC  (.O(ss_o[i]),.IO(ss_io[i]),.I(ss_i[i]),.T(sst_i));
     end
     endgenerate
  
