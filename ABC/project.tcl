@@ -143,7 +143,6 @@ proc checkRequiredFiles { origin_dir} {
  "[file normalize "$origin_dir/srcs/tdc_fav/AS6501_IF.v"]"\
  "[file normalize "$origin_dir/srcs/ttl_reg_mngt.v"]"\
  "[file normalize "$origin_dir/srcs/ttl_gate_apd.v"]"\
-#  "[file normalize "$origin_dir/Bob.srcs/sources_1/bd/Bob_top/Bob_top.bd"]"\
  "[file normalize "$origin_dir/ip/fifo_axistream_128/fifo_axistream_128.xci"]"\
  "[file normalize "$origin_dir/ip/axis_data_fifo_0/axis_data_fifo_0.xci"]"\
  "[file normalize "$origin_dir/srcs/ILVDS.v"]"\
@@ -415,7 +414,6 @@ set files [list \
  [file normalize "${origin_dir}/srcs/tdc_fav/AS6501_IF.v" ]\
  [file normalize "${origin_dir}/srcs/ttl_reg_mngt.v" ]\
  [file normalize "${origin_dir}/srcs/ttl_gate_apd.v" ]\
-#  [file normalize "${origin_dir}/Bob.srcs/sources_1/bd/Bob_top/Bob_top.bd" ]\
  [file normalize "${origin_dir}/ip/fifo_axistream_128/fifo_axistream_128.xci" ]\
  [file normalize "${origin_dir}/ip/axis_data_fifo_0/axis_data_fifo_0.xci" ]\
  [file normalize "${origin_dir}/srcs/ILVDS.v" ]\
@@ -441,12 +439,12 @@ set files [list \
 set added_files [add_files -fileset sources_1 $files]
 
 #call make_wrapper to create wrapper files
-# if { [get_property IS_LOCKED [ get_files -norecurse Bob_top.bd] ] == 1  } {
-#   import_files -fileset sources_1 [file normalize "${origin_dir}/Bob.gen/sources_1/bd/Bob_top/hdl/Bob_top_wrapper.v" ]
-# } else {
-#   set wrapper_path [make_wrapper -fileset sources_1 -files [ get_files -norecurse Bob_top.bd] -top]
-#   add_files -norecurse -fileset sources_1 $wrapper_path
-# }
+if { [get_property IS_LOCKED [ get_files -norecurse Bob_top.bd] ] == 1  } {
+  import_files -fileset sources_1 [file normalize "${origin_dir}/Bob.gen/sources_1/bd/Bob_top/hdl/Bob_top_wrapper.v" ]
+} else {
+  set wrapper_path [make_wrapper -fileset sources_1 -files [ get_files -norecurse Bob_top.bd] -top]
+  add_files -norecurse -fileset sources_1 $wrapper_path
+}
 
 
 # Set 'sources_1' fileset file properties for remote files
