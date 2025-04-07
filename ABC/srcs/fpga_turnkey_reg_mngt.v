@@ -21,6 +21,7 @@
 	//	output wire fpga_turnkey_fastdac_sync_o,
 	//	output wire fpga_turnkey_fastdac_sel_o,
 		output wire ttl_rst_o,
+		output wire decoy_rst_o,
 		output wire tdc_rst_o,
 		output wire lrst_o,
 		output wire fpga_turnkey_fastdac_rst_o,
@@ -135,6 +136,7 @@
 	assign tdc_rst_o = slv_reg1[0];
 	assign gc_rst_o =  slv_reg2[0];
 	assign ttl_rst_o = slv_reg3[0];
+	assign decoy_rst_o = slv_reg5[0];
 	assign lrst_o = slv_reg1[1];
 	assign ddr_data_rst_o = slv_reg4[0];
 

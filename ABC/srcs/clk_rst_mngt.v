@@ -84,6 +84,7 @@ module clk_rst_mngt
       output      lrst_o,
 
       output wire ttl_rst,
+      output wire decoy_rst,
       output      gc_rst_o,
       output      gc_rstn_o,
       output      ddr_data_rst_o,
@@ -98,6 +99,7 @@ fpga_turnkey_reg_mngt # (
       .gc_rst_o(gc_rst),
       .clockchip_sync_o(clockchip_sync),
       .ttl_rst_o(ttl_rst),
+      .decoy_rst_o(decoy_rst),
       .tdc_rst_o(tdc_rst),
       .lrst_o(lrst_i),
       .fpga_turnkey_fastdac_rst_o(fpga_turnkey_fastdac_rst),

@@ -1,7 +1,7 @@
 //Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
-//Date        : Fri Mar 21 11:19:59 2025
+//Date        : Wed Apr  2 16:36:16 2025
 //Host        : hop-MS-7D67 running 64-bit Ubuntu 22.04.5 LTS
 //Command     : generate_target Bob_top_wrapper.bd
 //Design      : Bob_top_wrapper
@@ -44,6 +44,9 @@ module Bob_top_wrapper
     cr_ext_cr_fastdac_sysref_p,
     ddr_sys_clk_n,
     ddr_sys_clk_p,
+    decoy_signal,
+    decoy_signal_n,
+    decoy_signal_p,
     ext_clk200_o,
     ext_fastdac_txn_out,
     ext_fastdac_txp_out,
@@ -63,8 +66,6 @@ module Bob_top_wrapper
     probe_tdc_rstidx,
     pulse_n,
     pulse_p,
-    pulse_rep_n,
-    pulse_rep_p,
     rd_en_fifo_gc,
     rd_gc_valid,
     read_done,
@@ -122,6 +123,9 @@ module Bob_top_wrapper
   input cr_ext_cr_fastdac_sysref_p;
   input ddr_sys_clk_n;
   input ddr_sys_clk_p;
+  output decoy_signal;
+  output decoy_signal_n;
+  output decoy_signal_p;
   output ext_clk200_o;
   output [3:0]ext_fastdac_txn_out;
   output [3:0]ext_fastdac_txp_out;
@@ -141,8 +145,6 @@ module Bob_top_wrapper
   output probe_tdc_rstidx;
   output [0:0]pulse_n;
   output [0:0]pulse_p;
-  output [0:0]pulse_rep_n;
-  output [0:0]pulse_rep_p;
   output rd_en_fifo_gc;
   output rd_gc_valid;
   output read_done;
@@ -201,6 +203,9 @@ module Bob_top_wrapper
   wire cr_ext_cr_fastdac_sysref_p;
   wire ddr_sys_clk_n;
   wire ddr_sys_clk_p;
+  wire decoy_signal;
+  wire decoy_signal_n;
+  wire decoy_signal_p;
   wire ext_clk200_o;
   wire [3:0]ext_fastdac_txn_out;
   wire [3:0]ext_fastdac_txp_out;
@@ -220,8 +225,6 @@ module Bob_top_wrapper
   wire probe_tdc_rstidx;
   wire [0:0]pulse_n;
   wire [0:0]pulse_p;
-  wire [0:0]pulse_rep_n;
-  wire [0:0]pulse_rep_p;
   wire rd_en_fifo_gc;
   wire rd_gc_valid;
   wire read_done;
@@ -281,6 +284,9 @@ module Bob_top_wrapper
         .cr_ext_cr_fastdac_sysref_p(cr_ext_cr_fastdac_sysref_p),
         .ddr_sys_clk_n(ddr_sys_clk_n),
         .ddr_sys_clk_p(ddr_sys_clk_p),
+        .decoy_signal(decoy_signal),
+        .decoy_signal_n(decoy_signal_n),
+        .decoy_signal_p(decoy_signal_p),
         .ext_clk200_o(ext_clk200_o),
         .ext_fastdac_txn_out(ext_fastdac_txn_out),
         .ext_fastdac_txp_out(ext_fastdac_txp_out),
@@ -300,8 +306,6 @@ module Bob_top_wrapper
         .probe_tdc_rstidx(probe_tdc_rstidx),
         .pulse_n(pulse_n),
         .pulse_p(pulse_p),
-        .pulse_rep_n(pulse_rep_n),
-        .pulse_rep_p(pulse_rep_p),
         .rd_en_fifo_gc(rd_en_fifo_gc),
         .rd_gc_valid(rd_gc_valid),
         .read_done(read_done),
