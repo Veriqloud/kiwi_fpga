@@ -3,7 +3,7 @@
   "ip_inst": {
     "xci_name": "fifo_alpha_out",
     "component_reference": "xilinx.com:ip:fifo_generator:13.2",
-    "ip_revision": "7",
+    "ip_revision": "11",
     "gen_directory": ".",
     "parameters": {
       "component_parameters": {
@@ -80,7 +80,7 @@
         "HAS_TKEEP": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "TKEEP_WIDTH": [ { "value": "16", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
         "wach_type": [ { "value": "FIFO", "resolve_type": "user", "usage": "all" } ],
-        "FIFO_Implementation_wach": [ { "value": "Independent_Clocks_Distributed_RAM", "resolve_type": "user", "usage": "all" } ],
+        "FIFO_Implementation_wach": [ { "value": "Independent_Clocks_Distributed_RAM", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "FIFO_Application_Type_wach": [ { "value": "Data_FIFO", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Enable_ECC_wach": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Inject_Sbit_Error_wach": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
@@ -92,7 +92,7 @@
         "Programmable_Empty_Type_wach": [ { "value": "No_Programmable_Empty_Threshold", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Empty_Threshold_Assert_Value_wach": [ { "value": "13", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
         "wdch_type": [ { "value": "FIFO", "resolve_type": "user", "usage": "all" } ],
-        "FIFO_Implementation_wdch": [ { "value": "Independent_Clocks_Builtin_FIFO", "resolve_type": "user", "usage": "all" } ],
+        "FIFO_Implementation_wdch": [ { "value": "Independent_Clocks_Builtin_FIFO", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "FIFO_Application_Type_wdch": [ { "value": "Data_FIFO", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Enable_ECC_wdch": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Inject_Sbit_Error_wdch": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
@@ -104,7 +104,7 @@
         "Programmable_Empty_Type_wdch": [ { "value": "No_Programmable_Empty_Threshold", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Empty_Threshold_Assert_Value_wdch": [ { "value": "1018", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
         "wrch_type": [ { "value": "FIFO", "resolve_type": "user", "usage": "all" } ],
-        "FIFO_Implementation_wrch": [ { "value": "Independent_Clocks_Distributed_RAM", "resolve_type": "user", "usage": "all" } ],
+        "FIFO_Implementation_wrch": [ { "value": "Independent_Clocks_Distributed_RAM", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "FIFO_Application_Type_wrch": [ { "value": "Data_FIFO", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Enable_ECC_wrch": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Inject_Sbit_Error_wrch": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
@@ -116,7 +116,7 @@
         "Programmable_Empty_Type_wrch": [ { "value": "No_Programmable_Empty_Threshold", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Empty_Threshold_Assert_Value_wrch": [ { "value": "13", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
         "rach_type": [ { "value": "FIFO", "resolve_type": "user", "usage": "all" } ],
-        "FIFO_Implementation_rach": [ { "value": "Independent_Clocks_Distributed_RAM", "resolve_type": "user", "usage": "all" } ],
+        "FIFO_Implementation_rach": [ { "value": "Independent_Clocks_Distributed_RAM", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "FIFO_Application_Type_rach": [ { "value": "Data_FIFO", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Enable_ECC_rach": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Inject_Sbit_Error_rach": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
@@ -128,7 +128,7 @@
         "Programmable_Empty_Type_rach": [ { "value": "No_Programmable_Empty_Threshold", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Empty_Threshold_Assert_Value_rach": [ { "value": "13", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
         "rdch_type": [ { "value": "FIFO", "resolve_type": "user", "usage": "all" } ],
-        "FIFO_Implementation_rdch": [ { "value": "Independent_Clocks_Builtin_FIFO", "resolve_type": "user", "usage": "all" } ],
+        "FIFO_Implementation_rdch": [ { "value": "Independent_Clocks_Builtin_FIFO", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "FIFO_Application_Type_rdch": [ { "value": "Data_FIFO", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "Enable_ECC_rdch": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Inject_Sbit_Error_rdch": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
@@ -391,18 +391,16 @@
         "SIMULATOR_LANGUAGE": [ { "value": "MIXED" } ],
         "SPEEDGRADE": [ { "value": "-2" } ],
         "STATIC_POWER": [ { "value": "" } ],
-        "TEMPERATURE_GRADE": [ { "value": "E" } ],
-        "USE_RDI_CUSTOMIZATION": [ { "value": "TRUE" } ],
-        "USE_RDI_GENERATION": [ { "value": "TRUE" } ]
+        "TEMPERATURE_GRADE": [ { "value": "E" } ]
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
-        "IPREVISION": [ { "value": "7" } ],
+        "IPREVISION": [ { "value": "11" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "." } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
-        "SWVERSION": [ { "value": "2022.2" } ],
+        "SWVERSION": [ { "value": "2024.2" } ],
         "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
       }
     },

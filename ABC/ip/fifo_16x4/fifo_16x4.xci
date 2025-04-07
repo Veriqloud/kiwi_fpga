@@ -3,7 +3,7 @@
   "ip_inst": {
     "xci_name": "fifo_16x4",
     "component_reference": "xilinx.com:ip:fifo_generator:13.2",
-    "ip_revision": "7",
+    "ip_revision": "11",
     "gen_directory": "../../../../Bob.gen/sources_1/ip/fifo_16x4",
     "parameters": {
       "component_parameters": {
@@ -23,7 +23,7 @@
         "Reset_Pin": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Enable_Reset_Synchronization": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Reset_Type": [ { "value": "Asynchronous_Reset", "resolve_type": "user", "enabled": false, "usage": "all" } ],
-        "Full_Flags_Reset_Value": [ { "value": "1", "resolve_type": "user", "usage": "all" } ],
+        "Full_Flags_Reset_Value": [ { "value": "1", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "Use_Dout_Reset": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Dout_Reset_Value": [ { "value": "0", "resolve_type": "user", "usage": "all" } ],
         "dynamic_power_saving": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
@@ -44,9 +44,9 @@
         "Data_Count": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Data_Count_Width": [ { "value": "7", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
         "Write_Data_Count": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
-        "Write_Data_Count_Width": [ { "value": "7", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "Write_Data_Count_Width": [ { "value": "7", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Read_Data_Count": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
-        "Read_Data_Count_Width": [ { "value": "9", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "Read_Data_Count_Width": [ { "value": "9", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Disable_Timing_Violations": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Read_Clock_Frequency": [ { "value": "1", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
         "Write_Clock_Frequency": [ { "value": "1", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
@@ -172,7 +172,7 @@
         "Master_interface_Clock_enable_memory_mapped": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Slave_interface_Clock_enable_memory_mapped": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Output_Register_Type": [ { "value": "Embedded_Reg", "resolve_type": "user", "usage": "all" } ],
-        "Enable_Safety_Circuit": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
+        "Enable_Safety_Circuit": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Enable_ECC_Type": [ { "value": "Hard_ECC", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "C_SELECT_XPM": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ]
       },
@@ -391,18 +391,16 @@
         "SIMULATOR_LANGUAGE": [ { "value": "MIXED" } ],
         "SPEEDGRADE": [ { "value": "-2" } ],
         "STATIC_POWER": [ { "value": "" } ],
-        "TEMPERATURE_GRADE": [ { "value": "E" } ],
-        "USE_RDI_CUSTOMIZATION": [ { "value": "TRUE" } ],
-        "USE_RDI_GENERATION": [ { "value": "TRUE" } ]
+        "TEMPERATURE_GRADE": [ { "value": "E" } ]
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
-        "IPREVISION": [ { "value": "7" } ],
+        "IPREVISION": [ { "value": "11" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../Bob.gen/sources_1/ip/fifo_16x4" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
-        "SWVERSION": [ { "value": "2022.2" } ],
+        "SWVERSION": [ { "value": "2024.2" } ],
         "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
       }
     },
