@@ -711,18 +711,6 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   create_bd_pin -dir I -type clk s_axis_clk
   create_bd_pin -dir I s_axis_tresetn
 
-  # Create instance: ila_0, and set properties
-  set ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0 ]
-  set_property -dict [list \
-    CONFIG.C_MONITOR_TYPE {Native} \
-    CONFIG.C_NUM_OF_PROBES {9} \
-    CONFIG.C_PROBE2_WIDTH {3} \
-    CONFIG.C_PROBE5_WIDTH {3} \
-    CONFIG.C_PROBE6_WIDTH {2} \
-    CONFIG.C_PROBE7_WIDTH {4} \
-  ] $ila_0
-
-
   # Create instance: decoy_0, and set properties
   set block_name decoy
   set block_cell_name decoy_0
@@ -749,46 +737,91 @@ proc create_hier_cell_decoy { parentCell nameHier } {
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /decoy/decoy_rng_fifos_0/s_axis_clk]
 
+  # Create instance: ila_0, and set properties
+  set ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0 ]
+  set_property -dict [list \
+    CONFIG.C_MONITOR_TYPE {Native} \
+    CONFIG.C_NUM_OF_PROBES {9} \
+    CONFIG.C_PROBE0_WIDTH {4} \
+    CONFIG.C_PROBE1_WIDTH {3} \
+    CONFIG.C_PROBE4_WIDTH {1} \
+    CONFIG.C_PROBE5_WIDTH {6} \
+    CONFIG.C_PROBE6_WIDTH {6} \
+    CONFIG.C_PROBE7_WIDTH {3} \
+    CONFIG.C_PROBE8_WIDTH {8} \
+  ] $ila_0
+
+
+  # Create instance: ila_1, and set properties
+  set ila_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_1 ]
+  set_property -dict [list \
+    CONFIG.C_MONITOR_TYPE {Native} \
+    CONFIG.C_NUM_OF_PROBES {8} \
+    CONFIG.C_PROBE1_WIDTH {3} \
+    CONFIG.C_PROBE2_WIDTH {2} \
+    CONFIG.C_PROBE3_WIDTH {3} \
+    CONFIG.C_PROBE4_WIDTH {4} \
+  ] $ila_1
+
+
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins s_axil] [get_bd_intf_pins decoy_0/s_axil]
   connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins s_axis] [get_bd_intf_pins decoy_rng_fifos_0/s_axis]
 
   # Create port connections
   connect_bd_net -net clk200_1  [get_bd_pins clk200] \
-  [get_bd_pins decoy_rng_fifos_0/clk200]
+  [get_bd_pins decoy_rng_fifos_0/clk200] \
+  [get_bd_pins ila_0/clk] \
+  [get_bd_pins decoy_0/clk200]
   connect_bd_net -net clk80_1  [get_bd_pins clk80] \
   [get_bd_pins decoy_0/clk80]
   connect_bd_net -net clk_wiz_0_clk_out1  [get_bd_pins clk240] \
-  [get_bd_pins ila_0/clk] \
+  [get_bd_pins ila_1/clk] \
   [get_bd_pins decoy_0/clk240]
   connect_bd_net -net decoy_0_counter  [get_bd_pins decoy_0/counter] \
-  [get_bd_pins ila_0/probe2]
+  [get_bd_pins ila_1/probe3]
+  connect_bd_net -net decoy_0_decoy_dpram_max_addr_rng_r  [get_bd_pins decoy_0/decoy_dpram_max_addr_rng_r] \
+  [get_bd_pins ila_0/probe6]
+  connect_bd_net -net decoy_0_decoy_rng_addr_int  [get_bd_pins decoy_0/decoy_rng_addr_int] \
+  [get_bd_pins ila_0/probe7]
+  connect_bd_net -net decoy_0_decoy_rng_din_int  [get_bd_pins decoy_0/decoy_rng_din_int] \
+  [get_bd_pins ila_0/probe8]
   connect_bd_net -net decoy_0_decoy_signal  [get_bd_pins decoy_0/decoy_signal] \
   [get_bd_pins decoy_signal_0] \
-  [get_bd_pins ila_0/probe7]
+  [get_bd_pins ila_1/probe7]
   connect_bd_net -net decoy_0_decoy_signal_n  [get_bd_pins decoy_0/decoy_signal_n] \
   [get_bd_pins decoy_signal_n_0]
   connect_bd_net -net decoy_0_decoy_signal_p  [get_bd_pins decoy_0/decoy_signal_p] \
   [get_bd_pins decoy_signal_p_0]
+  connect_bd_net -net decoy_0_dpram_rng_dout  [get_bd_pins decoy_0/dpram_rng_dout] \
+  [get_bd_pins ila_0/probe0] \
+  [get_bd_pins ila_1/probe4]
   connect_bd_net -net decoy_0_rd_en_4_r  [get_bd_pins decoy_0/rd_en_4_r] \
-  [get_bd_pins ila_0/probe5]
+  [get_bd_pins ila_1/probe1]
+  connect_bd_net -net decoy_0_read_enable  [get_bd_pins decoy_0/read_enable] \
+  [get_bd_pins ila_0/probe2]
   connect_bd_net -net decoy_0_rng_a_r  [get_bd_pins decoy_0/rng_a_r] \
-  [get_bd_pins ila_0/probe6]
+  [get_bd_pins ila_1/probe2]
+  connect_bd_net -net decoy_0_sequence_rng_addr_r  [get_bd_pins decoy_0/sequence_rng_addr_r] \
+  [get_bd_pins ila_0/probe5]
+  connect_bd_net -net decoy_0_state_rng  [get_bd_pins decoy_0/state_rng] \
+  [get_bd_pins ila_0/probe1]
   connect_bd_net -net decoy_0_temp_signal1  [get_bd_pins decoy_0/temp_signal1] \
-  [get_bd_pins ila_0/probe4]
+  [get_bd_pins ila_1/probe6]
   connect_bd_net -net decoy_0_temp_signal2  [get_bd_pins decoy_0/temp_signal2] \
-  [get_bd_pins ila_0/probe3]
+  [get_bd_pins ila_1/probe5]
   connect_bd_net -net decoy_rng_fifos_0_de_rng_dout4  [get_bd_pins decoy_rng_fifos_0/de_rng_dout4] \
-  [get_bd_pins ila_0/probe8] \
   [get_bd_pins decoy_0/rng_value]
   connect_bd_net -net decoy_rst_1  [get_bd_pins decoy_rst] \
   [get_bd_pins decoy_0/decoy_rst]
   connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
-  [get_bd_pins ila_0/probe1] \
+  [get_bd_pins ila_0/probe3] \
+  [get_bd_pins ila_1/probe0] \
   [get_bd_pins decoy_0/pps_i]
   connect_bd_net -net probe7_1  [get_bd_pins rd_en_4] \
-  [get_bd_pins decoy_0/rd_en_4] \
-  [get_bd_pins decoy_rng_fifos_0/rd_en_4]
+  [get_bd_pins decoy_rng_fifos_0/rd_en_4] \
+  [get_bd_pins ila_0/probe4] \
+  [get_bd_pins decoy_0/rd_en_4]
   connect_bd_net -net rd_en_16_1  [get_bd_pins rd_en_16] \
   [get_bd_pins decoy_rng_fifos_0/rd_en_16]
   connect_bd_net -net rst_240_1  [get_bd_pins rst_240] \
@@ -802,7 +835,6 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   connect_bd_net -net s_axis_tresetn_1  [get_bd_pins s_axis_tresetn] \
   [get_bd_pins decoy_rng_fifos_0/s_axis_tresetn]
   connect_bd_net -net ttl_gate_apd_0_pps_trigger  [get_bd_pins pps_trigger] \
-  [get_bd_pins ila_0/probe0] \
   [get_bd_pins decoy_0/pps_trigger]
   connect_bd_net -net tx_core_rst_1  [get_bd_pins tx_core_rst] \
   [get_bd_pins decoy_rng_fifos_0/tx_core_rst]

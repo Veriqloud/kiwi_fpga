@@ -29,7 +29,7 @@ module decoy#(
     parameter UPDATE_MODE = "ASYNC",
     //AXIL parameters    
     parameter integer C_s_axil_DATA_WIDTH   = 32,
-    parameter integer C_s_axil_ADDR_WIDTH   = 8
+    parameter integer C_s_axil_ADDR_WIDTH   = 12
 )
 (
     //Ports of Axi Slave Bus interface
@@ -58,6 +58,7 @@ module decoy#(
 
     input clk240,
     input clk80,
+    input clk200,
     input pps_i,
     input decoy_rst,
     input rst_240,
@@ -77,7 +78,11 @@ module decoy#(
     output decoy_signal,
     output [3:0] dpram_rng_dout,
     output [2:0] state_rng,
-    output read_enable
+    output read_enable,
+    output [5:0] sequence_rng_addr_r,
+    output [5:0] decoy_dpram_max_addr_rng_r,
+    output [2:0] decoy_rng_addr_int,
+    output [31:0] decoy_rng_din_int
     );
 
 
@@ -89,6 +94,7 @@ module decoy#(
     wire decoy_trigger_enstep_slv2_o; //trigger enable step  
     wire [31:0] decoy_params_80_o; //decoy params
     wire [31:0] decoy_params_slv_o; //decoy params
+    wire decoy_rng_mode_o; //decoy rng mode
     wire decoy_rng_wen_int; //decoy rng write enable
     wire [2:0] decoy_rng_addr_int; //decoy rng address
     wire [31:0] decoy_rng_din_int; //decoy rng data in
@@ -104,6 +110,7 @@ module decoy#(
             .trigger_enstep_slv2_o(decoy_trigger_enstep_slv2_o), //trigger enable step
             .decoy_params_80_o(decoy_params_80_o), //decoy params
             .decoy_params_slv_o(decoy_params_slv_o), //decoy params
+            .decoy_rng_mode_o(decoy_rng_mode_o), //decoy rng mode
             .decoy_rng_wen_int(decoy_rng_wen_int), //decoy rng write enable
             .decoy_rng_addr_int(decoy_rng_addr_int), //decoy rng address
             .decoy_rng_din_int(decoy_rng_din_int), //decoy rng data in
@@ -184,14 +191,17 @@ module decoy#(
     //registers to domain clk200
     (* ASYNC_REG = "TRUE" *) reg [2:0] reg_enable_200_r;
     reg [5:0] decoy_dpram_max_addr_rng_r;
+    reg decoy_rng_mode_r;
     initial begin
         reg_enable_200_r = 0;
         decoy_dpram_max_addr_rng_r = 0;
+        decoy_rng_mode_r = 0;
     end
     always @(posedge clk200) begin
         reg_enable_200_r <= {reg_enable_200_r[1:0], reg_enable_o};
             if (reg_enable_200_r[2] == 0 && reg_enable_200_r[1] == 1) begin
                 decoy_dpram_max_addr_rng_r <= decoy_dpram_max_addr_rng_int;
+                decoy_rng_mode_r <= decoy_rng_mode_o;
             end  
     end
     
@@ -220,10 +230,12 @@ module decoy#(
         );
     //State machine to readout the rng_test from dpram
     reg [2:0] state_rng;
+    reg pps_200_r;
     localparam IDLE_SR = 0, WAIT_SR = 1, SR0 = 2, SR1 = 3;
     always @(posedge clk200) begin
         if(rst_200_o) begin
             sequence_rng_addr_r <= 0;
+            pps_200_r <= 0;
             read_enable <= 0;
             state_rng <= IDLE_SR;
         end else begin
@@ -234,8 +246,8 @@ module decoy#(
                     end else state_rng <= WAIT_SR;
                 end
                 WAIT_SR: begin
-                    pps_r <= pps_i;
-                    if (!pps_r && pps_i) begin
+                    pps_200_r <= pps_i;
+                    if (!pps_200_r && pps_i) begin
                         state_rng <= SR0;
                         read_enable <= 1;
                     end else state_rng <= WAIT_SR;
@@ -359,10 +371,13 @@ module decoy#(
             decoy_signal <= 0;
         end else begin
             rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4};
-            if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
+            if ((rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) && (decoy_rng_mode_r == 1)) begin
                 // rng_a_r <= rng_a;
                 rng_a_r <= rng_value[1:0];
-            end
+            end else if ((rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) && (decoy_rng_mode_r == 0)) begin
+                // rng_a_r <= rng_a;
+                rng_a_r <= dpram_rng_dout[1:0];
+            end 
             case(rng_a_r)
                 2'b00: decoy_signal <= 0;
                 2'b01: decoy_signal <= temp_signal1;

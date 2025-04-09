@@ -38,6 +38,7 @@ module decoy_reg_mngt_axil#
         output wire trigger_enstep_slv2_o,
         output [31:0] decoy_params_80_o,
         output [31:0] decoy_params_slv_o,
+        output decoy_rng_mode_o,
         output reg decoy_rng_wen_int,
         output reg [2:0] decoy_rng_addr_int,
         output reg [31:0] decoy_rng_din_int,
@@ -149,8 +150,9 @@ module decoy_reg_mngt_axil#
     assign reg_enable_o = slv_reg0[0]; //enable writing to regs
     assign tune_step_o = slv_reg1[3:0]; //tune step
     assign trigger_enstep_o = slv_reg2[0]; //trigger enable step
-    assign trigger_enstep_slv1_o = slv_reg3[0]; //trigger enable step
-    assign trigger_enstep_slv2_o = slv_reg4[0]; //trigger enable step
+    assign trigger_enstep_slv1_o = slv_reg2[1]; //trigger enable step
+    assign trigger_enstep_slv2_o = slv_reg2[2]; //trigger enable step
+    assign decoy_rng_mode_o = slv_reg3[0]; //decoy rng mode
     assign decoy_params_80_o = slv_reg5; //decoy params
     assign decoy_params_slv_o = slv_reg6; //decoy params
     assign decoy_dpram_max_addr_rng_int = slv_reg7[5:0]; //decoy dpram max addr

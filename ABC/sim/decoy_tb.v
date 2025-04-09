@@ -25,6 +25,8 @@ module decoy_tb;
     // reg clk200;
     reg pps_i;
     reg clk240;
+    reg clk80;
+    reg clk200;
     reg rst_240;
     reg decoy_rst;
     // reg tx_core_rst;
@@ -40,6 +42,8 @@ module decoy_tb;
         // .clk200(clk200), 
         .pps_i(pps_i),
         .clk240(clk240),
+        .clk80(clk80),
+        .clk200(clk200),
         .rst_240(rst_240),
         .decoy_rst(decoy_rst),
         // .tx_core_rst(tx_core_rst), 
@@ -53,6 +57,8 @@ module decoy_tb;
         // Initialize Inputs
         // clk200 = 0;
         clk240 = 0; 
+        clk80 = 0;
+        clk200 = 0;
         decoy_rst = 1; // Added missing semicolon
         // tx_core_rst = 1;
         // Wait for global reset to finish
@@ -99,6 +105,18 @@ module decoy_tb;
         #2.55 clk240 = 1;
         forever begin 
             #2.083333333 clk240 = ~clk240; // Generate clock with 4.166ns period (240MHz)
+        end
+    end
+    initial begin
+        #2.55 clk80 = 1;
+        forever begin 
+            #6.25 clk80 = ~clk80; // Generate clock with 4.166ns period (240MHz)
+        end
+    end
+    initial begin
+        #2.55 clk200 = 1;
+        forever begin 
+            #5 clk200 = ~clk200; // Generate clock with 4.166ns period (240MHz)
         end
     end
 endmodule
