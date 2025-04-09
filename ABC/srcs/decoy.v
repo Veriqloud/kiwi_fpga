@@ -74,7 +74,10 @@ module decoy#(
     output temp_signal1,
     output rd_en_4_r,
     output rng_a_r,
-    output decoy_signal
+    output decoy_signal,
+    output [3:0] dpram_rng_dout,
+    output [2:0] state_rng,
+    output read_enable
     );
 
 
@@ -86,6 +89,10 @@ module decoy#(
     wire decoy_trigger_enstep_slv2_o; //trigger enable step  
     wire [31:0] decoy_params_80_o; //decoy params
     wire [31:0] decoy_params_slv_o; //decoy params
+    wire decoy_rng_wen_int; //decoy rng write enable
+    wire [2:0] decoy_rng_addr_int; //decoy rng address
+    wire [31:0] decoy_rng_din_int; //decoy rng data in
+    wire [5:0] decoy_dpram_max_addr_rng_int; //decoy dpram max address
     decoy_reg_mngt_axil # ( 
             .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
             .C_S_AXI_ADDR_WIDTH(C_s_axil_ADDR_WIDTH)
@@ -97,6 +104,10 @@ module decoy#(
             .trigger_enstep_slv2_o(decoy_trigger_enstep_slv2_o), //trigger enable step
             .decoy_params_80_o(decoy_params_80_o), //decoy params
             .decoy_params_slv_o(decoy_params_slv_o), //decoy params
+            .decoy_rng_wen_int(decoy_rng_wen_int), //decoy rng write enable
+            .decoy_rng_addr_int(decoy_rng_addr_int), //decoy rng address
+            .decoy_rng_din_int(decoy_rng_din_int), //decoy rng data in
+            .decoy_dpram_max_addr_rng_int(decoy_dpram_max_addr_rng_int), //decoy dpram max address
             .S_AXI_ACLK(s_axil_aclk),
             .S_AXI_ARESETN(s_axil_aresetn),
             .S_AXI_AWADDR(s_axil_awaddr),
@@ -119,6 +130,135 @@ module decoy#(
             .S_AXI_RVALID(s_axil_rvalid),
             .S_AXI_RREADY(s_axil_rready)
         );
+
+    //Generate reset in clk240 domain
+        (* ASYNC_REG = "TRUE" *) reg [2:0] rst_240_r;
+        (* ASYNC_REG = "TRUE" *) reg [2:0] rst_80_r;
+        (* ASYNC_REG = "TRUE" *) reg [2:0] rst_200_r;
+        initial begin
+            rst_240_r <= 0;
+            rst_80_r <= 0;
+            rst_200_r <= 0;
+        end
+        always @(posedge clk240) begin
+            rst_240_r <= {rst_240_r[1:0],decoy_rst};
+        end
+        always @(posedge clk80) begin
+            rst_80_r <= {rst_80_r[1:0],decoy_rst};
+        end
+        always @(posedge clk200) begin
+            rst_200_r <= {rst_200_r[1:0],decoy_rst};
+        end
+            
+        wire clk240_o;
+        wire rst_240_o;
+        wire rstn_240_o;
+        
+        reset_register #(.RST_ACTIVE_LEVEL("HIGH")) decoy_rst_240_inst (
+            .clk_i(clk240),
+            .rst_i(rst_240_r[1]),
+            .clk_o(clk240_o),
+            .rstn_o(rstn_240_o),
+            .rst_o(rst_240_o));
+    
+        wire clk80_o;
+        wire rst_80_o;
+        wire rstn_80_o;
+        reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk80_inst (
+            .clk_i(clk80),
+            .rst_i(rst_80_r[1]),
+            .clk_o(clk80_o),
+            .rstn_o(rstn_80_o),
+            .rst_o(rst_80_o));
+    
+        wire clk200_o;
+        wire rst_200_o;
+        wire rstn_200_o;
+        reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk200_inst (
+            .clk_i(clk200),
+            .rst_i(rst_200_r[1]),
+            .clk_o(clk200_o),
+            .rstn_o(rstn_200_o),
+            .rst_o(rst_200_o));
+    
+    //registers to domain clk200
+    (* ASYNC_REG = "TRUE" *) reg [2:0] reg_enable_200_r;
+    reg [5:0] decoy_dpram_max_addr_rng_r;
+    initial begin
+        reg_enable_200_r = 0;
+        decoy_dpram_max_addr_rng_r = 0;
+    end
+    always @(posedge clk200) begin
+        reg_enable_200_r <= {reg_enable_200_r[1:0], reg_enable_o};
+            if (reg_enable_200_r[2] == 0 && reg_enable_200_r[1] == 1) begin
+                decoy_dpram_max_addr_rng_r <= decoy_dpram_max_addr_rng_int;
+            end  
+    end
+    
+    //Genererate RNG value
+    reg [5:0] sequence_rng_addr_r;
+    wire [3:0] dpram_rng_dout;
+    reg read_enable;
+    dpram_in_wider_out #(
+        .RAM_INIT("decoy_rng_sequence.mem"),
+        .WIDTHB(4),
+        .SIZEB(64),
+        .ADDRWIDTHB(6),
+        .WIDTHA(32),
+        .SIZEA(8),
+        .ADDRWIDTHA(3))
+    dpram_seq_rng_16x4_inst(
+        .clkA(s_axil_aclk), 
+        .clkB(clk200), 
+        .enaA(decoy_rng_wen_int), 
+        .weA(decoy_rng_wen_int), 
+        .enaB(read_enable), 
+        .addrA(decoy_rng_addr_int), 
+        .addrB(sequence_rng_addr_r), 
+        .diA(decoy_rng_din_int[31:0]), 
+        .doB(dpram_rng_dout)    
+        );
+    //State machine to readout the rng_test from dpram
+    reg [2:0] state_rng;
+    localparam IDLE_SR = 0, WAIT_SR = 1, SR0 = 2, SR1 = 3;
+    always @(posedge clk200) begin
+        if(rst_200_o) begin
+            sequence_rng_addr_r <= 0;
+            read_enable <= 0;
+            state_rng <= IDLE_SR;
+        end else begin
+            case(state_rng)
+                IDLE_SR: begin
+                    if (pps_i) begin
+                        state_rng <= IDLE_SR;
+                    end else state_rng <= WAIT_SR;
+                end
+                WAIT_SR: begin
+                    pps_r <= pps_i;
+                    if (!pps_r && pps_i) begin
+                        state_rng <= SR0;
+                        read_enable <= 1;
+                    end else state_rng <= WAIT_SR;
+                end
+                SR0: begin
+                    sequence_rng_addr_r <= 0;
+                    if (rd_en_4 == 1) begin
+                        state_rng <= SR1;
+                    end
+                end
+                SR1: begin
+                    if (rd_en_4 == 1) begin
+                        if (sequence_rng_addr_r == (decoy_dpram_max_addr_rng_r-1)) begin //Max_addr=64
+                            sequence_rng_addr_r <= 0;
+                        end else 
+                            sequence_rng_addr_r <= sequence_rng_addr_r+1;                    
+                        state_rng <= SR1;
+                    end
+                end
+                default: ;
+            endcase
+        end
+    end  
 
     //Regiters from axil clock domain to clk240 domain
     (* ASYNC_REG = "TRUE" *) reg [2:0] reg_enable_240_r;
@@ -162,40 +302,6 @@ module decoy#(
         end
     end
 
-    //Generate reset in clk240 domain
-    (* ASYNC_REG = "TRUE" *) reg [2:0] rst_240_r;
-    (* ASYNC_REG = "TRUE" *) reg [2:0] rst_80_r;
-    initial begin
-        rst_240_r <= 0;
-        rst_80_r <= 0;
-    end
-    always @(posedge clk240) begin
-        rst_240_r <= {rst_240_r[1:0],decoy_rst};
-    end
-    always @(posedge clk80) begin
-        rst_80_r <= {rst_80_r[1:0],decoy_rst};
-    end
-        
-    wire clk240_o;
-    wire rst_240_o;
-    wire rstn_240_o;
-    
-    reset_register #(.RST_ACTIVE_LEVEL("HIGH")) decoy_rst_240_inst (
-        .clk_i(clk240),
-        .rst_i(rst_240_r[1]),
-        .clk_o(clk240_o),
-        .rstn_o(rstn_240_o),
-        .rst_o(rst_240_o));
-
-    wire clk80_o;
-    wire rst_80_o;
-    wire rstn_80_o;
-    reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk80_inst (
-        .clk_i(clk80),
-        .rst_i(rst_80_r[1]),
-        .clk_o(clk80_o),
-        .rstn_o(rstn_80_o),
-        .rst_o(rst_80_o));
 
     //Generate pattern corresponding to rng value 1 and 2
     reg [2:0] counter;  // 3-bit counter
