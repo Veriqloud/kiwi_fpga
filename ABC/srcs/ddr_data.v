@@ -530,7 +530,7 @@ always @(posedge clk200_i) begin
                 // rd_en_gc_test <= m_axis_tvalid_gc;
 
                 counter_rd_en_gc <= counter_rd_en_gc + 1;
-                if (counter_rd_en_gc >= threshold_wait) begin
+                if ((counter_rd_en_gc >= threshold_wait) && (state_alpha==WAIT)) begin
                     counter_rd_en_gc <= 0;
                 end
                 
