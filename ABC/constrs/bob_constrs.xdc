@@ -228,6 +228,7 @@ set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey
 set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Bob_top_i/ttl_gate_apd_0/inst/ttl_rst80_r_reg[0]/D}]
 set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/rst_240_r_reg[0]/D}]
 set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/rst_80_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/rst_200_r_reg[0]/D}]
 # set_false_path -from $mmcm_ddr_clkout -to [get_clocks clk_10]
 set_false_path -from [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/fpga_turnkey_reg_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Bob_top_i/clk_rst/clk_rst_mngt/inst/clockchip_sync_r_reg[0]/D}]
 
@@ -324,13 +325,18 @@ set_false_path -from [get_pins {Bob_top_i/ttl_gate_apd_0/inst/fpga_turnkey_reg_m
 ## 1-bit CDC
 set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg0_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/reg_enable_240_r_reg[0]/D}]
 set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg0_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/reg_enable_80_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg0_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/reg_enable_200_r_reg[0]/D}]
 set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg2_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/fine_delay_de_inst/ttl_trigger_enstep_r_reg[0]/D}]
-set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg3_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/fine_delay_de_inst/ttl_trigger_enstep_slv1_r_reg[0]/D}]
-set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg4_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/fine_delay_de_inst/ttl_trigger_enstep_slv2_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg2_reg[1]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/fine_delay_de_inst/ttl_trigger_enstep_slv1_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg2_reg[2]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/fine_delay_de_inst/ttl_trigger_enstep_slv2_r_reg[0]/D}]
+set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg3_reg[0]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_rng_mode_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg3_reg[0]/C}] -to [get_pins Bob_top_i/decoy/decoy_0/inst/decoy_rng_mode_240_r_reg/D]
+
 ## multi-bit CDC
 set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg1_reg[*]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/tune_step_r_reg[*]/D}]
 set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg5_reg[*]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_params_80_r_reg[*]/D}]
 set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg6_reg[*]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_params_slv_r_reg[*]/D}]
+set_false_path -from [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_reg_mngt_axil_inst/slv_reg7_reg[*]/C}] -to [get_pins {Bob_top_i/decoy/decoy_0/inst/decoy_dpram_max_addr_rng_r_reg[*]/D}]
 ## CONSTRAINING FOR FPGA FLASH CONFIGURATION
 # set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN disable [current_design]
 # set_property CONFIG_MODE SPIx4 [current_design]

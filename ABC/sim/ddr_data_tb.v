@@ -35,20 +35,25 @@ module ddr_data_tb();
     reg [31:0]    gate_pos3;
 
     //AXIL control ports
-    reg           start_write_ddr_i;
-    reg [2:0]     command_i;
-    reg           command_gc_i;
-    reg           command_enable;
-    reg           command_alpha_enable;
-    reg           command_gc_enable;
-    reg           reg_enable_i;
-    reg [47:0]    dq_gc_start_i;
-    reg [31:0]    threshold_i;
-    reg [31:0]    threshold_full_i;
+    reg           sr_start_write_ddr_i;
+    reg [2:0]     sr_command_i;
+    reg           sr_command_gc_i;
+    reg           sr_command_enable;
+    reg           sr_command_alpha_enable;
+    reg           sr_command_gc_enable;
+    reg           sr_reg_enable_i;
+    reg [47:0]    sr_dq_gc_start_i;
+    reg [31:0]    sr_threshold_i;
+    reg [31:0]    sr_threshold_full_i;
+    reg [15:0]    sr_fiber_delay_i;
+    reg           sr_pair_delay_i;
+    reg [15:0]    sr_de_fiber_delay_i;
+    reg           sr_de_pair_delay_i;
+    reg [15:0]    sr_ab_fiber_delay_i;
 
 
     //AXIL output monitoring ports
-    wire [47:0]   current_dq_gc;
+    wire [47:0]   sr_current_dq_gc;
 
     //AXI-Stream master ports
     wire [255:0]                            m_axis_tdata;
@@ -109,17 +114,22 @@ ddr_data ddr_data_int(
     .gate_pos1(gate_pos1),
     .gate_pos2(gate_pos2),
     .gate_pos3(gate_pos3),
-    .start_write_ddr_i(start_write_ddr_i),
-    .command_i(command_i),
-    .command_gc_i(command_gc_i),
-    .command_enable(command_enable),
-    .command_alpha_enable(command_alpha_enable),
-    .command_gc_enable(command_gc_enable),
-    .reg_enable_i(reg_enable_i),
-    .dq_gc_start_i(dq_gc_start_i),
-    .threshold_i(threshold_i),
-    .threshold_full_i(threshold_full_i),
-    .current_dq_gc(current_dq_gc),
+    .sr_start_write_ddr_i(sr_start_write_ddr_i),
+    .sr_command_i(sr_command_i),
+    .sr_command_gc_i(sr_command_gc_i),
+    .sr_command_enable(sr_command_enable),
+    .sr_command_alpha_enable(sr_command_alpha_enable),
+    .sr_command_gc_enable(sr_command_gc_enable),
+    .sr_reg_enable_i(sr_reg_enable_i),
+    .sr_dq_gc_start_i(sr_dq_gc_start_i),
+    .sr_threshold_i(sr_threshold_i),
+    .sr_threshold_full_i(sr_threshold_full_i),
+    .sr_current_dq_gc(sr_current_dq_gc),
+    .sr_fiber_delay_i(sr_fiber_delay_i),
+    .sr_pair_delay_i(sr_pair_delay_i),
+    .sr_de_fiber_delay_i(sr_de_fiber_delay_i),
+    .sr_de_pair_delay_i(sr_de_pair_delay_i),
+    .sr_ab_fiber_delay_i(sr_ab_fiber_delay_i),
     .m_axis_tdata(m_axis_tdata),
     .m_axis_tvalid(m_axis_tvalid),
     .m_axis_tready(m_axis_tready),
@@ -161,8 +171,12 @@ initial begin
     gate_pos1 = 31'd400;
     gate_pos2 = 31'd400;
     gate_pos3 = 31'd625;
-    dq_gc_start_i = 48'ha00000433;
-    threshold_i = 32'd39999;
+    sr_dq_gc_start_i = 48'h00000433;
+    sr_threshold_i = 32'd39999;
+    sr_fiber_delay_i = 16'd0;
+    sr_pair_delay_i = 1'b0;
+    sr_de_fiber_delay_i = 16'd42;
+    sr_de_pair_delay_i = 1'b1;
 
     m_axis_tready = 1;
     m_axis_tready_gc = 1;
@@ -185,11 +199,11 @@ end
 
 //Registers
 initial begin
-    #20 command_i = 0;
-    #20 command_i = 3'd3;
-    #20 reg_enable_i = 0;
-    #20 reg_enable_i = 1;
-    command_enable = 1;    
+    #20 sr_command_i = 0;
+    #20 sr_command_i = 3'd3;
+    #20 sr_reg_enable_i = 0;
+    #20 sr_reg_enable_i = 1;
+    sr_command_enable = 1;    
 end
 
 initial begin
@@ -240,20 +254,20 @@ end
 
 //Start moment
 initial begin
-    start_write_ddr_i = 0; 
-    #10 start_write_ddr_i = 1;
-    #200000 start_write_ddr_i = 0;
-    #2000000 start_write_ddr_i = 1;
+    sr_start_write_ddr_i = 0; 
+    #10 sr_start_write_ddr_i = 1;
+    #200000 sr_start_write_ddr_i = 0;
+    #2000000 sr_start_write_ddr_i = 1;
 end
 
 initial begin
-    command_gc_enable = 0;
-    #80000 command_gc_enable = 1;
+    sr_command_gc_enable = 0;
+    #80000 sr_command_gc_enable = 1;
 end
 
 initial begin
-    command_alpha_enable = 0;
-    #1000000 command_alpha_enable = 1;
+    sr_command_alpha_enable = 0;
+    #1000000 sr_command_alpha_enable = 1;
 end
 //detection result is sent to m_axis_gc
 initial begin
@@ -318,8 +332,8 @@ initial begin
     #5 s_axis_tdata = 256'h3333;
     forever begin
         // #300 s_axis_tdata = 256'hffffffffaaaaaaaaffffffffaaaaaaaaffffffffaaaaaaaaffffffffaaaaaaaa;
-        #300 s_axis_tdata = 256'hffffffff00000e00ffffffff00000000ffffffffaaaaa7aaffffffff00000000;
-        #300 s_axis_tdata = 256'hffffffff00000a00ffffffff00000000ffffffffaaaaacaaffffffff00000000;
+        #300 s_axis_tdata = 256'hffffffff00000e00ffffffff000f0000ffffffffaaaaa7aa1f1f1f1fffffffff;
+        #300 s_axis_tdata = 256'hffffffff00000a00ffffffff000f0000ffffffffaaaaacaa1f1f1f1fffffffff;
     end
 end
 

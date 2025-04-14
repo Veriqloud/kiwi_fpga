@@ -28,6 +28,7 @@ module ddr_data(
     //input from fastdac
     input           rd_en_4,
     input [3:0]     rng_data,
+    input [1:0]     rng_a_data, 
 
     //input from tdc 
     input           tvalid200,
@@ -48,8 +49,10 @@ module ddr_data(
     input [47:0]    sr_dq_gc_start_i,
     input [31:0]    sr_threshold_i,
     input [31:0]    sr_threshold_full_i,
-    input [31:0]    sr_fiber_delay_i,
+    input [15:0]    sr_fiber_delay_i,
     input           sr_pair_delay_i,
+    input [15:0]    sr_de_fiber_delay_i,
+    input           sr_de_pair_delay_i,
     input [15:0]    sr_ab_fiber_delay_i,
 
     //AXIL output monitoring ports
@@ -192,8 +195,10 @@ reg [2:0] command_gc_r;
 reg [47:0] dq_gc_start_r;
 reg [31:0] threshold_r;
 reg [31:0] threshold_full_r;
-reg [31:0] fiber_delay_r;
+reg [15:0] fiber_delay_r;
 reg pair_delay_r;
+reg [15:0] de_fiber_delay_r;
+reg de_pair_delay_r;
 reg [15:0] ab_fiber_delay_r;
 
 initial begin
@@ -210,8 +215,10 @@ initial begin
     dq_gc_start_r <= 48'b0;
     threshold_r <= 32'b0;
     threshold_full_r <= 32'b0;
-    fiber_delay_r <= 32'b0;
+    fiber_delay_r <= 16'b0;
     pair_delay_r <= 0;
+    de_fiber_delay_r <= 16'b0;
+    de_pair_delay_r <= 0;
     ab_fiber_delay_r <= 16'b0;
 end
 
@@ -225,6 +232,8 @@ always @(posedge clk200_i) begin
         threshold_full_r <= sr_threshold_full_i;
         fiber_delay_r <= sr_fiber_delay_i;
         pair_delay_r <= sr_pair_delay_i;
+        de_fiber_delay_r <= sr_de_fiber_delay_i;
+        de_pair_delay_r <= sr_de_pair_delay_i;
         ab_fiber_delay_r <= sr_ab_fiber_delay_i;
     end
 end
@@ -236,6 +245,7 @@ reg [47:0] dq_gc_time;
 reg [47:0] read_count;
 reg [3:0] alpha;
 reg [1:0] alpha_q;
+reg decoy_q;
 reg [6:0] rd_en_4_r;
 reg [6:0] cycle_counter;
 reg [2:0] counter_valid;
@@ -284,23 +294,39 @@ wire [47:0] dq_gc_div64;
 assign dq_gc_div64 = ((dq_gc-12)>>6)<<6; //12 gcs is delay time from click to tvalid200
 
 //global counter read out of gc_fifo_in
-wire [47:0] gc_time_valid;
-wire [41:0] gc_time_valid_div;
-wire [6:0] gc_time_valid_mod;
-wire q_pos;
-// wire [41:0] delta_time_count;
-// wire debug_empty_flag;
+// wire [47:0] gc_time_valid;
+// wire [41:0] gc_time_valid_div;
+// wire [6:0] gc_time_valid_mod;
+// wire q_pos;
 
-// assign gc_time_valid = tdata_gc[47:0] - fiber_delay_r; //might have some calib value
+// assign gc_time_valid = (pair_delay_r == 1)?(tdata_gc[47:0] - fiber_delay_r)
+// :((tdata_gc[48] == 1)?(tdata_gc[47:0] - fiber_delay_r + 1):(tdata_gc[47:0] - fiber_delay_r));
 // assign gc_time_valid_div = gc_time_valid[47:6];
 // assign gc_time_valid_mod = gc_time_valid[5:0];
-// assign q_pos = tdata_gc[48];
+// assign q_pos = (pair_delay_r == 1)?(tdata_gc[48]):(~tdata_gc[48]); 
+
+//pack alpha: 32x8bits
+wire [47:0] gc_time_valid;
+wire [42:0] gc_time_valid_div;
+wire [4:0] gc_time_valid_mod;
+wire q_pos;
+wire [47:0] de_gc_time_valid;
+wire [42:0] de_gc_time_valid_div;
+wire [4:0] de_gc_time_valid_mod;
+wire de_q_pos;
+
 
 assign gc_time_valid = (pair_delay_r == 1)?(tdata_gc[47:0] - fiber_delay_r)
 :((tdata_gc[48] == 1)?(tdata_gc[47:0] - fiber_delay_r + 1):(tdata_gc[47:0] - fiber_delay_r));
-assign gc_time_valid_div = gc_time_valid[47:6];
-assign gc_time_valid_mod = gc_time_valid[5:0];
+assign gc_time_valid_div = gc_time_valid[47:5];
+assign gc_time_valid_mod = gc_time_valid[4:0];
 assign q_pos = (pair_delay_r == 1)?(tdata_gc[48]):(~tdata_gc[48]); 
+
+assign de_gc_time_valid = (de_pair_delay_r == 1)?(tdata_gc[47:0] - de_fiber_delay_r)
+:((tdata_gc[48] == 1)?(tdata_gc[47:0] - de_fiber_delay_r + 1):(tdata_gc[47:0] - de_fiber_delay_r));
+assign de_gc_time_valid_div = de_gc_time_valid[47:5];
+assign de_gc_time_valid_mod = de_gc_time_valid[4:0];
+assign de_q_pos = (de_pair_delay_r == 1)?(tdata_gc[48]):(~tdata_gc[48]);
 
 
 wire sr_current_dq_gc_valid;
@@ -310,7 +336,7 @@ assign sr_current_dq_gc_valid = command_enable_r[2];
 reg [2:0] state;
 parameter IDLE = 0, WAIT_START = 1, DETECT_PPS = 2, START = 3;
 reg [2:0] state_alpha;
-parameter IDLE_AL = 0, WAIT = 1, COUNTING = 2, DONE = 3;
+parameter IDLE_AL = 0, WAIT = 1, COUNTING_CM = 2, COUNTING_DE = 3, COUNTING_AL = 4, DONE = 5;
 
 initial begin
     state <= IDLE;
@@ -330,6 +356,7 @@ always @(posedge clk200_i) begin
         read_count <= 48'b0;
         alpha <= 4'b0;
         alpha_q <= 2'b0;
+        decoy_q <= 1'b0;
         rd_en_4_r <= 0;
         cycle_counter <= 7'b0;
         counter_valid <= 3'b0;
@@ -432,8 +459,9 @@ always @(posedge clk200_i) begin
                 //     fifo_gc_rst <= 1;
                 // end else fifo_gc_rst <= 0;
                 command_gc_enable_r <= {command_gc_enable_r[1:0],sr_command_gc_enable};
-                if ((command_gc_enable_r[2]) && (dq_gc > ab_fiber_delay_r)) begin
-                    fifo_gc_rst <= 1;
+                // if ((command_gc_enable_r[2]) && (dq_gc > ab_fiber_delay_r)) begin
+                if ((command_gc_enable_r[2]) && (dq_gc > de_fiber_delay_r)) begin
+                        fifo_gc_rst <= 1;
                 end else fifo_gc_rst <= 0;
 
                 // Get gc_click from detection
@@ -502,9 +530,11 @@ always @(posedge clk200_i) begin
                 //Pack data to save in ddr, verify number of write and read are matched
                 if (rd_en_4_r[1] == 1'b1) begin
                     cycle_counter <= cycle_counter + 1;
-                    data_pack[(4*cycle_counter)+:4] <= rng_data;
-                    if (cycle_counter >= 7'd63) begin
-                        cycle_counter <= 7'b0;
+                    // data_pack[(4*cycle_counter)+:4] <= rng_data;
+                    data_pack[(8*cycle_counter)+:8] <= {2'b00,rng_a_data,rng_data};
+                    // if (cycle_counter >= 7'd63) begin
+                    if (cycle_counter >= 7'd31) begin
+                            cycle_counter <= 7'b0;
                         pack_done <= 1'b1;
                     end
                 end else begin
@@ -535,7 +565,9 @@ always @(posedge clk200_i) begin
                 end
                 
                 if (rd_gc_valid) begin
-                    state_alpha <= COUNTING;
+                    // state_alpha <= COUNTING;
+                    // state_alpha <= COUNTING_DE;
+                    state_alpha <= COUNTING_CM;
                 end else begin
                     state_alpha <= WAIT;
                 end
@@ -550,47 +582,48 @@ always @(posedge clk200_i) begin
             end
         endcase
 
-   
         // case (state_alpha)
-        //     IDLE_AL : begin
-        //         read_count <= 0;
-        //         read_done <= 0;
-        //         counter_wait <= 0;
+        //     IDLE_AL: begin
+        //         read_count <= 48'b0;
+        //         read_done <= 1'b0;
         //     end
         //     WAIT: begin
         //         read_done <= 0;
-        //         counter_wait <= counter_wait + 1;
-        //         if (counter_wait >= threshold_wait) begin
+        //         if (rd_gc_valid) begin
         //             state_alpha <= COUNTING;
-        //             counter_wait <= counter_wait;
         //         end else state_alpha <= WAIT;
         //     end
         //     COUNTING: begin
-        //         s_axis_tready <= 1'b1;
+        //         s_axis_tready <= 1;
         //         read_done <= 0;
-        //         if (s_axis_tvalid) begin
+        //         if (s_axis_tvalid && s_axis_tready) begin
         //             read_count <= read_count + 1;
         //         end else begin
         //             read_count <= read_count;
         //         end
-        //         if ((read_count-1) == 624) begin //1249 for 1k rate, 24 for 50k rate
-        //             s_axis_tready <= 0;
+
+        //         if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
+        //             alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
         //             state_alpha <= DONE;
+        //             s_axis_tready <= 0;
+        //         end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
+        //             alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
+        //             state_alpha <= DONE;
+        //             s_axis_tready <= 0;
         //         end else begin
         //             state_alpha <= COUNTING;
         //         end
-        //         if (counter_datout == 0) begin
+
+        //         if (dq_gc == 0) begin
         //             state_alpha <= IDLE_AL;
         //         end
         //     end
         //     DONE: begin
         //         read_done <= 1;
-        //         read_count <= 0;
-        //         counter_wait <= 0;
+        //         read_count <= read_count;
         //         state_alpha <= WAIT;
         //     end
         // endcase
-
 
         case (state_alpha)
             IDLE_AL: begin
@@ -600,15 +633,20 @@ always @(posedge clk200_i) begin
             WAIT: begin
                 read_done <= 0;
                 if (rd_gc_valid) begin
-                    state_alpha <= COUNTING;
+                    // state_alpha <= COUNTING;
+                    // state_alpha <= COUNTING_DE;
+                    // state_alpha <= COUNTING_CM;
+                    if (gc_time_valid_div == de_gc_time_valid_div) begin
+                        state_alpha <= COUNTING_CM;
+                    end else begin
+                        state_alpha <= COUNTING_DE;
+                    end
+
                 end else state_alpha <= WAIT;
             end
-            COUNTING: begin
+            COUNTING_CM: begin
                 s_axis_tready <= 1;
                 read_done <= 0;
-                // if ((!s_axis_tvalid) || (!s_axis_tready)) begin
-                //     read_count <= read_count;
-                // end
                 if (s_axis_tvalid && s_axis_tready) begin
                     read_count <= read_count + 1;
                 end else begin
@@ -616,23 +654,73 @@ always @(posedge clk200_i) begin
                 end
 
                 if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
-                    alpha_q <= s_axis_tdata[(4*gc_time_valid_mod + 2)+:2];
+                    alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
+                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
                     state_alpha <= DONE;
                     s_axis_tready <= 0;
                 end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
-                    alpha_q <= s_axis_tdata[4*gc_time_valid_mod+:2]; 
+                    alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
+                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1];
                     state_alpha <= DONE;
                     s_axis_tready <= 0;
                 end else begin
-                    state_alpha <= COUNTING;
+                    state_alpha <= COUNTING_CM;
                 end
 
                 if (dq_gc == 0) begin
                     state_alpha <= IDLE_AL;
                 end
-                // if (counter_datout == 0) begin
-                //     state_alpha <= IDLE_AL;
-                // end
+            end
+            COUNTING_DE: begin
+                s_axis_tready <= 1;
+                read_done <= 0;
+                if (s_axis_tvalid && s_axis_tready) begin
+                    read_count <= read_count + 1;
+                end else begin
+                    read_count <= read_count;
+                end
+                if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
+                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
+                    state_alpha <= COUNTING_AL;
+                    // s_axis_tready <= 0;
+                end else if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
+                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1]; 
+                    state_alpha <= COUNTING_AL;
+                    // s_axis_tready <= 0;
+                end else begin
+                    state_alpha <= COUNTING_DE;
+                end
+
+                if (dq_gc == 0) begin
+                    state_alpha <= IDLE_AL;
+                end
+
+            end
+            COUNTING_AL: begin
+                s_axis_tready <= 1;
+                read_done <= 0;
+                decoy_q <= decoy_q;
+                if (s_axis_tvalid && s_axis_tready) begin
+                    read_count <= read_count + 1;
+                end else begin
+                    read_count <= read_count;
+                end
+
+                if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
+                    alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
+                    state_alpha <= DONE;
+                    s_axis_tready <= 0;
+                end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
+                    alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
+                    state_alpha <= DONE;
+                    s_axis_tready <= 0;
+                end else begin
+                    state_alpha <= COUNTING_AL;
+                end
+
+                if (dq_gc == 0) begin
+                    state_alpha <= IDLE_AL;
+                end
             end
             DONE: begin
                 read_done <= 1;
@@ -651,6 +739,10 @@ reg start_save_alpha;
 reg [6:0] alpha_cycle_counter;
 reg [127:0] alpha_pack;
 reg alpha_pack_done;
+
+initial begin
+    alpha_cycle_counter <= 0;
+end
 
 always @(posedge clk200_i) begin
     if (!ddr_data_rstn) begin
@@ -674,8 +766,10 @@ always @(posedge clk200_i) begin
                     start_save_alpha <= 1'b1;
                     if (start_save_alpha == 1'b1 && read_done == 1'b1) begin
                         alpha_cycle_counter <= alpha_cycle_counter + 1;
-                        alpha_pack[(2*alpha_cycle_counter)+:2] <= alpha_q;
-                        if (alpha_cycle_counter >= 7'd63) begin
+                        // alpha_pack[(2*alpha_cycle_counter)+:2] <= alpha_q;
+                        // if (alpha_cycle_counter >= 7'd63) begin
+                        alpha_pack[(4*alpha_cycle_counter)+:4] <= {1'b0,decoy_q,alpha_q};
+                        if (alpha_cycle_counter >= 7'd31) begin
                             alpha_cycle_counter <= 0;
                             alpha_pack_done <= 1'b1;
                         end

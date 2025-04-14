@@ -74,7 +74,10 @@ module decoy#(
     output temp_signal2,
     output temp_signal1,
     output rd_en_4_r,
-    output rng_a_r,
+    output rd_en_4_200_r,
+    output [1:0] rng_a_r,
+    output [1:0] rng_a,
+    // output [1:0] rng_a_200_r,
     output decoy_signal,
     output [3:0] dpram_rng_dout,
     output [2:0] state_rng,
@@ -275,19 +278,22 @@ module decoy#(
     //Regiters from axil clock domain to clk240 domain
     (* ASYNC_REG = "TRUE" *) reg [2:0] reg_enable_240_r;
     reg [3:0] tune_step_r;
+    reg decoy_rng_mode_240_r;
     initial begin
         reg_enable_240_r = 0;
-        reg_enable_80_r = 0;
         tune_step_r = 0;
+        decoy_rng_mode_240_r = 0;
     end
     always @(posedge clk240) begin
         if (rst_240_o) begin
             reg_enable_240_r <= 0;
             tune_step_r <= 0;
+            decoy_rng_mode_240_r <= 0;
         end else begin
             reg_enable_240_r <= {reg_enable_240_r[1:0], reg_enable_o};
             if (reg_enable_240_r[2] == 0 && reg_enable_240_r[1] == 1) begin
                 tune_step_r <= tune_step_o;
+                decoy_rng_mode_240_r <= decoy_rng_mode_o;
             end  
         end
     end
@@ -354,6 +360,10 @@ module decoy#(
         end
     end
 
+    //Generate nrg_a in clk200 domain to save to ddr
+    wire [1:0] rng_a;
+    assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
+
     //Generate decoy signal
     reg [2:0] rd_en_4_r;
     reg [1:0] rng_a_r;
@@ -365,19 +375,21 @@ module decoy#(
     reg decoy_signal;
     always @(posedge clk240) begin
         if (rst_240_o) begin
-        // if (rst_240) begin
             rd_en_4_r <= 0;
             rng_a_r <= 0;
             decoy_signal <= 0;
         end else begin
             rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4};
-            if ((rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) && (decoy_rng_mode_r == 1)) begin
-                // rng_a_r <= rng_a;
-                rng_a_r <= rng_value[1:0];
-            end else if ((rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) && (decoy_rng_mode_r == 0)) begin
-                // rng_a_r <= rng_a;
-                rng_a_r <= dpram_rng_dout[1:0];
-            end 
+            if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
+                rng_a_r <= rng_a;
+            end
+            // if ((rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) && (decoy_rng_mode_240_r == 1)) begin
+            //     // rng_a_r <= rng_a;
+            //     rng_a_r <= rng_value[1:0];
+            // end else if ((rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) && (decoy_rng_mode_240_r == 0)) begin
+            //     // rng_a_r <= rng_a;
+            //     rng_a_r <= dpram_rng_dout[1:0];
+            // end 
             case(rng_a_r)
                 2'b00: decoy_signal <= 0;
                 2'b01: decoy_signal <= temp_signal1;
@@ -388,6 +400,25 @@ module decoy#(
         end
     end
 
+    // reg [1:0] rng_a_200_r;
+    // reg [2:0] rd_en_4_200_r;
+    // initial begin
+    //     rng_a_200_r = 0;
+    //     rd_en_4_200_r = 0;
+    // end
+    // always @(posedge clk200) begin
+    //     if (rst_200_o) begin
+    //         rng_a_200_r <= 0;
+    //         rd_en_4_200_r <= 0;
+    //     end else begin
+    //         rd_en_4_200_r <= {rd_en_4_200_r[1:0], rd_en_4};
+    //         if ((rd_en_4_200_r[2] == 0 && rd_en_4_200_r[1] == 1) && (decoy_rng_mode_r == 1)) begin
+    //             rng_a_200_r <= rng_value[1:0];
+    //         end else if ((rd_en_4_200_r[2] == 0 && rd_en_4_200_r[1] == 1) && (decoy_rng_mode_r == 0)) begin
+    //             rng_a_200_r <= dpram_rng_dout[1:0];
+    //         end
+    //     end
+    // end
     //Tune delay of decoy signal
     reg [7:0] decoy_signal_d;
     always @(posedge clk240) begin
