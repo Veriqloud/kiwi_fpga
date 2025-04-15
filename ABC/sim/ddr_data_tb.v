@@ -26,6 +26,7 @@ module ddr_data_tb();
     reg           ddr_data_rstn;
     reg           rd_en_4;
     reg [3:0]     rng_data;
+    reg [1:0]     rng_a_data;
     reg           tvalid200;
     reg [31:0]    tdata200;
     reg [15:0]    tdata200_mod;
@@ -107,6 +108,7 @@ ddr_data ddr_data_int(
     .ddr_data_rstn(ddr_data_rstn),
     .rd_en_4(rd_en_4),
     .rng_data(rng_data),
+    .rng_a_data(rng_a_data),
     .tvalid200(tvalid200),
     .tdata200(tdata200),
     .tdata200_mod(tdata200_mod),
@@ -218,29 +220,52 @@ end
 
 //rng_data to write to ddr fifo
 initial begin
-    rng_data = 0;
-    #15 rng_data = 2;
+    rng_data = 0; rng_a_data = 0;
+    #15 rng_data = 2; rng_a_data = 2;
     forever begin
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h1;
-        #25 rng_data = 4'h1;
-        #25 rng_data = 4'h1;
-        #25 rng_data = 4'h1;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h0;
-        #25 rng_data = 4'h2;
-        #25 rng_data = 4'h2;
-        #25 rng_data = 4'h2;
-        #25 rng_data = 4'h2;
+        repeat(8)begin
+            #25 rng_data = 4'h0; rng_a_data = 2'h1;
+        end
+        repeat(8)begin
+            #25 rng_data = 4'h1; rng_a_data = 2'h0;
+        end
+        repeat(8)begin
+            #25 rng_data = 4'h0; rng_a_data = 2'h3;
+        end
+        repeat(8)begin
+            #25 rng_data = 4'h2; rng_a_data = 2'h0;
+        end
 
-        // #25 rng_data = rng_data + 1;
+        repeat(8)begin
+            #25 rng_data = 4'h0; rng_a_data = 2'h1;
+        end
+        repeat(8)begin
+            #25 rng_data = 4'h1; rng_a_data = 2'h0;
+        end
+        repeat(8)begin
+            #25 rng_data = 4'h0; rng_a_data = 2'h3;
+        end
+        repeat(8)begin
+            #25 rng_data = 4'h3; rng_a_data = 2'h3;
+        end
+
+
+        // #25 rng_data = 4'h0; rng_a_data = 2'h1;
+        // #25 rng_data = 4'h0; rng_a_data = 2'h1;
+        // #25 rng_data = 4'h0; rng_a_data = 2'h1;
+        // #25 rng_data = 4'h0; rng_a_data = 2'h1;
+        // #25 rng_data = 4'h1; rng_a_data = 2'h0;
+        // #25 rng_data = 4'h1; rng_a_data = 2'h0;
+        // #25 rng_data = 4'h1; rng_a_data = 2'h0;
+        // #25 rng_data = 4'h1; rng_a_data = 2'h0;
+        // #25 rng_data = 4'h0; rng_a_data = 2'h3;
+        // #25 rng_data = 4'h0; rng_a_data = 2'h3;
+        // #25 rng_data = 4'h0; rng_a_data = 2'h3;
+        // #25 rng_data = 4'h0; rng_a_data = 2'h3;
+        // #25 rng_data = 4'h2; rng_a_data = 2'h0;
+        // #25 rng_data = 4'h2; rng_a_data = 2'h0;
+        // #25 rng_data = 4'h2; rng_a_data = 2'h0;
+        // #25 rng_data = 4'h2; rng_a_data = 2'h0;
     end    
 end
 
@@ -249,7 +274,7 @@ initial begin
     ddr_data_rstn = 0;
     #10 ddr_data_rstn = 1;
     #2400000 ddr_data_rstn = 0;
-    #100000 ddr_data_rstn = 1;
+    #1000000 ddr_data_rstn = 1;
 end
 
 //Start moment
@@ -257,7 +282,7 @@ initial begin
     sr_start_write_ddr_i = 0; 
     #10 sr_start_write_ddr_i = 1;
     #200000 sr_start_write_ddr_i = 0;
-    #2000000 sr_start_write_ddr_i = 1;
+    #4000000 sr_start_write_ddr_i = 1;
 end
 
 initial begin
@@ -307,34 +332,62 @@ end
 // simulate data go in and out of ddr. the stream beat is much faster than rd_gc_valid
 initial begin
     s_axis_tvalid = 1;
-    // s_axis_tvalid = 0;
-    s_axis_tdata = 0;
-    wait (s_axis_tready == 1'b1)  s_axis_tvalid = 1;
-    #21 s_axis_tvalid = 1;
-    s_axis_tvalid = 0;
-    #295 s_axis_tvalid = 1;
+    s_axis_tdata = 0; 
+    // wait (s_axis_tready == 1'b0) begin
+    //     s_axis_tvalid = 0;
+    //     s_axis_tdata = 0;
+    // end
+    // wait (s_axis_tready == 1'b1) begin
+    //     #45 s_axis_tvalid = 1;
+    //     s_axis_tvalid = 0;
+    //     #295 s_axis_tvalid = 1;
+    //     repeat (5) begin
+    //         #5 s_axis_tvalid = 0;
+    //         #295 s_axis_tvalid = 1;
+    //     end
+    // end
     forever begin
-        #5 s_axis_tvalid = 0;
-        #295 s_axis_tvalid = 1;
-    end
-
-    wait (s_axis_tready == 1'b0) #10 s_axis_tvalid = 0;
-    forever begin
+        wait (s_axis_tready == 1'b1) s_axis_tvalid = 1;
+        repeat(40) begin
+            #5 s_axis_tvalid = 0; s_axis_tdata = 256'h0101010101010110101010101010100202020202020202303030303030303001;
+            #295 s_axis_tvalid = 1;
+            #5 s_axis_tvalid = 0; s_axis_tdata = 256'h0101010101010110101010101010103333333333333333303030303030303001;
+            #295 s_axis_tvalid = 1;
+        end
         s_axis_tvalid = 0;
         s_axis_tdata = 0;
+            
     end
 end
+// initial begin
+//     s_axis_tvalid = 1;
+//     s_axis_tdata = 0;
+//     wait (s_axis_tready == 1'b1)  s_axis_tvalid = 1;
+//     #21 s_axis_tvalid = 1;
+//     s_axis_tvalid = 0;
+//     #295 s_axis_tvalid = 1;
+//     forever begin
+//         #5 s_axis_tvalid = 0;
+//         #295 s_axis_tvalid = 1;
+//     end
 
-initial begin
-    s_axis_tdata = 0;
-    #290075 s_axis_tdata = 256'h1111;
-    #5 s_axis_tdata = 256'h2222;
-    #5 s_axis_tdata = 256'h3333;
-    forever begin
-        // #300 s_axis_tdata = 256'hffffffffaaaaaaaaffffffffaaaaaaaaffffffffaaaaaaaaffffffffaaaaaaaa;
-        #300 s_axis_tdata = 256'hffffffff00000e00ffffffff000f0000ffffffffaaaaa7aa1f1f1f1fffffffff;
-        #300 s_axis_tdata = 256'hffffffff00000a00ffffffff000f0000ffffffffaaaaacaa1f1f1f1fffffffff;
-    end
-end
+//     wait (s_axis_tready == 1'b0) #10 s_axis_tvalid = 0;
+//     forever begin
+//         s_axis_tvalid = 0;
+//         s_axis_tdata = 0;
+//     end
+// end
+
+// initial begin
+//     s_axis_tdata = 0;
+//     #290075 s_axis_tdata = 256'h1111;
+//     #5 s_axis_tdata = 256'h2222;
+//     #5 s_axis_tdata = 256'h3333;
+//     forever begin
+//         // #300 s_axis_tdata = 256'hffffffffaaaaaaaaffffffffaaaaaaaaffffffffaaaaaaaaffffffffaaaaaaaa;
+//         #300 s_axis_tdata = 256'hffffffff00000e00ffffffff000f0000ffffffffaaaaa7aa1f1f1f1fffffffff;
+//         #300 s_axis_tdata = 256'hffffffff00000a00ffffffff000f0000ffffffffaaaaacaa1f1f1f1fffffffff;
+//     end
+// end
 
 endmodule
