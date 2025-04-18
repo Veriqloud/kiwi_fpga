@@ -15,8 +15,7 @@ delete_bd_objs [get_bd_nets ddr4/clk_1] [get_bd_pins ddr4/clk]
 connect_bd_net [get_bd_pins ddr4/clk200_i] [get_bd_pins ddr4/system_ila_ddr/clk]
 validate_bd_design
 set design_name [get_bd_designs]
-make_wrapper -files [get_files Bob_top.bd] -top -import
-save_bd_design
+make_wrapper -files [get_files Bob_top.bd] -top 
 
 
 
