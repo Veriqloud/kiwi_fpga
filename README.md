@@ -11,7 +11,7 @@
 git clone git@github.com:Veriqloud/kiwi_fpga.git
 ```
 ### Build project and block design 
-Run these command in vivado Tcl console (If prompted due to invalid topmodule, close the window!):
+Run these command in vivado Tcl console:
 ```
 cd [your local directory]/ABC/
 ```
@@ -38,6 +38,7 @@ Modify the block_design.tcl as follow:
 ```
 source fix_frequency.tcl
 ```
+- Save block_design.tcl
 ## Release
 - You can get full project without building from Tcl script in Released Source ABC_Prj.zip. This is local Vivado project.
 - unzip and start building your bitstream !
