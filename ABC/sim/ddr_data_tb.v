@@ -177,7 +177,7 @@ initial begin
     sr_threshold_i = 32'd39999;
     sr_fiber_delay_i = 16'd0;
     sr_pair_delay_i = 1'b0;
-    sr_de_fiber_delay_i = 16'd42;
+    sr_de_fiber_delay_i = 16'd0;
     sr_de_pair_delay_i = 1'b1;
 
     m_axis_tready = 1;
@@ -349,9 +349,9 @@ initial begin
     forever begin
         wait (s_axis_tready == 1'b1) s_axis_tvalid = 1;
         repeat(40) begin
-            #5 s_axis_tvalid = 0; s_axis_tdata = 256'h0101010101010110101010101010100202020202020202303030303030303001;
+            #5 s_axis_tvalid = 0; s_axis_tdata = 256'h010101010101011010101010101f100202020202020202303030303030303001;
             #295 s_axis_tvalid = 1;
-            #5 s_axis_tvalid = 0; s_axis_tdata = 256'h0101010101010110101010101010103333333333333333303030303030303001;
+            #5 s_axis_tvalid = 0; s_axis_tdata = 256'h010101010101011010101010101e103333333333333333303030303030303001;
             #295 s_axis_tvalid = 1;
         end
         s_axis_tvalid = 0;
