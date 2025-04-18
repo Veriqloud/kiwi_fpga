@@ -2459,6 +2459,4 @@ proc create_root_design { parentCell } {
 ##################################################################
 
 create_root_design ""
-set design_name [get_bd_designs]
-make_wrapper -files [get_files Bob_top.bd] -top 
 
