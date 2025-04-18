@@ -2447,7 +2447,7 @@ proc create_root_design { parentCell } {
 
   # Restore current instance
   current_bd_instance $oldCurInst
-
+  source fix_frequency.tcl
   validate_bd_design
   save_bd_design
 }
@@ -2459,5 +2459,6 @@ proc create_root_design { parentCell } {
 ##################################################################
 
 create_root_design ""
-
+set design_name [get_bd_designs]
+make_wrapper -files [get_files Bob_top.bd] -top 
 
