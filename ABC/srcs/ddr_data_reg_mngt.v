@@ -31,7 +31,7 @@ module ddr_data_reg_mngt #
         parameter integer C_s_axil_ADDR_WIDTH    = 12
     )
     (
-        input clk200_i,
+//        input clk200_i,
         input pps_i,
         output wire mr_start_write_ddr_i,
         output wire mr_command_enable,

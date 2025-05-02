@@ -64,11 +64,7 @@ parameter integer C_s_axil_ADDR_WIDTH   = 8)
     output pulse_p,
     output pulse_n,
     output pulse_rep_p,
-    output pulse_rep_n,
-
-    //output to other modules
-    output pps_trigger,
-    output ttl_rst240_o
+    output pulse_rep_n
     );
 
 

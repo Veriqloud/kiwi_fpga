@@ -76,7 +76,6 @@ module jesd_transport
         output reg [2:0] state_rng,
         
         // Ports of control (synchronization) & status
-        input clk_pps,
         input tvalid200,
         input [15:0] tdata200_mod,
         input [31:0] gate_pos0,
@@ -88,7 +87,7 @@ module jesd_transport
         // Ports of AXI-s master(alpha argument)
         input                                         tx_core_clk,
         input                                         tx_core_reset,
-        input                                         tx_reset_done_i,
+        // input                                         tx_reset_done_i,
         output reg [127 : 0]                          tx_tdata,
         input wire                                    tx_tready
 

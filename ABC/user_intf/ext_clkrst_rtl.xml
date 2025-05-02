@@ -43,8 +43,8 @@
       </spirit:wire>
     </spirit:port>
     <spirit:port>
-      <spirit:logicalName>tdc_rstidxp_n</spirit:logicalName>
-      <spirit:displayName>tdc_rstidxp_p</spirit:displayName>
+      <spirit:logicalName>tdc_rstidx_n</spirit:logicalName>
+      <spirit:displayName>tdc_rstidx_p</spirit:displayName>
       <spirit:wire>
         <spirit:qualifier>
           <spirit:isReset>true</spirit:isReset>
@@ -61,8 +61,8 @@
       </spirit:wire>
     </spirit:port>
     <spirit:port>
-      <spirit:logicalName>tdc_rstidxp_p</spirit:logicalName>
-      <spirit:displayName>tdc_rstidxp_p</spirit:displayName>
+      <spirit:logicalName>tdc_rstidx_p</spirit:logicalName>
+      <spirit:displayName>tdc_rstidx_p</spirit:displayName>
       <spirit:wire>
         <spirit:qualifier>
           <spirit:isReset>true</spirit:isReset>

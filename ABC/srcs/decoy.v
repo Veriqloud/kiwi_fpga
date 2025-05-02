@@ -61,10 +61,8 @@ module decoy#(
     input clk200,
     input pps_i,
     input decoy_rst,
-    input rst_240,
     input wire [3:0]    rng_value, //rng temp from fastdac
     input wire          rd_en_4,
-    input wire          pps_trigger,
     // output reg          decoy_signal,
     output decoy_signal_p,
     output decoy_signal_n,

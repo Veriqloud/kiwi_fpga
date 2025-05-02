@@ -22,8 +22,8 @@
 
 module clk_rst_mngt
     #(
-      parameter TDC_REFCLK_DIVISOR = 20, //Number of 200MHz clk every tdc_refclk
-      parameter N_TDC_REFCLK = 8, //Number of tdc clk every RSTIDX
+      // parameter TDC_REFCLK_DIVISOR = 20, //Number of 200MHz clk every tdc_refclk
+      // parameter N_TDC_REFCLK = 8, //Number of tdc clk every RSTIDX
       parameter integer C_s_axil_DATA_WIDTH	= 32,
       parameter integer C_s_axil_ADDR_WIDTH	= 10)
     (

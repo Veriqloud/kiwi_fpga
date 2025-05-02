@@ -21,43 +21,25 @@
 
 
 module tdc_clk_rst_mngt #(
-    parameter N_TDC_REFCLK = 8
+    parameter N_TDC_REFCLK = 8,
+    parameter TDC_DIV_HALF = 20,
+    parameter N_COUNTER_APD = 800
     )
     (
-    // input clk10_i,
     input clk200_i,
     input tdc_rst,
     input pps_i,
     output tdc_refclk_o,
-    output tdc_rstidxp_o,
-    // input tdc_pps_trigger_i,
+    output tdc_rstidx_o,
     input [31:0] stopa_sim_limit_i,
     input stopa_sim_enable_i,
-    // input reg_enable_i,
     //Debug ports
     output pps_trigger,
     output stopa_sim
 
     );
 
-
-//Switch domain
-// reg [2:0] reg_enable_r;
-// reg [31:0] stopa_sim_limit_r;
-// initial begin
-//     reg_enable_r<= 0;
-//     stopa_sim_limit <= 0;
-// end
-// always @(posedge clk200_i) begin
-//     reg_enable_r <= {reg_enable_r[1:0],reg_enable_i};
-//     if(reg_enable_r[2]==0 && reg_enable_r[1]==1) begin
-//         stopa_sim_limit_r <= stopa_sim_limit_i;
-//     end
-// end
-
-// //under 200MHz ----------------------------------------------------------------------
-
-
+// Generate pps_trigger signal
 reg pps_trigger;
 reg pps_r;
 
@@ -78,12 +60,12 @@ end
 reg [7:0] counter_tdc;
 wire tdc_refclk_o;
 
-reg [$clog2(40*N_TDC_REFCLK)-1:0] counter_rstidx;
-wire tdc_rstidxp_o;
+reg [$clog2((TDC_DIV_HALF*2)*N_TDC_REFCLK)-1:0] counter_rstidx;
+wire tdc_rstidx_o;
 
 
-assign tdc_refclk_o = (counter_tdc >= 0 && counter_tdc <= 19 && pps_trigger) ?1:0;
-assign tdc_rstidxp_o = ((counter_rstidx >=0 && counter_rstidx <=2) | (counter_rstidx >= (40*N_TDC_REFCLK -3) && counter_rstidx <= (40*N_TDC_REFCLK -1)) && pps_trigger ) ?1:0;
+assign tdc_refclk_o = (counter_tdc >= 0 && counter_tdc <= (TDC_DIV_HALF-1) && pps_trigger) ?1:0;
+assign tdc_rstidx_o = ((counter_rstidx >=0 && counter_rstidx <=2) | (counter_rstidx >= ((TDC_DIV_HALF*2)*N_TDC_REFCLK -3) && counter_rstidx <= ((TDC_DIV_HALF*2)*N_TDC_REFCLK -1)) && pps_trigger ) ?1:0;
 
 always @(posedge clk200_i, posedge tdc_rst) begin
     if (tdc_rst) begin
@@ -92,11 +74,11 @@ always @(posedge clk200_i, posedge tdc_rst) begin
     end else begin
         if (pps_trigger) begin
             counter_tdc <= counter_tdc + 1;
-            if (counter_tdc >= 39) begin
+            if (counter_tdc >= (TDC_DIV_HALF*2-1)) begin
                 counter_tdc <= 0;
             end
             counter_rstidx <= counter_rstidx + 1;
-            if (counter_rstidx >= (40*N_TDC_REFCLK-1)) begin
+            if (counter_rstidx >= ((TDC_DIV_HALF*2)*N_TDC_REFCLK-1)) begin
                 counter_rstidx <= 0;
             end
         end else begin
@@ -107,6 +89,7 @@ always @(posedge clk200_i, posedge tdc_rst) begin
 end 
 
 
+//Get register values
 reg [17:0] counter_apd_sim;
 wire stopa_sim;
 
@@ -123,7 +106,7 @@ always @(posedge clk200_i) begin
     end
 end
 
-// wire [31:0] stopa_sim_limit_i;
+//Generate simulated stopa signal
 wire [15:0] limit_high;
 wire [7:0] limit_low;
 wire [7:0] divide_stopa;
@@ -137,13 +120,11 @@ always @(posedge clk200_i, posedge tdc_rst) begin
     end else begin
         if (pps_trigger) begin
             counter_apd_sim <= counter_apd_sim + 1;
-            if (counter_apd_sim >= 800*divide_stopa-1) begin
-            // if (counter_apd_sim >= (40*N_TDC_REFCLK-1)) begin
+            if (counter_apd_sim >= N_COUNTER_APD*divide_stopa-1) begin
                 counter_apd_sim <= 0;
             end
         end
     end
 end
-
 
 endmodule

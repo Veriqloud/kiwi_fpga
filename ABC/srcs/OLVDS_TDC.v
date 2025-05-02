@@ -25,9 +25,9 @@ module OLVDS_TDC(
     output tdc_refclk_p,
     input tdc_reflck,
 
-    output tdc_rstidxp_n,
-    output tdc_rstidxp_p,
-    input tdc_rstidxp,
+    output tdc_rstidx_n,
+    output tdc_rstidx_p,
+    input tdc_rstidx,
 
     output tdc_lclki_n,
     output tdc_lclki_p,
@@ -46,10 +46,10 @@ OBUFDS #(
 OBUFDS #(
       .IOSTANDARD("DEFAULT"), // Specify the output I/O standard
       .SLEW("SLOW")           // Specify the output slew rate
-   ) OBUFDS_tdc_rstidxp (
-      .O(tdc_rstidxp_p),     // Diff_p output (connect directly to top-level port)
-      .OB(tdc_rstidxp_n),   // Diff_n output (connect directly to top-level port)
-      .I(tdc_rstidxp)      // Buffer input
+   ) OBUFDS_tdc_rstidx (
+      .O(tdc_rstidx_p),     // Diff_p output (connect directly to top-level port)
+      .OB(tdc_rstidx_n),   // Diff_n output (connect directly to top-level port)
+      .I(tdc_rstidx)      // Buffer input
    );
 
 OBUFDS #(

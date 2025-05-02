@@ -77,8 +77,8 @@ module Bob_top_wrapper
     tdc_ext_clkrst_tdc_lclki_p,
     tdc_ext_clkrst_tdc_refclk_n,
     tdc_ext_clkrst_tdc_refclk_p,
-    tdc_ext_clkrst_tdc_rstidxp_n,
-    tdc_ext_clkrst_tdc_rstidxp_p,
+    tdc_ext_clkrst_tdc_rstidx_n,
+    tdc_ext_clkrst_tdc_rstidx_p,
     tdc_ext_in_framea_n,
     tdc_ext_in_framea_p,
     tdc_ext_in_frameb_n,
@@ -156,8 +156,8 @@ module Bob_top_wrapper
   output tdc_ext_clkrst_tdc_lclki_p;
   output tdc_ext_clkrst_tdc_refclk_n;
   output tdc_ext_clkrst_tdc_refclk_p;
-  output tdc_ext_clkrst_tdc_rstidxp_n;
-  output tdc_ext_clkrst_tdc_rstidxp_p;
+  output tdc_ext_clkrst_tdc_rstidx_n;
+  output tdc_ext_clkrst_tdc_rstidx_p;
   input tdc_ext_in_framea_n;
   input tdc_ext_in_framea_p;
   input tdc_ext_in_frameb_n;
@@ -317,8 +317,8 @@ module Bob_top_wrapper
         .tdc_ext_clkrst_tdc_lclki_p(tdc_ext_clkrst_tdc_lclki_p),
         .tdc_ext_clkrst_tdc_refclk_n(tdc_ext_clkrst_tdc_refclk_n),
         .tdc_ext_clkrst_tdc_refclk_p(tdc_ext_clkrst_tdc_refclk_p),
-        .tdc_ext_clkrst_tdc_rstidxp_n(tdc_ext_clkrst_tdc_rstidxp_n),
-        .tdc_ext_clkrst_tdc_rstidxp_p(tdc_ext_clkrst_tdc_rstidxp_p),
+        .tdc_ext_clkrst_tdc_rstidx_n(tdc_ext_clkrst_tdc_rstidx_n),
+        .tdc_ext_clkrst_tdc_rstidx_p(tdc_ext_clkrst_tdc_rstidx_p),
         .tdc_ext_in_framea_n(tdc_ext_in_framea_n),
         .tdc_ext_in_framea_p(tdc_ext_in_framea_p),
         .tdc_ext_in_frameb_n(tdc_ext_in_frameb_n),

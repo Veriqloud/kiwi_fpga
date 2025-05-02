@@ -16,7 +16,7 @@
 	(
 		// Users to add ports here
 		//Clock
-		input clk200_i,
+		// input clk200_i,
 		// Control data output
 		output wire mr_enable,
 		output wire mr_command_enable,
