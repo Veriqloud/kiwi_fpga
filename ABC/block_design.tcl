@@ -343,6 +343,14 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
      return 1
    }
   
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /tdc/tdc_mngt/AS6501_IF_0/m_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_pins /tdc/tdc_mngt/AS6501_IF_0/m_axis_clk]
+
   # Create interface connections
   connect_bd_intf_net -intf_net AS6501_IF_0_m_axis [get_bd_intf_pins AS6501_IF_0/m_axis] [get_bd_intf_pins fifo_gc_tdc_rtl_0/s_axis]
   connect_bd_intf_net -intf_net S_AXIL_PCIE_1 [get_bd_intf_pins s_axil] [get_bd_intf_pins TDC_REG_MNGT_v1_0_0/s_axil]
@@ -1353,7 +1361,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   [get_bd_pins axi_clock_converter_0/m_axi_aresetn]
   connect_bd_net -net clk200_i_1  [get_bd_pins clk200_i] \
   [get_bd_pins mon_ddr_fifos_0/clk200_i] \
-  [get_bd_pins system_ila_ddr/clk] \
   [get_bd_pins axi_clock_converter_0/s_axi_aclk] \
   [get_bd_pins fifos_out_0/s_gco_aclk] \
   [get_bd_pins fifos_out_0/s_alpha_aclk] \
@@ -1362,7 +1369,8 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   [get_bd_pins ddr_data_0/m_axis_clk] \
   [get_bd_pins ddr_data_0/s_axis_clk] \
   [get_bd_pins ddr_data_0/m_axis_gc_clk] \
-  [get_bd_pins ddr_data_0/m_axis_alpha_clk]
+  [get_bd_pins ddr_data_0/m_axis_alpha_clk] \
+  [get_bd_pins system_ila_ddr/clk]
   connect_bd_net -net ddr4_0_addn_ui_clkout1  [get_bd_pins ddr4_0/addn_ui_clkout1] \
   [get_bd_pins addn_ui_clkout1] \
   [get_bd_pins ddr_data_reg_mngt_0/s_axil_aclk]
@@ -2091,6 +2099,7 @@ proc create_root_design { parentCell } {
     CONFIG.axilite_master_size {32} \
     CONFIG.axist_bypass_en {false} \
     CONFIG.axisten_freq {250} \
+    CONFIG.mode_selection {Basic} \
     CONFIG.pf0_device_id {9034} \
     CONFIG.pl_link_cap_max_link_speed {8.0_GT/s} \
     CONFIG.pl_link_cap_max_link_width {X4} \
@@ -2224,7 +2233,7 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net com_ext_spi_0_2 [get_bd_intf_ports com_ext_spi_dl] [get_bd_intf_pins spi_dacs_ltc/com_ext_spi_dl]
   connect_bd_intf_net -intf_net cr_ext_cr_0_1 [get_bd_intf_ports cr_ext_cr] [get_bd_intf_pins clk_rst/cr_ext_cr]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports c0_ddr4] [get_bd_intf_pins ddr4/c0_ddr4]
-  connect_bd_intf_net -intf_net ddr4_M_AXIS [get_bd_intf_pins xdma_0/S_AXIS_C2H_0] [get_bd_intf_pins ddr4/M_AXIS]
+  connect_bd_intf_net -intf_net ddr4_M_AXIS [get_bd_intf_pins ddr4/M_AXIS] [get_bd_intf_pins xdma_0/S_AXIS_C2H_1]
   connect_bd_intf_net -intf_net ddr4_M_AXIS1 [get_bd_intf_pins xdma_0/S_AXIS_C2H_3] [get_bd_intf_pins ddr4/M_AXIS1]
   connect_bd_intf_net -intf_net s_axis_1 [get_bd_intf_pins decoy/s_axis] [get_bd_intf_pins xdma_0/M_AXIS_H2C_3]
   connect_bd_intf_net -intf_net tdc_M_AXIS1 [get_bd_intf_pins xdma_0/S_AXIS_C2H_2] [get_bd_intf_pins tdc/M_AXIS1]
