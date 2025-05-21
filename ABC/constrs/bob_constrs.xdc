@@ -1,6 +1,6 @@
 ##Clocks and resets--------------------------------------------
 
-create_clock -period 10.000 -name sys_clk [get_ports sys_clk_p]
+create_clock -name sys_clk [get_ports sys_clk_p]
 set_property PACKAGE_PIN T6 [get_ports sys_clk_n]
 set_property PACKAGE_PIN T7 [get_ports sys_clk_p]
 
