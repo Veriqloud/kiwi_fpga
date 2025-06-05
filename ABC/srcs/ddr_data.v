@@ -669,80 +669,6 @@ always @(posedge clk200_i) begin
                     state_alpha <= IDLE_AL;
                 end
             end
-            // COUNTING_AL: begin
-            //     s_axis_tready <= 1;
-            //     read_done <= 0;
-            //     decoy_q <= decoy_q;
-            //     if (s_axis_tvalid && s_axis_tready) begin
-            //         read_count <= read_count + 1;
-            //     end else begin
-            //         read_count <= read_count;
-            //     end
-
-            //     if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
-            //         alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
-            //         state_alpha <= COUNTING_DE;
-            //         // s_axis_tready <= 0;
-            //     end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
-            //         alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
-            //         state_alpha <= COUNTING_DE;
-            //         // s_axis_tready <= 0;
-            //     end else begin
-            //         state_alpha <= COUNTING_AL;
-            //     end
-
-            //     if (dq_gc == 0) begin
-            //         state_alpha <= IDLE_AL;
-            //     end
-            // end
-
-            // COUNTING_DE: begin
-            //     s_axis_tready <= 1;
-            //     read_done <= 0;
-            //     if (s_axis_tvalid && s_axis_tready) begin
-            //         read_count <= read_count + 1;
-            //     end else begin
-            //         read_count <= read_count;
-            //     end
-            //     if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
-            //         decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
-            //         state_alpha <= DONE;
-            //         s_axis_tready <= 0;
-            //     end else if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
-            //         decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1]; 
-            //         state_alpha <= DONE;
-            //         s_axis_tready <= 0;
-            //     end else begin
-            //         state_alpha <= COUNTING_DE;
-            //     end
-
-            //     if (dq_gc == 0) begin
-            //         state_alpha <= IDLE_AL;
-            //     end
-
-            // end
-            COUNTING_DE: begin
-                s_axis_tready <= 1;
-                read_done <= 0;
-                if (s_axis_tvalid && s_axis_tready) begin
-                    read_count <= read_count + 1;
-                end else begin
-                    read_count <= read_count;
-                end
-                if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
-                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
-                    state_alpha <= COUNTING_AL;
-                end else if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
-                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1]; 
-                    state_alpha <= COUNTING_AL;
-                end else begin
-                    state_alpha <= COUNTING_DE;
-                end
-                if (dq_gc == 0) begin
-                    state_alpha <= IDLE_AL;
-                end
-
-            end
             COUNTING_AL: begin
                 s_axis_tready <= 1;
                 read_done <= 0;
@@ -755,12 +681,12 @@ always @(posedge clk200_i) begin
 
                 if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
                     alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
-                    state_alpha <= DONE;
-                    s_axis_tready <= 0;
+                    state_alpha <= COUNTING_DE;
+                    // s_axis_tready <= 0;
                 end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
                     alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
-                    state_alpha <= DONE;
-                    s_axis_tready <= 0;
+                    state_alpha <= COUNTING_DE;
+                    // s_axis_tready <= 0;
                 end else begin
                     state_alpha <= COUNTING_AL;
                 end
@@ -769,6 +695,80 @@ always @(posedge clk200_i) begin
                     state_alpha <= IDLE_AL;
                 end
             end
+
+            COUNTING_DE: begin
+                s_axis_tready <= 1;
+                read_done <= 0;
+                if (s_axis_tvalid && s_axis_tready) begin
+                    read_count <= read_count + 1;
+                end else begin
+                    read_count <= read_count;
+                end
+                if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
+                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
+                    state_alpha <= DONE;
+                    s_axis_tready <= 0;
+                end else if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
+                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1]; 
+                    state_alpha <= DONE;
+                    s_axis_tready <= 0;
+                end else begin
+                    state_alpha <= COUNTING_DE;
+                end
+
+                if (dq_gc == 0) begin
+                    state_alpha <= IDLE_AL;
+                end
+
+            end
+            // COUNTING_DE: begin
+            //     s_axis_tready <= 1;
+            //     read_done <= 0;
+            //     if (s_axis_tvalid && s_axis_tready) begin
+            //         read_count <= read_count + 1;
+            //     end else begin
+            //         read_count <= read_count;
+            //     end
+            //     if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
+            //         decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
+            //         state_alpha <= COUNTING_AL;
+            //     end else if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
+            //         decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1]; 
+            //         state_alpha <= COUNTING_AL;
+            //     end else begin
+            //         state_alpha <= COUNTING_DE;
+            //     end
+            //     if (dq_gc == 0) begin
+            //         state_alpha <= IDLE_AL;
+            //     end
+
+            // end
+            // COUNTING_AL: begin
+            //     s_axis_tready <= 1;
+            //     read_done <= 0;
+            //     decoy_q <= decoy_q;
+            //     if (s_axis_tvalid && s_axis_tready) begin
+            //         read_count <= read_count + 1;
+            //     end else begin
+            //         read_count <= read_count;
+            //     end
+
+            //     if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
+            //         alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
+            //         state_alpha <= DONE;
+            //         s_axis_tready <= 0;
+            //     end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
+            //         alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
+            //         state_alpha <= DONE;
+            //         s_axis_tready <= 0;
+            //     end else begin
+            //         state_alpha <= COUNTING_AL;
+            //     end
+
+            //     if (dq_gc == 0) begin
+            //         state_alpha <= IDLE_AL;
+            //     end
+            // end
             DONE: begin
                 read_done <= 1;
                 read_count <= read_count;
