@@ -21,6 +21,7 @@
 		output wire mr_enable,
 		output wire mr_command_enable,
 		output wire [2:0] mr_command_i,
+		output wire mr_command_count,
 		// output wire command_get_gc_o,
 		output wire mr_start_gc_i,
 		// output wire [6:0] tdc_burst_size,
@@ -45,7 +46,12 @@
 		input[31:0]		  mr_total_count_o,
 		input[31:0]		  mr_click0_count_o,
 		input[31:0]	      mr_click1_count_o,
-		input 				mr_data_count_valid_o,
+		input 			  mr_data_count_valid_o,
+
+		input[31:0]		  mr_count_to,
+		input[31:0]		  mr_count_c0,
+		input[31:0]	      mr_count_c1,
+		input 			  mr_command_count_valid_o,
 
 		// User ports ends
 		// User ports ends
@@ -146,7 +152,7 @@
 	    .tdc_enable(mr_enable),
 	    .tdc_command_enable_o(mr_command_enable),
 	    .tdc_command_o(mr_command_i),
-	    // .tdc_command_get_gc_o(command_get_gc_o),
+		.tdc_command_count_o(mr_command_count),
 	    .start_gc_o(mr_start_gc_i),
 	    // .tdc_burst_size(tdc_burst_size),
 	    // .tdc_index_bitwise_o(tdc_index_bitwise_o),
@@ -170,6 +176,10 @@
 	    .click0_count_i(mr_click0_count_o),
 	    .click1_count_i(mr_click1_count_o),
 	    .data_count_valid_i(mr_data_count_valid_o),
+		.count_to_i(mr_count_to),
+		.count_c0_i(mr_count_c0),
+		.count_c1_i(mr_count_c1),
+		.command_count_valid_i(mr_command_count_valid_o),
 		.S_AXI_ACLK(s_axil_aclk),
 		.S_AXI_ARESETN(s_axil_aresetn),
 		.S_AXI_AWADDR(s_axil_awaddr),

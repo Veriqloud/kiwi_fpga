@@ -8,6 +8,7 @@ module AS6501_IF (
     input           sr_enable,
     input           sr_command_enable,
     input [2:0]		sr_command_i,
+	input 			sr_command_count,
     //input 			command_get_gc,
     // input  [6:0]    AS6501_BURST_SIZE_i,
     // input  [5:0]    index_bitwise_i,
@@ -81,11 +82,15 @@ module AS6501_IF (
     output wire [31:0] gate_pos2,
     output wire [31:0] gate_pos3,
     //Output ports
-    output [31:0] sr_total_count_o,
+    output [31:0] sr_total_count_o,//Counts output continuously
     output [31:0] sr_click0_count_o,
     output [31:0] sr_click1_count_o,
     output [31:0] total_count,
-    output sr_data_count_valid_o
+    output sr_data_count_valid_o,
+	output [31:0] sr_count_to,//Counts output only after requested
+	output [31:0] sr_count_c0,
+	output [31:0] sr_count_c1,
+	output sr_command_count_valid_o
 
 );
 
@@ -554,6 +559,7 @@ always @(posedge clk200_i, posedge gc_rst) begin
 					click1_count <= 0;
 					sr_click1_count_o <= click1_count;
 				end
+				//Start saving click result and gc
 				if (tvalid200_r[2] == 0 && tvalid200_r[1] == 1) begin
 					gc_time_valid <= gc_div64 + index_shift_gc + time_ref_gc;
 				end else gc_time_valid <= gc_time_valid;
@@ -607,70 +613,60 @@ always @(posedge clk200_i, posedge gc_rst) begin
 					m_axis_tdata <= m_axis_tdata;
 					m_axis_tvalid_gc <= 1'b0;
 					m_axis_tdata_gc <= m_axis_tdata_gc;
-				end
-				// if (tvalid200) begin
-				// 	counter_valid <= counter_valid + 1;
-				// 	if (counter_valid == 1) begin
-				// 		gc_time_valid <= gc>>6 + index_shift_gc + time_ref_gc;
-				// 		if (command_r == 3'b001) begin	//no gate
-				// 			fifo_calib_rst <= 0;
-				// 			click_result <= 2'b11;
-				// 			command_enable_r <= {command_enable_r[1:0],command_enable};
-				// 			if (command_enable_r[2]) begin
-				// 				fifo_calib_rst <= 1;
-				// 				// m_axis_tdata <= {click_result,gc,tdata200};
-				// 				m_axis_tdata <= {click_result,gc_time_valid,tdata200};
-				// 				m_axis_tvalid <= 1'b1;
-				// 			end else begin
-				// 				m_axis_tdata <= m_axis_tdata;
-				// 				m_axis_tvalid <= 1'b0;
-				// 				fifo_calib_rst <= 0;
-				// 			end
-				// 		end else if (command_r == 3'b010) begin //with gate
-				// 			fifo_calib_rst <= 0;
-				// 			command_enable_r <= {command_enable_r[1:0],command_enable};
-				// 			if (command_enable_r[2]) begin
-				// 				fifo_calib_rst <= 1;
-				// 				if (tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) begin
-				// 					//click_result <= 2'b00;
-				// 					// m_axis_tdata <= {2'b00,gc,tdata200};
-				// 					m_axis_tdata <= {2'b00,gc_time_valid,tdata200};
-				// 					m_axis_tvalid <= 1'b1;
-				// 				end else if (tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) begin 
-				// 					//click_result <= 2'b01;
-				// 					// m_axis_tdata <= {2'b01,gc,tdata200};
-				// 					m_axis_tdata <= {2'b01,gc_time_valid,tdata200};
-				// 					m_axis_tvalid <= 1'b1;
-				// 				end else begin
-				// 					//click_result <= 2'b11;
-				// 					m_axis_tdata <= m_axis_tdata;
-				// 					m_axis_tvalid <= 1'b0;
-				// 				end
-				// 			end else begin
-				// 				m_axis_tdata <= m_axis_tdata;
-				// 				m_axis_tvalid <= 1'b0;
-				// 				fifo_calib_rst <= 0;
-				// 			end
-				// 		end
-				// 	end else begin
-				// 		gc_time_valid <= gc_time_valid;
-				// 		click_result <= click_result;
-				// 		m_axis_tvalid <= 1'b0;
-				// 		m_axis_tdata <= m_axis_tdata;
-				// 		m_axis_tvalid_gc <= 1'b0;
-				// 		m_axis_tdata_gc <= m_axis_tdata_gc;
-				// 	end
-				// end else begin
-				// 	counter_valid <= 0;
-				// 	gc_time_valid <= gc_time_valid;
-				// 	click_result <= click_result;
-				// 	m_axis_tvalid <= 1'b0;
-				// 	m_axis_tdata <= m_axis_tdata;			
-				// 	m_axis_tvalid_gc <= 1'b0;
-				// 	m_axis_tdata_gc <= m_axis_tdata_gc;
-				// end				
+				end			
 			end
 		endcase
+	end
+end
+
+//Get the click count when requested. Only after starting TDC
+reg [2:0] command_count_r;
+reg [31:0] w_counter;
+reg [31:0] sr_count_to;
+reg [31:0] sr_count_c0;
+reg [31:0] sr_count_c1;
+reg sr_command_count_valid_o;
+always @(posedge clk200_i) begin
+	if (gc_rst) begin
+		command_count_r <= 0;
+		sr_command_count_valid_o <= 0;
+		sr_count_to <= 0;
+		sr_count_c0 <= 0;
+		sr_count_c1 <= 0;
+	end else begin
+		command_count_r <= {command_count_r[1:0],sr_command_count};
+		if (command_count_r[2] && command_count_r[1])begin
+			w_counter <= w_counter + 1;
+			if (w_counter < 19999999) begin
+				sr_command_count_valid_o <= 0;
+				if (tvalid200_en) begin
+					sr_count_to <= sr_count_to + 1;
+				end else sr_count_to <= sr_count_to;
+				if (tvalid200_g0_en) begin
+					sr_count_c0 <= sr_count_c0 + 1;
+				end else sr_count_c0 <= sr_count_c0;
+				if (tvalid200_g1_en) begin
+					sr_count_c1 <= sr_count_c1 +1;
+				end else sr_count_c1 <= sr_count_c1;
+			end else if (w_counter >= 19999999 && w_counter < 20000050) begin
+				sr_command_count_valid_o <= 1;
+				sr_count_to <= sr_count_to;
+				sr_count_c0 <= sr_count_c0;
+				sr_count_c1 <= sr_count_c1;
+			end else begin
+				sr_command_count_valid_o <= 0;
+				w_counter <= w_counter;
+				sr_count_to <= sr_count_to;
+				sr_count_c0 <= sr_count_c0;
+				sr_count_c1 <= sr_count_c1;
+			end
+		end else begin
+			sr_command_count_valid_o <= 0;
+			w_counter <= 0;
+			sr_count_to <= 0;
+			sr_count_c0 <= 0;
+			sr_count_c1 <= 0;
+		end
 	end
 end
 

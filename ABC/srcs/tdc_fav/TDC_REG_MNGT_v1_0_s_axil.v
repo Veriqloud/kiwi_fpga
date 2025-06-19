@@ -29,6 +29,7 @@
 		output wire tdc_reg_enable200_o,
 		output wire tdc_command_enable_o,
 		output wire [2:0] tdc_command_o,
+		output wire tdc_command_count_o,
 		// output wire tdc_command_get_gc_o,
 
 
@@ -40,6 +41,10 @@
 		input[31:0]		  click0_count_i,
 		input[31:0]		  click1_count_i,
 		input  			  data_count_valid_i,
+		input[31:0]		  count_to_i,
+		input[31:0]		  count_c0_i,
+		input[31:0]		  count_c1_i,
+		input 			  command_count_valid_i,
 		// User ports ends
 		// Do not modify the ports beyond this line
 
@@ -166,7 +171,7 @@
 	assign stopa_sim_enable_o = slv_reg9[2];
 	assign tdc_command_enable_o = slv_reg10[0];
 	assign tdc_command_o = slv_reg8[2:0];
-	// assign tdc_command_get_gc_o = slv_reg11[0];
+	assign tdc_command_count_o = slv_reg8[3];
 
 
 	
@@ -287,7 +292,7 @@
 	      slv_reg8 <= 0;
 	      slv_reg9 <= 0;
 	      slv_reg10 <= 0;
-	      slv_reg11 <= 0;
+	    //   slv_reg11 <= 0;
 	      // slv_reg12 <= 0;
 	      // slv_reg13 <= 0;
 	      // slv_reg14 <= 0;
@@ -375,13 +380,13 @@
                    // Slave register 3
                    slv_reg10[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                    end
-                4'hb:
-                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
-                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-                   // Respective byte enables are asserted as per write strobes 
-                   // Slave register 3
-                   slv_reg11[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-                   end
+                // 4'hb:
+                //    for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+                //    if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+                //    // Respective byte enables are asserted as per write strobes 
+                //    // Slave register 3
+                //    slv_reg11[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+                //    end
 	          default : begin
 	                      slv_reg0 <= slv_reg0;
 	                      slv_reg1 <= slv_reg1;
@@ -394,7 +399,7 @@
 	                      slv_reg8 <= slv_reg8;
 	                      slv_reg9 <= slv_reg9;
 	                      slv_reg10 <= slv_reg10;
-	                      slv_reg11 <= slv_reg11;
+	                    //   slv_reg11 <= slv_reg11;
 	                    end
 	        endcase
 	      end
@@ -471,7 +476,6 @@
 		slv_reg16 <= 0;
 		slv_reg15 <= 0;
 		slv_reg14 <= 0;
-		slv_reg12 <= 3000;
 	end     
 
 	always @(posedge S_AXI_ACLK) begin
@@ -488,8 +492,31 @@
 				slv_reg14 <= click1_count_i;				
 			end
 		end
-	end  
+	end 
+	//Save the count to registers. Update only when send command_count 
+	(* ASYNC_REG = "TRUE" *) reg [2:0] command_count_valid_r;
+	initial begin
+		command_count_valid_r <= 0;
+		slv_reg11 <= 0;
+		slv_reg12 <= 0;
+		slv_reg13 <= 0;
+	end     
 
+	always @(posedge S_AXI_ACLK) begin
+		if (S_AXI_ARESETN == 1'b0) begin
+			slv_reg11 <= 0;
+			slv_reg12 <= 0;
+			slv_reg13 <= 0;
+			command_count_valid_r <= 0;
+		end else begin
+			command_count_valid_r <= {command_count_valid_r[1:0],command_count_valid_i};
+			if (command_count_valid_r[2] == 0 && command_count_valid_r[1] == 1) begin
+				slv_reg11 <= count_to_i;
+				slv_reg12 <= count_c0_i;
+				slv_reg13 <= count_c1_i;				
+			end
+		end
+	end
 	// Implement axi_arvalid generation
 	// axi_rvalid is asserted for one S_AXI_ACLK clock cycle when both 
 	// S_AXI_ARVALID and axi_arready are asserted. The slave registers 

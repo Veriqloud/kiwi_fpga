@@ -27,6 +27,7 @@ module AS6501_IF_tb();
     // Control register
     reg           enable;
     reg           command_enable;
+    reg           command_count;
     // reg           command_i;
     reg           start_gc_i;
     reg  [15:0]   index_stop_bitwise_i;
@@ -89,17 +90,18 @@ module AS6501_IF_tb();
         .lclk_i(lclk_i),
         .lrst_i(lrst_i),
         .linterrupt_i(linterrupt_i),
-        .enable(enable),
-        .command_enable(command_enable),
-        .command_i(command_i),
-        .start_gc_i(start_gc_i),
-        .index_stop_bitwise_i(index_stop_bitwise_i),
-        .gate0_i(gate0_i),
-        .gate1_i(gate1_i),
-        .shift_tdc_time_i(shift_tdc_time_i),
-        .shift_gc_back_i(shift_gc_back_i),
-        .reg_enable_tdc_i(reg_enable_tdc_i),
-        .reg_enable200_i(reg_enable200_i),
+        .sr_enable(enable),
+        .sr_command_enable(command_enable),
+        .sr_command_i(command_i),
+        .sr_command_count(command_count),
+        .sr_start_gc_i(start_gc_i),
+        .sr_index_stop_bitwise_i(index_stop_bitwise_i),
+        .sr_gate0_i(gate0_i),
+        .sr_gate1_i(gate1_i),
+        .sr_shift_tdc_time_i(shift_tdc_time_i),
+        .sr_shift_gc_back_i(shift_gc_back_i),
+        .sr_reg_enable_tdc(reg_enable_tdc_i),
+        .sr_reg_enable200(reg_enable200_i),
         .frame_i(frame_i),
         .sdi_i(sdi_i),
         .m_axis_tdata(m_axis_tdata),
@@ -129,7 +131,7 @@ module AS6501_IF_tb();
         .gc(gc),
         .gc_time_valid(gc_time_valid),
         .command_enable_r(command_enable_r),
-        .total_count_o(total_count_o),
+        .sr_total_count_o(total_count_o),
         .total_count(total_count)
         );
 
@@ -174,15 +176,14 @@ module AS6501_IF_tb();
         start_gc_i = 0;
         #10999995 start_gc_i = 1;
     end
-    // initial begin
-    //     clk5 = 1;
-    // end
-    // always #100 clk5 = ~clk5;
-// initial begin
-//     clk15 = 1;
-//     arstn = 0;
-//     #100 arstn = 1;
-// end
+
+    initial begin
+        command_count = 0;
+        #12000000 command_count = 1;
+        #1000000 command_count = 0;
+        #1000000 command_count = 1;
+    end
+
 
     // always #33.33 clk15 = ~clk15;
     always #2.5 lclk_i = ~lclk_i;
