@@ -4,12 +4,12 @@
 // Engineer: 
 // 
 // Create Date: 11/07/2023 05:40:28 PM
-// Design Name: 
-// Module Name: buffers
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Design Name: Qline_turnkey
+// Module Name: pcierefclk
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: GT buffer for PCIE clock
 // 
 // Dependencies: 
 // 

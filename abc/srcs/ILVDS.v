@@ -4,12 +4,12 @@
 // Engineer: 
 // 
 // Create Date: 06/20/2023 01:42:40 PM
-// Design Name: 
-// Module Name: IBUFDS
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Design Name: Qline_turnkey
+// Module Name: ILVDS
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Instantiate IBUFDS
 // 
 // Dependencies: 
 // 

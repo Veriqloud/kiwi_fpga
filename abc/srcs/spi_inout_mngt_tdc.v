@@ -1,15 +1,15 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau
 // 
 // Create Date: 06/19/2023 11:15:04 AM
-// Design Name: 
-// Module Name: tdc_spi_inout_mngt
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Design Name: Qline_turnkey
+// Module Name: spi_inout_mngt_tdc
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Manage inout pins for SPI bus of TDC + JITTER CLEANER
 // 
 // Dependencies: 
 // 

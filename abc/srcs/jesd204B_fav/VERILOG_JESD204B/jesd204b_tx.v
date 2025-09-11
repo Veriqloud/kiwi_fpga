@@ -4,11 +4,11 @@
 // Engineer: Fabrice Faveneau
 // 
 // Create Date: 26.09.2023 17:05:09
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: jesd204b_tx
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
 // Description: Manage link layer of jesd204b protocol
 // 
 // Dependencies: 
@@ -60,7 +60,9 @@ module jesd204b_tx
         
         // data bus output
         output reg [p_L*32-1:0]     vgt_tdata_o  = 0,
-        output reg [p_L*4-1:0]      vgt_charisk_o = 0
+        output reg [p_L*4-1:0]      vgt_charisk_o = 0,
+        //output debug
+        output blmfc_r
     );
 
     wire [8-1:0]     vFCHK_i;

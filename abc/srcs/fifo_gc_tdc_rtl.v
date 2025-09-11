@@ -1,3 +1,5 @@
+//Description :
+//- Instantiate AXIS FIFO to prevent the tool reset ACLK domain when building project from tcl
 module fifo_gc_tdc_rtl(
     input wire m_aclk,
     input wire s_aclk,

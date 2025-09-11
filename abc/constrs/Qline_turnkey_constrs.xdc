@@ -173,7 +173,7 @@ set_property PACKAGE_PIN J9 [get_ports {com_ext_spi_dl_ss_io[1]}]
 set_property PACKAGE_PIN H9 [get_ports {com_ext_spi_dl_ss_io[2]}]
 
 set_property PACKAGE_PIN A9 [get_ports ext_clk200_o]
-#set_property PACKAGE_PIN E10 [get_ports ext_tdc_rst]
+set_property PACKAGE_PIN B9 [get_ports ext_sysref]
 set_property PACKAGE_PIN E11 [get_ports fifo_gc_out_rst]
 set_property PACKAGE_PIN F12 [get_ports rd_gc_valid]
 

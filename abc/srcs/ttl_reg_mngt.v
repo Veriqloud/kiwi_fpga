@@ -1,15 +1,15 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau, Hop DINH
 // 
 // Create Date: 03/04/2024 03:39:54 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: ttl_reg_mngt
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Manage AXIL interface, assign ttl registers to AXIL registers
 // 
 // Dependencies: 
 // 

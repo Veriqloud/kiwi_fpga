@@ -4,11 +4,11 @@
 // Engineer: Hop Dinh
 // 
 // Create Date: 11/09/2023 03:11:37 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: led_test
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
 // Description: Test the signals, clocks out of the clk_rst_mngt module
 // 
 // Dependencies: 
@@ -40,7 +40,7 @@ module led_test(
    output wire ext_clk100_o,
    output sig_80,
    output pps_trigger
-    );
+);
 reg [3:0] data = 4'b0000;
 reg [23:0] counter = 0;
 reg [25:0] counter1 = 0;  
@@ -55,7 +55,6 @@ always @ (posedge clk10) begin
    counter <= counter + 1;
    data[3] <= counter[23]; 
 end
-
 
 reg pps_trigger;
 reg pps_r;
@@ -72,8 +71,6 @@ always @(posedge clk200) begin
     end
 end
 
-
-
 reg [2:0] shift_pps_trigger;
 reg tdc_pps_trigger;
 initial begin
@@ -87,48 +84,11 @@ always @(posedge pps) begin
       end
 end
 
-// reg [2:0] shift_pps_trigger;
-// reg [2:0] data;
-// wire tdc_pps_trigger;
-// initial begin
-//    shift_pps_trigger <= 0;
-//    data <= 3'd5;
-// end
-
-// always @(posedge pps) begin
-//    shift_pps_trigger <= {shift_pps_trigger[1:0],tdc_pps_trigger_i};
-//    if (shift_pps_trigger[2] == 0 && shift_pps_trigger[0] == 1) begin
-//       data <= 3'd6;
-//    end else begin
-//       data <= data;
-//    end
-// end
-// assign tdc_pps_trigger = shift_pps_trigger[0];
-
-
-//Create long signal aligned to pps
-// reg long_pulse;
-// reg [1:0] shift_long_pulse;
-// initial begin
-//    shift_long_pulse <= 0;
-//    long_pulse <= 0;
-// end
-// always @(posedge clk200) begin
-//       long_pulse <= 1;
-// end
-// // past long pulse from fast domain to slow domain
-
-// always @(posedge pps) begin
-//    shift_long_pulse <= {shift_long_pulse[0],long_pulse};
-// end
-// assign pps_trigger = shift_long_pulse[0];
-
 reg [7:0] counter_tdc;
 wire tdc_refclk;
 
 localparam N_TDC_REFCLK = 2; //number of tdc clock to reset
 reg [8:0] counter_rstidx;
-// reg [$clog2(40*N_TDC_REFCLK)-1:0] counter_rstidx; 
 wire rstidx;
 
 assign tdc_refclk = (counter_tdc >= 0 && counter_tdc <=19 && pps_trigger) ?1:0;
@@ -152,9 +112,7 @@ always @(posedge clk200) begin
    end
 end
 
-
 //----------------global counter test\
-
 reg [2:0] counter40;
 reg [2:0] counter40_n;
 wire pos_40, neg_40;
@@ -194,10 +152,6 @@ end
 assign sig_80 = pos_40 | neg_40;
 
 //----------------------------------
-
-
-
-
 wire clk3125_int;
 assign clk3125_int =clk3125;
 assign sig3125 = clk3125_int;
@@ -206,49 +160,5 @@ always @ (posedge clk100) begin
    counter1 <= counter1 + 1;
    data[0] <= counter1[25]; 
 end
-
-
-reg sync_ltc_o;
-reg [2:0] clockchip_sync_r;
-reg [15:0] counter_clk;
-
-reg pps_clk_r;
-reg pps_clk_trigger;
-initial begin
-    clockchip_sync_r <= 3'b0;
-end
-
-
-always @(posedge clk10 or negedge sys_reset_n) begin
-   if (!sys_reset_n) begin
-      clockchip_sync_r <= 0;
-      sync_ltc_o <= 0;
-      pps_clk_trigger <= 0;
-      pps_clk_r = 0;
-      counter_clk <= 0;
-   end else begin
-      clockchip_sync_r <= {clockchip_sync_r[1:0],clockchip_sync};
-      pps_clk_r <= pps;
-      if ((!pps_clk_r && pps) && clockchip_sync_r[2]) begin
-         pps_clk_trigger <= 1;
-      end
-      if (pps_clk_trigger) begin
-         counter_clk <= counter_clk + 1;
-         if ((counter_clk > 0) && (counter_clk <= 16'd20000)) begin
-            sync_ltc_o <= 1'b1;
-         end else if (counter_clk > 16'd20000) begin
-            counter_clk <= counter_clk;
-            sync_ltc_o <= 1'b0;
-         end else begin
-            sync_ltc_o <= 1'b0;
-         end
-      end else begin
-         sync_ltc_o <= 1'b0;
-         counter_clk <= 0;
-      end
-
-   end
-end
-
 
 endmodule

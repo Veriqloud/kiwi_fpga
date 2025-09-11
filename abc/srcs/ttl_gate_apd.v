@@ -4,14 +4,16 @@
 // Engineer: Hop Dinh
 // 
 // Create Date: 03/04/2024 03:02:51 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: ttl_gate_apd
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
 // Description: Generate the gate signal for APD. Include the tune and fine delays
 // 
 // Dependencies: 
+//- ttl_reg_mngt.v
+//- fine_delay.v
 // 
 // Revision:
 // Revision 0.01 - File Created
@@ -20,51 +22,51 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module ttl_gate_apd
-#(
-//ODELAY3 module parameters    
-parameter DELAY_FORMAT = "COUNT", // recommend COUNT & VAR_ MODE, TIME and FIXED mode
-parameter DELAY_TYPE = "VARIABLE",
-parameter DELAY_VALUE = 50,  //need to be between 45-65 taps for IDELAY3 calibrates correctly/BISC process 
-parameter REFCLK_FREQUENCY = 300, // 
-parameter UPDATE_MODE = "ASYNC",
-//AXIL parameters    
-parameter integer C_s_axil_DATA_WIDTH   = 32,
-parameter integer C_s_axil_ADDR_WIDTH   = 8)
-(
+module ttl_gate_apd #(
+    //ODELAY3 module parameters    
+    parameter DELAY_FORMAT = "COUNT", // recommend COUNT & VAR_ MODE, TIME and FIXED mode
+    parameter DELAY_TYPE = "VARIABLE",
+    parameter DELAY_VALUE = 50,  //need to be between 45-65 taps for IDELAY3 calibrates correctly/BISC process 
+    parameter REFCLK_FREQUENCY = 300, // 
+    parameter UPDATE_MODE = "ASYNC",
+    //AXIL parameters    
+    parameter integer C_s_axil_DATA_WIDTH   = 32,
+    parameter integer C_s_axil_ADDR_WIDTH   = 8
+)(
+    //Ports of Axi Slave Bus interface
+    input   wire [C_s_axil_ADDR_WIDTH-1 : 0]        s_axil_awaddr,
+    input   wire [2 : 0]                            s_axil_awprot,
+    input   wire                                    s_axil_awvalid,
+    output  wire                                    s_axil_awready,
+    input   wire [C_s_axil_DATA_WIDTH-1 : 0]        s_axil_wdata,
+    input   wire [(C_s_axil_DATA_WIDTH/8)-1 : 0]    s_axil_wstrb,
+    input   wire                                    s_axil_wvalid,
+    output  wire                                    s_axil_wready,
+    output  wire [1 : 0]                            s_axil_bresp,
+    output  wire                                    s_axil_bvalid,
+    input   wire                                    s_axil_bready,
+    input   wire [C_s_axil_ADDR_WIDTH-1 : 0]        s_axil_araddr,
+    input   wire [2 : 0]                            s_axil_arprot,
+    input   wire                                    s_axil_arvalid,
+    output  wire                                    s_axil_arready,
+    output  wire [C_s_axil_DATA_WIDTH-1 : 0]        s_axil_rdata,
+    output  wire [1 : 0]                            s_axil_rresp,
+    output  wire                                    s_axil_rvalid,
+    input   wire                                    s_axil_rready,
+    input   s_axil_aclk,
+    input   s_axil_aresetn,
 
-//Ports of Axi Slave Bus interface
-    input wire [C_s_axil_ADDR_WIDTH-1 : 0] s_axil_awaddr,
-    input wire [2 : 0] s_axil_awprot,
-    input wire  s_axil_awvalid,
-    output wire  s_axil_awready,
-    input wire [C_s_axil_DATA_WIDTH-1 : 0] s_axil_wdata,
-    input wire [(C_s_axil_DATA_WIDTH/8)-1 : 0] s_axil_wstrb,
-    input wire  s_axil_wvalid,
-    output wire  s_axil_wready,
-    output wire [1 : 0] s_axil_bresp,
-    output wire  s_axil_bvalid,
-    input wire  s_axil_bready,
-    input wire [C_s_axil_ADDR_WIDTH-1 : 0] s_axil_araddr,
-    input wire [2 : 0] s_axil_arprot,
-    input wire  s_axil_arvalid,
-    output wire  s_axil_arready,
-    output wire [C_s_axil_DATA_WIDTH-1 : 0] s_axil_rdata,
-    output wire [1 : 0] s_axil_rresp,
-    output wire  s_axil_rvalid,
-    input wire  s_axil_rready,
-    input       s_axil_aclk,
-    input       s_axil_aresetn,
-
-    input clk240,
-    input clk80,
-    input ttl_rst,
-    input pps_i,
-
-    output pulse_p,
-    output pulse_n,
-    output pulse_rep_p,
-    output pulse_rep_n
+    //input clocks and reset
+    input   clk240,
+    input   clk80,
+    input   ttl_rst,
+    input   pps_i,
+    
+    //output with/without delay pulse 
+    output  pulse_p,
+    output  pulse_n,
+    output  pulse_rep_p,
+    output  pulse_rep_n
     );
 
 
@@ -74,40 +76,39 @@ wire [31:0] ttl_params_slv_o;
 wire ttl_params_en_o;
 wire ttl_trigger_enstep_o, ttl_trigger_enstep_slv1_o, ttl_trigger_enstep_slv2_o;
 ttl_reg_mngt # ( 
-        .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
-        .C_S_AXI_ADDR_WIDTH(C_s_axil_ADDR_WIDTH)
-    ) fpga_turnkey_reg_mngt_inst (
-        .ttl_trigger_enstep_o(ttl_trigger_enstep_o),              //en_step trigger master
-        .ttl_trigger_enstep_slv1_o(ttl_trigger_enstep_slv1_o),    //en_step trigger slave1
-        .ttl_trigger_enstep_slv2_o(ttl_trigger_enstep_slv2_o),    //en_step trigger slave2
-        .ttl_params_o(ttl_params_o),                              //parameters for master
-        .ttl_params_slv_o(ttl_params_slv_o),                      //parameters for slaves
-        .ttl_params_en_o(ttl_params_en_o),                        //save parameters to regs
-        .S_AXI_ACLK(s_axil_aclk),
-        .S_AXI_ARESETN(s_axil_aresetn),
-        .S_AXI_AWADDR(s_axil_awaddr),
-        .S_AXI_AWPROT(s_axil_awprot),
-        .S_AXI_AWVALID(s_axil_awvalid),
-        .S_AXI_AWREADY(s_axil_awready),
-        .S_AXI_WDATA(s_axil_wdata),
-        .S_AXI_WSTRB(s_axil_wstrb),
-        .S_AXI_WVALID(s_axil_wvalid),
-        .S_AXI_WREADY(s_axil_wready),
-        .S_AXI_BRESP(s_axil_bresp),
-        .S_AXI_BVALID(s_axil_bvalid),
-        .S_AXI_BREADY(s_axil_bready),
-        .S_AXI_ARADDR(s_axil_araddr),
-        .S_AXI_ARPROT(s_axil_arprot),
-        .S_AXI_ARVALID(s_axil_arvalid),
-        .S_AXI_ARREADY(s_axil_arready),
-        .S_AXI_RDATA(s_axil_rdata),
-        .S_AXI_RRESP(s_axil_rresp),
-        .S_AXI_RVALID(s_axil_rvalid),
-        .S_AXI_RREADY(s_axil_rready)
-    );
+    .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
+    .C_S_AXI_ADDR_WIDTH(C_s_axil_ADDR_WIDTH)
+) fpga_turnkey_reg_mngt_inst (
+    .ttl_trigger_enstep_o(ttl_trigger_enstep_o),              //en_step trigger master
+    .ttl_trigger_enstep_slv1_o(ttl_trigger_enstep_slv1_o),    //en_step trigger slave1
+    .ttl_trigger_enstep_slv2_o(ttl_trigger_enstep_slv2_o),    //en_step trigger slave2
+    .ttl_params_o(ttl_params_o),                              //parameters for master
+    .ttl_params_slv_o(ttl_params_slv_o),                      //parameters for slaves
+    .ttl_params_en_o(ttl_params_en_o),                        //save parameters to regs
+    .S_AXI_ACLK(s_axil_aclk),
+    .S_AXI_ARESETN(s_axil_aresetn),
+    .S_AXI_AWADDR(s_axil_awaddr),
+    .S_AXI_AWPROT(s_axil_awprot),
+    .S_AXI_AWVALID(s_axil_awvalid),
+    .S_AXI_AWREADY(s_axil_awready),
+    .S_AXI_WDATA(s_axil_wdata),
+    .S_AXI_WSTRB(s_axil_wstrb),
+    .S_AXI_WVALID(s_axil_wvalid),
+    .S_AXI_WREADY(s_axil_wready),
+    .S_AXI_BRESP(s_axil_bresp),
+    .S_AXI_BVALID(s_axil_bvalid),
+    .S_AXI_BREADY(s_axil_bready),
+    .S_AXI_ARADDR(s_axil_araddr),
+    .S_AXI_ARPROT(s_axil_arprot),
+    .S_AXI_ARVALID(s_axil_arvalid),
+    .S_AXI_ARREADY(s_axil_arready),
+    .S_AXI_RDATA(s_axil_rdata),
+    .S_AXI_RRESP(s_axil_rresp),
+    .S_AXI_RVALID(s_axil_rvalid),
+    .S_AXI_RREADY(s_axil_rready)
+);
 
 // Change clock domain for registers, from axil to 240MHz and 80MHz
-
 (* ASYNC_REG = "TRUE" *) reg [2:0] ttl_params_240_r;
 reg [31:0] ttl_params_240;
 initial begin
@@ -138,7 +139,6 @@ always @(posedge clk80) begin
 end
 
 //Generate reset in 240MHz and 80MHz domain
-
 (* ASYNC_REG = "TRUE" *) reg [2:0] ttl_rst80_r;
 (* ASYNC_REG = "TRUE" *) reg [2:0] ttl_rst240_r;
 initial begin
@@ -177,7 +177,6 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk240_inst (
 reg pps_trigger;
 reg pps_r;
 always @(posedge clk240) begin
-    // if (!rstn_tdc_o) begin
     if (ttl_rst240_o) begin
         pps_trigger <= 1'b0;
         pps_r <= 0;
@@ -188,6 +187,7 @@ always @(posedge clk240) begin
         end
     end
 end
+
 //Generate the pulse, value of duty cycle and tune delay come from axil registers
 reg [4:0] counter;
 reg [7:0] bits;
@@ -201,7 +201,6 @@ assign delay_val = ttl_params_240[18:15];
 wire pulse_delay_tune;
 wire pulse_rep;
 always @(posedge clk240) begin
-    // if (!rst) begin
     if (ttl_rst240_o) begin
         counter <= 0;
         pulse <= 1'b0;
@@ -238,25 +237,25 @@ OBUFDS #(
       .I(pulse_rep)      // Buffer input
    );
 
-   //Instantiate fine delay module
-   fine_delay #(
-        .DELAY_FORMAT(DELAY_FORMAT), // recommend COUNT & VAR_ MODE, TIME and FIXED mode
-        .DELAY_TYPE(DELAY_TYPE),
-        .DELAY_VALUE(DELAY_VALUE),  //need to be between 45-65 taps for IDELAY3 calibrates correctly/BISC process 
-        .REFCLK_FREQUENCY(REFCLK_FREQUENCY), // 
-        .UPDATE_MODE(UPDATE_MODE)
-    ) fine_delay_inst (
-        .clk80(clk80),
-        .ttl_rst80_o(ttl_rst80_o),
-        .pulse_delay_tune(pulse_delay_tune),
-        .pulse_p(pulse_p),
-        .pulse_n(pulse_n),
-        .ttl_params_80(ttl_params_80),
-        .ttl_params_slv(ttl_params_slv),  
-        .ttl_trigger_enstep_o(ttl_trigger_enstep_o),
-        .ttl_trigger_enstep_slv1_o(ttl_trigger_enstep_slv1_o),
-        .ttl_trigger_enstep_slv2_o(ttl_trigger_enstep_slv2_o)
-    );
+//Instantiate fine delay module
+fine_delay #(
+    .DELAY_FORMAT(DELAY_FORMAT), // recommend COUNT & VAR_ MODE, TIME and FIXED mode
+    .DELAY_TYPE(DELAY_TYPE),
+    .DELAY_VALUE(DELAY_VALUE),  //need to be between 45-65 taps for IDELAY3 calibrates correctly/BISC process 
+    .REFCLK_FREQUENCY(REFCLK_FREQUENCY), // 
+    .UPDATE_MODE(UPDATE_MODE)
+) fine_delay_inst (
+    .clk80(clk80),
+    .ttl_rst80_o(ttl_rst80_o),
+    .pulse_delay_tune(pulse_delay_tune),
+    .pulse_p(pulse_p),
+    .pulse_n(pulse_n),
+    .ttl_params_80(ttl_params_80),
+    .ttl_params_slv(ttl_params_slv),  
+    .ttl_trigger_enstep_o(ttl_trigger_enstep_o),
+    .ttl_trigger_enstep_slv1_o(ttl_trigger_enstep_slv1_o),
+    .ttl_trigger_enstep_slv2_o(ttl_trigger_enstep_slv2_o)
+);
 
 
 // //Fine delay

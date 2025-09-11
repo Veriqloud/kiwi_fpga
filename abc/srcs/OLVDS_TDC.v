@@ -4,12 +4,12 @@
 // Engineer: Fabrice Faveneau
 // 
 // Create Date: 01/30/2024 12:23:11 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: OLVDS_TDC
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2 
+// Description: Buffers for clock and reset, sent to TDC chip
 // 
 // Dependencies: 
 // 
@@ -21,19 +21,18 @@
 
 
 module OLVDS_TDC(
-    output tdc_refclk_n,
-    output tdc_refclk_p,
-    input tdc_reflck,
+    output  tdc_refclk_n,
+    output  tdc_refclk_p,
+    input   tdc_reflck,
 
-    output tdc_rstidx_n,
-    output tdc_rstidx_p,
-    input tdc_rstidx,
+    output  tdc_rstidx_n,
+    output  tdc_rstidx_p,
+    input   tdc_rstidx,
 
-    output tdc_lclki_n,
-    output tdc_lclki_p,
-    input tdc_lclki
-
-    );
+    output  tdc_lclki_n,
+    output  tdc_lclki_p,
+    input   tdc_lclki
+);
     
 OBUFDS #(
       .IOSTANDARD("DEFAULT"), // Specify the output I/O standard
@@ -60,6 +59,5 @@ OBUFDS #(
       .OB(tdc_lclki_n),   // Diff_n output (connect directly to top-level port)
       .I(tdc_lclki)      // Buffer input
    );
-
 
 endmodule

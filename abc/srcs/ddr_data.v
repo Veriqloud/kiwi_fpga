@@ -4,12 +4,15 @@
 // Engineer: Hop Dinh
 // 
 // Create Date: 07/17/2024 01:44:29 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: ddr_data
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: Manage write and read AXI virtual fifo 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2 
+// Description: 
+//- Package data to send to DDR Virtual Fifo
+//- Read data from DDR Virtual Fifo
+//- Send selected data to AXIS 
 // 
 // Dependencies: 
 // 
@@ -60,21 +63,21 @@ module ddr_data(
     output          sr_current_dq_gc_valid,
 
     //AXI-Stream master ports for sending alpha to ddr
-    output reg [255:0]                        m_axis_tdata,
-    input wire                                m_axis_tready,
-    output reg                                m_axis_tvalid,
-    input                                     m_axis_clk,
+    output  reg [255:0]      m_axis_tdata,
+    input   wire             m_axis_tready,
+    output  reg              m_axis_tvalid,
+    input                    m_axis_clk,
 
     //AXI-Stream slave ports for reading alpha from ddr
     input [255:0]    s_axis_tdata,
-    output reg       s_axis_tready,
-    input wire       s_axis_tvalid,
+    output  reg      s_axis_tready,
+    input   wire     s_axis_tvalid,
     input            s_axis_clk,
 
 
     //AXI-Stream master ports for sending dq_gc, click result to xdma
     input              m_axis_gc_clk,
-    output reg [63:0] m_axis_tdata_gc,
+    output reg [63:0]  m_axis_tdata_gc,
     input wire         m_axis_tready_gc,
     output reg         m_axis_tvalid_gc,
     output reg         fifo_gc_rst,
@@ -121,8 +124,7 @@ module ddr_data(
     output dq_gc,
     output command_gc_enable_r,
     output debug_rc_gc_div
-
-    );
+);
 
 //Debug signals
 // wire [15:0] threshold_wait;
@@ -161,23 +163,23 @@ wire fifo_gc_full;
 wire rd_gc_valid;
 reg fifo_gc_in_rst;
 fifo_gc_in_64x64 fifo_gc_in_inst (
-  // .rst(!s_gc_aresetn),                    // input wire rst
-  .rst(!fifo_gc_in_rst),                    // input wire rst
-  .wr_clk(s_axis_gc_clk),              // input wire wr_clk
-  .rd_clk(clk200_i),              // input wire rd_clk
-  .din(s_axis_tdata_gc),                    // input wire [63 : 0] din
-  .wr_en(s_axis_tvalid_gc),                // input wire wr_en
-  .rd_en(rd_en_fifo_gc),                // input wire rd_en
-  .dout(tdata_gc),                  // output wire [63 : 0] dout
-  .full(fifo_gc_full),                  // output wire full
-  .almost_full(),    // output wire almost_full
-  .empty(fifo_gc_empty),                // output wire empty
-  .almost_empty(fifo_gc_almost_empty),  // output wire almost_empty
-  .valid(rd_gc_valid),                // output wire valid
-  .prog_full(),        // output wire prog_full
-  // .prog_empty(),      // output wire prog_empty
-  .wr_rst_busy(),    // output wire wr_rst_busy
-  .rd_rst_busy()    // output wire rd_rst_busy
+    // .rst(!s_gc_aresetn),                    // input wire rst
+    .rst(!fifo_gc_in_rst),                    // input wire rst
+    .wr_clk(s_axis_gc_clk),              // input wire wr_clk
+    .rd_clk(clk200_i),              // input wire rd_clk
+    .din(s_axis_tdata_gc),                    // input wire [63 : 0] din
+    .wr_en(s_axis_tvalid_gc),                // input wire wr_en
+    .rd_en(rd_en_fifo_gc),                // input wire rd_en
+    .dout(tdata_gc),                  // output wire [63 : 0] dout
+    .full(fifo_gc_full),                  // output wire full
+    .almost_full(),    // output wire almost_full
+    .empty(fifo_gc_empty),                // output wire empty
+    .almost_empty(fifo_gc_almost_empty),  // output wire almost_empty
+    .valid(rd_gc_valid),                // output wire valid
+    .prog_full(),        // output wire prog_full
+    // .prog_empty(),      // output wire prog_empty
+    .wr_rst_busy(),    // output wire wr_rst_busy
+    .rd_rst_busy()    // output wire rd_rst_busy
 );
 
 
@@ -382,7 +384,6 @@ always @(posedge clk200_i) begin
         m_axis_tvalid_gc <= 0;
         fifo_gc_rst <= 0;
         fifo_gc_in_rst <= 0;
-
 
         s_axis_tready_gc_200 <= 0; //s_axis receive gc_in
 
@@ -779,8 +780,6 @@ always @(posedge clk200_i) begin
     end
 end
 
-
-
 //Manage read alpha and stop read alpha 
 reg start_save_alpha;
 reg [6:0] alpha_cycle_counter;
@@ -846,6 +845,4 @@ always @(posedge clk200_i) begin
         end        
     end
 end
-
-
 endmodule

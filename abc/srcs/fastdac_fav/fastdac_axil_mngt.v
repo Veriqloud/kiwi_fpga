@@ -1,15 +1,15 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau, Hop DINH
 // 
 // Create Date: 07/07/2023 10:39:02 AM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: fastdac_axil_mngt
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Manage AXIL interface, assign jesd_transport registers to AXIL registers
 // 
 // Dependencies: 
 // 

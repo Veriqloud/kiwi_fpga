@@ -1,15 +1,15 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau, Hop DINH
 // 
 // Create Date: 07/17/2024 03:00:07 PM
-// Design Name: 
-// Module Name: ddr_data_reg_mngt
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Design Name: Qline_turnkey
+// Module Name: ddr_data_axil_mngt
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Manage AXIL interface, create registers for ddr_data module
 // 
 // Dependencies: 
 // 

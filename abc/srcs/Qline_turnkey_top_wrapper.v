@@ -1,8 +1,9 @@
 //Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+//Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
-//Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
-//Date        : Wed Apr  2 16:36:16 2025
-//Host        : hop-MS-7D67 running 64-bit Ubuntu 22.04.5 LTS
+//Tool Version: Vivado v.2024.2 (lin64) Build 5239630 Fri Nov 08 22:34:34 MST 2024
+//Date        : Tue Sep  9 16:55:03 2025
+//Host        : hop-MS-7D67 running 64-bit Ubuntu 24.04.2 LTS
 //Command     : generate_target Qline_turnkey_top_wrapper.bd
 //Design      : Qline_turnkey_top_wrapper
 //Purpose     : IP block netlist
@@ -53,6 +54,7 @@ module Qline_turnkey_top_wrapper
     ext_pps,
     ext_stopa_sim,
     ext_sync_ltc,
+    ext_sysref,
     fifo_gc_out_rst,
     led,
     linterrupt_i,
@@ -132,6 +134,7 @@ module Qline_turnkey_top_wrapper
   input ext_pps;
   output ext_stopa_sim;
   output ext_sync_ltc;
+  output ext_sysref;
   output fifo_gc_out_rst;
   output [0:0]led;
   input linterrupt_i;
@@ -212,6 +215,7 @@ module Qline_turnkey_top_wrapper
   wire ext_pps;
   wire ext_stopa_sim;
   wire ext_sync_ltc;
+  wire ext_sysref;
   wire fifo_gc_out_rst;
   wire [0:0]led;
   wire linterrupt_i;
@@ -236,8 +240,8 @@ module Qline_turnkey_top_wrapper
   wire tdc_ext_clkrst_tdc_lclki_p;
   wire tdc_ext_clkrst_tdc_refclk_n;
   wire tdc_ext_clkrst_tdc_refclk_p;
-  wire tdc_ext_clkrst_tdc_rstidxp_n;
-  wire tdc_ext_clkrst_tdc_rstidxp_p;
+  wire tdc_ext_clkrst_tdc_rstidx_n;
+  wire tdc_ext_clkrst_tdc_rstidx_p;
   wire tdc_ext_in_framea_n;
   wire tdc_ext_in_framea_p;
   wire tdc_ext_in_frameb_n;
@@ -293,6 +297,7 @@ module Qline_turnkey_top_wrapper
         .ext_pps(ext_pps),
         .ext_stopa_sim(ext_stopa_sim),
         .ext_sync_ltc(ext_sync_ltc),
+        .ext_sysref(ext_sysref),
         .fifo_gc_out_rst(fifo_gc_out_rst),
         .led(led),
         .linterrupt_i(linterrupt_i),

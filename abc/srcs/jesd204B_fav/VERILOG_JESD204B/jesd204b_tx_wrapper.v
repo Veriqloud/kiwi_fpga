@@ -4,15 +4,16 @@
 // Engineer: Fabrice Faveneau
 // 
 // Create Date: 11.10.2023 12:39:27
-// Design Name: 
-// Module Name: jesd204_wrapper
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
+// Design Name: Qline_turnkey
+// Module Name: jesd204b_tx_wrapper
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2 
 // Description: Wrapper of jesd204b protocol, link layer
 // 
 // Dependencies: 
-// 
+//- jesd204b_tx.v
+//- jesd204b_reg_mngt.v
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
@@ -67,7 +68,10 @@ module jesd204b_tx_wrapper #(
         output wire [4-1:0]                           vgt3_charisk_o,
         
         output wire                                   btx_reset_gt_o,
-        input wire                                    btx_reset_done_i
+        input wire                                    btx_reset_done_i,
+        
+        //debug
+        output wire blmfc_r
     );
  
 wire [31:0]         vCTRL_ENABLE_int;
@@ -123,7 +127,9 @@ jesd204b_tx
         
         // data bus output
         .vgt_tdata_o(vgt_tdata_int),
-        .vgt_charisk_o(vgt_charisk_int)
+        .vgt_charisk_o(vgt_charisk_int),
+        //debug
+        .blmfc_r(blmfc_r)
     );
     
     jesd204b_reg_mngt # ( 

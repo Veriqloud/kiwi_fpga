@@ -4,11 +4,11 @@
 // Engineer: Hop Dinh
 // 
 // Create Date: 02/02/2024 03:33:49 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: tdc_clk_rst_mngt
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
 // Description: Generate reference clock, reset index, simulated stopa for tdc
 // 
 // Dependencies: 
@@ -24,20 +24,19 @@ module tdc_clk_rst_mngt #(
     parameter N_TDC_REFCLK = 8,
     parameter TDC_DIV_HALF = 20,
     parameter N_COUNTER_APD = 800
-    )
-    (
-    input clk200_i,
-    input tdc_rst,
-    input pps_i,
-    output tdc_refclk_o,
-    output tdc_rstidx_o,
-    input [31:0] stopa_sim_limit_i,
-    input stopa_sim_enable_i,
+)
+(
+    input           clk200_i,
+    input           tdc_rst,
+    input           pps_i,
+    output          tdc_refclk_o,
+    output          tdc_rstidx_o,
+    input [31:0]    stopa_sim_limit_i,
+    input           stopa_sim_enable_i,
     //Debug ports
-    output pps_trigger,
-    output stopa_sim
-
-    );
+    output          pps_trigger,
+    output          stopa_sim
+);
 
 // Generate pps_trigger signal
 reg pps_trigger;
@@ -54,7 +53,6 @@ always @(posedge clk200_i, posedge tdc_rst) begin
         end
     end
 end
-
 
 //counter to get 5MHz tdc_refclk from 200MHz, aligned to pps by using pps_trigger
 reg [7:0] counter_tdc;

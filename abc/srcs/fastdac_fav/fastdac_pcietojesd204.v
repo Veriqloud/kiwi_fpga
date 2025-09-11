@@ -1,15 +1,15 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau
 // 
 // Create Date: 07/07/2023 10:25:49 AM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: fastdac_pcietojesd204
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Old version of jesd_transport.v
 // 
 // Dependencies: 
 // 
