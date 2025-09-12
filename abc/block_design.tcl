@@ -2450,7 +2450,7 @@ proc create_root_design { parentCell } {
 
   # Restore current instance
   current_bd_instance $oldCurInst
-
+  source fix_frequency.tcl
   save_bd_design
 }
 # End of create_root_design()
