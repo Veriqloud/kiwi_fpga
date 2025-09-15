@@ -311,10 +311,6 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
  ] [get_bd_intf_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/m_axis]
 
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/s_axis]
-
-  set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/m_aclk]
 
@@ -742,10 +738,6 @@ proc create_hier_cell_decoy { parentCell nameHier } {
      return 1
    }
   
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /decoy/decoy_rng_fifos_0/s_axis]
-
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /decoy/decoy_rng_fifos_0/s_axis_clk]
@@ -1197,10 +1189,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/axi_virtual_controll_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_pins /ddr4/axi_virtual_controll_0/aclk]
 
   # Create instance: axi_clock_converter_0, and set properties
@@ -1217,10 +1205,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {300000000} \
  ] [get_bd_intf_pins /ddr4/axi_clock_converter_0/m_axi]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/axi_clock_converter_0/s_axi]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {300000000} \
@@ -1248,14 +1232,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_intf_pins /ddr4/fifos_out_0/m_axis_gco]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_alpha]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_gco]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
@@ -1321,14 +1297,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_intf_pins /ddr4/ddr_data_0/m_axis_gc]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis_gc]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
@@ -1823,10 +1791,6 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /fastdac/jesd_transport_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /fastdac/jesd_transport_0/s_axis_clk]
 
   # Create interface connections
@@ -2085,8 +2049,6 @@ proc create_root_design { parentCell } {
 
   # Create ports
   set sys_rst_n [ create_bd_port -dir I -type rst sys_rst_n ]
-  set sys_clk_n [ create_bd_port -dir I sys_clk_n ]
-  set sys_clk_p [ create_bd_port -dir I sys_clk_p ]
   set ext_fastdac_txp_out [ create_bd_port -dir O -from 3 -to 0 ext_fastdac_txp_out ]
   set ext_fastdac_txn_out [ create_bd_port -dir O -from 3 -to 0 ext_fastdac_txn_out ]
   set ext_pps [ create_bd_port -dir I ext_pps ]
@@ -2112,6 +2074,8 @@ proc create_root_design { parentCell } {
   set decoy_signal_n [ create_bd_port -dir O decoy_signal_n ]
   set decoy_signal [ create_bd_port -dir O decoy_signal ]
   set ext_sysref [ create_bd_port -dir O -type clk ext_sysref ]
+  set sys_clk_n [ create_bd_port -dir I -type clk -freq_hz 100000000 sys_clk_n ]
+  set sys_clk_p [ create_bd_port -dir I -type clk -freq_hz 100000000 sys_clk_p ]
 
   # Create instance: xdma_0, and set properties
   set xdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xdma:4.1 xdma_0 ]
@@ -2231,10 +2195,6 @@ proc create_root_design { parentCell } {
      return 1
    }
   
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {15000000} \
- ] [get_bd_intf_pins /ttl_gate_apd_0/s_axil]
-
   set_property -dict [ list \
    CONFIG.FREQ_HZ {15000000} \
  ] [get_bd_pins /ttl_gate_apd_0/s_axil_aclk]
@@ -2485,7 +2445,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
   source fix_frequency.tcl
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2497,4 +2456,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
