@@ -50,16 +50,32 @@ fifo_decoy_rng_128x16 fifo_decoy_rng_16_inst (
     .wr_rst_busy(),  // output wire wr_rst_busy
     .rd_rst_busy()  // output wire rd_rst_busy
 );
+//// fifo in common clock domain
+// fifo_decoy_rng_16x4 fifo_decoy_rng_4_inst (
+//     .clk(clk200),                  // input wire clk
+//     .srst(tx_core_rst),                // input wire srst
+//     .din(dout16),                  // input wire [15 : 0] din
+//     .wr_en(rd_en_16),              // input wire wr_en
+//     .rd_en(rd_en_4),              // input wire rd_en
+//     .dout(de_rng_dout4),                // output wire [1 : 0] dout
+//     .full(),                // output wire full
+//     .empty(),              // output wire empty
+//     .wr_rst_busy(),  // output wire wr_rst_busy
+//     .rd_rst_busy()  // output wire rd_rst_busy
+// );
+
+//// fifo in independant clock domains
 fifo_decoy_rng_16x4 fifo_decoy_rng_4_inst (
-    .clk(clk200),                  // input wire clk
-    .srst(tx_core_rst),                // input wire srst
-    .din(dout16),                  // input wire [15 : 0] din
-    .wr_en(rd_en_16),              // input wire wr_en
-    .rd_en(rd_en_4),              // input wire rd_en
-    .dout(de_rng_dout4),                // output wire [1 : 0] dout
-    .full(),                // output wire full
-    .empty(),              // output wire empty
-    .wr_rst_busy(),  // output wire wr_rst_busy
-    .rd_rst_busy()  // output wire rd_rst_busy
+  .rst(tx_core_rst),                  // input wire rst
+  .wr_clk(clk200),            // input wire wr_clk
+  .rd_clk(clk200),            // input wire rd_clk
+  .din(dout16),                  // input wire [15 : 0] din
+  .wr_en(rd_en_16),              // input wire wr_en
+  .rd_en(rd_en_4),              // input wire rd_en
+  .dout(de_rng_dout4),                // output wire [1 : 0] dout
+  .full(),                // output wire full
+  .empty(),              // output wire empty
+  .wr_rst_busy(),  // output wire wr_rst_busy
+  .rd_rst_busy()  // output wire rd_rst_busy
 );
 endmodule

@@ -333,6 +333,16 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_rng_mode_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_rng_mode_240_r_reg/D]
 
+set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/counter40_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
+#for dpram data path
+set_false_path -from [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/dpram_seq_rng_16x4_inst/RAM_reg_bram_0/CLKARDCLK] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/counter10_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
+#for rng_value path
+# set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[100]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[0]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[101]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[1]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[100]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[0]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[101]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[1]/D}]
+
 ## multi-bit CDC
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/tune_step_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg5_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_params_80_r_reg[*]/D}]

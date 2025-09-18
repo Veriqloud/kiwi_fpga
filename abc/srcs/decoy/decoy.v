@@ -361,7 +361,9 @@ end
 
 //Generate nrg_a in clk200 domain to save to ddr
 wire [1:0] rng_a;
-assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
+// assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
+assign rng_a = rng_value[1:0];
+// assign rng_a = dpram_rng_dout[1:0];
 
 //Generate decoy signal
 reg [2:0] rd_en_4_r;
@@ -382,6 +384,13 @@ always @(posedge clk240) begin
         if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
             rng_a_r <= rng_a;
         end
+        // if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1 && decoy_rng_mode_240_r == 1) begin
+        //     // rng_a_r <= rng_a;
+        //     // rng_a_r <= 0;
+        //     // rng_a_r <= rng_value[1:0];
+        // end else if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1 && decoy_rng_mode_240_r == 0) begin
+        //     rng_a_r <= dpram_rng_dout[1:0];
+        // end
         case(rng_a_r)
             2'b00: decoy_signal <= 0;
             2'b01: decoy_signal <= temp_signal1;
