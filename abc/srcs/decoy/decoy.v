@@ -29,7 +29,8 @@ module decoy#(
     parameter UPDATE_MODE = "ASYNC",
     //AXIL parameters    
     parameter integer C_s_axil_DATA_WIDTH   = 32,
-    parameter integer C_s_axil_ADDR_WIDTH   = 12
+    parameter integer C_s_axil_ADDR_WIDTH   = 12,
+    parameter SIMULATION = 0 //1 for simulation, 0 for synthesis
 )
 (
     //Ports of Axi Slave Bus interface
@@ -64,6 +65,7 @@ module decoy#(
     //rng temp from fastdac
     input   wire [3:0]    rng_value, 
     input   wire          rd_en_4,
+    input           rng_value_valid,
     //output pulse
     output          decoy_signal_p,
     output          decoy_signal_n,
@@ -100,6 +102,12 @@ wire decoy_rng_wen_int; //decoy rng write enable
 wire [2:0] decoy_rng_addr_int; //decoy rng address
 wire [31:0] decoy_rng_din_int; //decoy rng data in
 wire [5:0] decoy_dpram_max_addr_rng_int; //decoy dpram max address
+
+generate if (SIMULATION) begin
+    assign reg_enable_o = 1;
+    assign decoy_rng_mode = 1;
+end
+endgenerate
 
 decoy_axil_mngt # ( 
     .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
@@ -368,9 +376,11 @@ assign rng_a = rng_value[1:0];
 //Generate decoy signal
 reg [2:0] rd_en_4_r;
 reg [1:0] rng_a_r;
+reg [2:0] rng_valid_r;
 initial begin
     rd_en_4_r = 0;
     rng_a_r = 0;
+    rng_valid_r = 0;
 end
 
 reg decoy_signal;
@@ -378,19 +388,19 @@ always @(posedge clk240) begin
     if (rst_240_o) begin
         rd_en_4_r <= 0;
         rng_a_r <= 0;
+        rng_valid_r <= 0;
         decoy_signal <= 0;
     end else begin
-        rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4};
-        if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
-            rng_a_r <= rng_a;
-        end
-        // if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1 && decoy_rng_mode_240_r == 1) begin
-        //     // rng_a_r <= rng_a;
-        //     // rng_a_r <= 0;
-        //     // rng_a_r <= rng_value[1:0];
-        // end else if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1 && decoy_rng_mode_240_r == 0) begin
-        //     rng_a_r <= dpram_rng_dout[1:0];
+        // rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4};
+        // if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
+        //     rng_a_r <= rng_a;
         // end
+        rng_valid_r <= {rng_valid_r[1:0], rng_value_valid};
+        if (rng_valid_r[1] == 0 && rng_valid_r[0] == 1) begin
+            rng_a_r <= rng_a;
+            // rng_a_r <= rng_value;
+        end
+
         case(rng_a_r)
             2'b00: decoy_signal <= 0;
             2'b01: decoy_signal <= temp_signal1;

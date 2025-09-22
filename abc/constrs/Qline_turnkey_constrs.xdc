@@ -340,8 +340,8 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/ins
 #for rng_value path
 # set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[100]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[0]/D}]
 # set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[101]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[1]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[100]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[0]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[101]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[1]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[100]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[0]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[101]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[1]/D}]
 
 ## multi-bit CDC
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/tune_step_r_reg[*]/D}]
