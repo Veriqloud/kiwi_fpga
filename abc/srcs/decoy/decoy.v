@@ -30,7 +30,7 @@ module decoy#(
     //AXIL parameters    
     parameter integer C_s_axil_DATA_WIDTH   = 32,
     parameter integer C_s_axil_ADDR_WIDTH   = 12,
-    parameter SIMULATION = 0 //1 for simulation, 0 for synthesis
+    parameter SIMULATION = 1 //1 for simulation, 0 for synthesis
 )
 (
     //Ports of Axi Slave Bus interface
@@ -75,11 +75,12 @@ module decoy#(
     output          temp_signal2,
     output          temp_signal1,
     output          rd_en_4_r,
-    output          rd_en_4_200_r,
+    output          rng_valid_r,
     output [1:0]    rng_a_r,
+    output [1:0]    rng_a_r_test,
     output [1:0]    rng_a,
     output          decoy_signal,
-    output [3:0]    dpram_rng_dout,
+    output [3:0]    dpram_rng_dout, 
     output [2:0]    state_rng,
     output          read_enable,
     output [5:0]    sequence_rng_addr_r,
@@ -103,11 +104,12 @@ wire [2:0] decoy_rng_addr_int; //decoy rng address
 wire [31:0] decoy_rng_din_int; //decoy rng data in
 wire [5:0] decoy_dpram_max_addr_rng_int; //decoy dpram max address
 
-generate if (SIMULATION) begin
-    assign reg_enable_o = 1;
-    assign decoy_rng_mode = 1;
-end
-endgenerate
+// generate if (SIMULATION) begin
+//     assign reg_enable_o = 1;
+//     assign decoy_rng_mode_o = 1;
+// end
+// endgenerate
+
 
 decoy_axil_mngt # ( 
     .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
@@ -369,18 +371,19 @@ end
 
 //Generate nrg_a in clk200 domain to save to ddr
 wire [1:0] rng_a;
-// assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
-assign rng_a = rng_value[1:0];
-// assign rng_a = dpram_rng_dout[1:0];
+assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
+// assign rng_a = decoy_rng_mode_r?dpram_rng_dout[1:0]:rng_value[1:0];
 
 //Generate decoy signal
 reg [2:0] rd_en_4_r;
 reg [1:0] rng_a_r;
+reg [1:0] rng_a_r_test;
 reg [2:0] rng_valid_r;
 initial begin
     rd_en_4_r = 0;
     rng_a_r = 0;
     rng_valid_r = 0;
+    rng_a_r_test = 0;
 end
 
 reg decoy_signal;
@@ -389,16 +392,16 @@ always @(posedge clk240) begin
         rd_en_4_r <= 0;
         rng_a_r <= 0;
         rng_valid_r <= 0;
+        rng_a_r_test <= 0;
         decoy_signal <= 0;
     end else begin
-        // rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4};
-        // if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
-        //     rng_a_r <= rng_a;
-        // end
+        rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4};
+        if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
+            rng_a_r_test <= rng_a;    
+        end
         rng_valid_r <= {rng_valid_r[1:0], rng_value_valid};
         if (rng_valid_r[1] == 0 && rng_valid_r[0] == 1) begin
             rng_a_r <= rng_a;
-            // rng_a_r <= rng_value;
         end
 
         case(rng_a_r)

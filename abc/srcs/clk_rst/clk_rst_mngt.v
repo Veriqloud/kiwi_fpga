@@ -104,7 +104,8 @@ module clk_rst_mngt #(
     output wire   ttl_rst,
     output wire   decoy_rst,
     output        gc_rst_o,
-    output        ddr_data_rstn_o
+    output        ddr_data_rstn_o,
+    output        ltc_rst_o
 );
 
 clk_rst_axil_mngt # ( 
