@@ -2437,7 +2437,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net tdc_pps_trigger  [get_bd_pins tdc/pps_trigger] \
   [get_bd_ports pps_trigger]
   connect_bd_net -net tdc_probe_tdc_refclk  [get_bd_pins tdc/probe_tdc_refclk] \
-  [get_bd_ports probe_tdc_refclk]G
+  [get_bd_ports probe_tdc_refclk]
   connect_bd_net -net tdc_probe_tdc_rstidx  [get_bd_pins tdc/probe_tdc_rstidx] \
   [get_bd_ports probe_tdc_rstidx]
   connect_bd_net -net tdc_rst_jic_0  [get_bd_pins tdc/rst_jic_0] \
