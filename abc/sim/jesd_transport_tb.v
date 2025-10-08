@@ -58,35 +58,36 @@ reg         tx_core_clk;
 reg         tx_core_reset;
 reg         tx_tready;
 wire[127:0] tx_tdata;
+reg         pps_i;
 
 jesd_transport jesd_transport_inst(
-    s_axil_aclk(SAXI_aclk),
-    s_axil_aresetn(SAXI_aresetn),
-    s_axil_awaddr(SAXI_awaddr),
-    s_axil_awprot(3'b0),
-    s_axil_awvalid(SAXI_awvalid),
-    s_axil_awready(SAXI_awready),
-    s_axil_wdata(SAXI_wdata),
-    s_axil_wstrb(4'hF),
-    s_axil_wvalid(SAXI_wvalid),
-    s_axil_wready(SAXI_wready),
-    s_axil_bresp(SAXI_bresp),
-    s_axil_bvalid(SAXI_bvalid),
-    s_axil_bready(SAXI_bready),
-    s_axil_araddr(SAXI_araddr),
-    s_axil_arprot(3'b0),
-    s_axil_arvalid(SAXI_arvalid),
-    s_axil_arready(SAXI_arready),
-    s_axil_rdata(SAXI_rdata),
-    s_axil_rresp(SAXI_rresp),
-    s_axil_rvalid(SAXI_rvalid),
-    s_axil_rready(SAXI_rready),
+    .s_axil_aclk(SAXI_aclk),
+    .s_axil_aresetn(SAXI_aresetn),
+    .s_axil_awaddr(SAXI_awaddr),
+    .s_axil_awprot(3'b0),
+    .s_axil_awvalid(SAXI_awvalid),
+    .s_axil_awready(SAXI_awready),
+    .s_axil_wdata(SAXI_wdata),
+    .s_axil_wstrb(4'hF),
+    .s_axil_wvalid(SAXI_wvalid),
+    .s_axil_wready(SAXI_wready),
+    .s_axil_bresp(SAXI_bresp),
+    .s_axil_bvalid(SAXI_bvalid),
+    .s_axil_bready(SAXI_bready),
+    .s_axil_araddr(SAXI_araddr),
+    .s_axil_arprot(3'b0),
+    .s_axil_arvalid(SAXI_arvalid),
+    .s_axil_arready(SAXI_arready),
+    .s_axil_rdata(SAXI_rdata),
+    .s_axil_rresp(SAXI_rresp),
+    .s_axil_rvalid(SAXI_rvalid),
+    .s_axil_rready(SAXI_rready),
     //For axistream
-    s_axis_tclk(SAXIS_tclk),
-    s_axis_tresetn(SAXIS_tresetn),
-    s_axis_tdata(SAXIS_tdata),
-    s_axis_tvalid(SAXIS_tvalid),
-    s_axis_tready(SAXIS_tready),
+    .s_axis_clk(SAXIS_tclk),
+    .s_axis_tresetn(SAXIS_tresetn),
+    .s_axis_tdata(SAXIS_tdata),
+    .s_axis_tvalid(SAXIS_tvalid),
+    .s_axis_tready(SAXIS_tready),
     // dout4_test,
     // rd_en_16,
     // rd_en_4,
@@ -109,10 +110,11 @@ jesd_transport jesd_transport_inst(
     // clk_pps,
     // fastdac_sync_i,
     // fastdac_ddr_status_i,
-    tx_core_clk(tx_core_clk),
-    tx_core_reset(tx_core_reset),
-    tx_tdata(tx_tdata),
-    tx_tready(tx_tready)
+    .tx_core_clk(tx_core_clk),
+    .tx_core_reset(tx_core_reset),
+    .tx_tdata(tx_tdata),
+    .tx_tready(tx_tready),
+    .pps_i(pps_i)
     );
 
 //AXIL clock
@@ -136,17 +138,39 @@ always begin
     #(PERIOD_tx_core/2) tx_core_clk = 1'b0;
     #(PERIOD_tx_core/2);
 end
+//PPS clock
+localparam PERIOD_pps = 1000000;
+initial begin
+  pps_i = 1'b0;
+  #15 pps_i = 1'b0;
+  forever begin
+      pps_i = 1'b1;
+      #(PERIOD_pps/10) pps_i = 1'b0;
+      #(PERIOD_pps - PERIOD_pps/10);
+  end
+end
+// always begin
+//     pps_i = 1'b1;
+//     #(PERIOD_pps/10) pps_i = 1'b0;
+//     #(PERIOD_pps - PERIOD_pps/10);
+// end
 
 initial begin
     $display("Start simulation");
     $display("Reset sysem");
     SAXI_aresetn <= 0;
     tx_core_reset <= 1;
-    #4000000
+    #2000000
     SAXI_aresetn <= 1;
     tx_core_reset <= 0;
     // #4000000
     //Wite to axil
+end
+
+initial begin
+    tx_tready = 0;
+    #4000000
+    tx_tready = 1;
 end
 
 //Axil_write task

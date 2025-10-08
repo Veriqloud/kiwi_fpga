@@ -64,7 +64,7 @@ module decoy#(
     input           decoy_rst,
     //rng temp from fastdac
     input   wire [3:0]    rng_value, 
-    input   wire          rd_en_4,
+    input                 rd_en_4,
     input           rng_value_valid,
     //output pulse
     output          decoy_signal_p,
@@ -375,10 +375,10 @@ assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
 // assign rng_a = decoy_rng_mode_r?dpram_rng_dout[1:0]:rng_value[1:0];
 
 //Generate decoy signal
-reg [2:0] rd_en_4_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] rd_en_4_r;
 reg [1:0] rng_a_r;
 reg [1:0] rng_a_r_test;
-reg [2:0] rng_valid_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] rng_valid_r;
 initial begin
     rd_en_4_r = 0;
     rng_a_r = 0;
@@ -395,14 +395,14 @@ always @(posedge clk240) begin
         rng_a_r_test <= 0;
         decoy_signal <= 0;
     end else begin
-        rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4};
+        rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4}; //using rd_en_4 is old version
         if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
-            rng_a_r_test <= rng_a;    
+            rng_a_r <= rng_a;    
         end
-        rng_valid_r <= {rng_valid_r[1:0], rng_value_valid};
-        if (rng_valid_r[1] == 0 && rng_valid_r[0] == 1) begin
-            rng_a_r <= rng_a;
-        end
+        // rng_valid_r <= {rng_valid_r[1:0], rng_value_valid};
+        // if (rng_valid_r[1] == 0 && rng_valid_r[0] == 1) begin
+        //     rng_a_r_test <= rng_a;
+        // end
 
         case(rng_a_r)
             2'b00: decoy_signal <= 0;

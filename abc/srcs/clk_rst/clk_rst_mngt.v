@@ -352,14 +352,14 @@ always @(posedge clk10_o) begin
 end
 
 //ILA debug
-ila_sync_ltc sync_ltc_ila_inst (
-	.clk(fastdac_coreclk_o), // input wire clk
-	.probe0(pps_i), // input wire [0:0]  probe0  
-	.probe1(clk10_o), // input wire [0:0]  probe1 
-	.probe2(sync_ltc_o), // input wire [0:0]  probe2 
-	.probe3(clockchip_sync), // input wire [0:0]  probe3 
-	.probe4(clockchip_sync_r), // input wire [2:0]  probe4 
-	.probe5(counter_clk), // input wire [15:0]  probe5
-	.probe6(pps_clk_trigger) // input wire [0:0]  probe6
-);
+// ila_sync_ltc sync_ltc_ila_inst (
+// 	.clk(fastdac_coreclk_o), // input wire clk
+// 	.probe0(pps_i), // input wire [0:0]  probe0  
+// 	.probe1(clk10_o), // input wire [0:0]  probe1 
+// 	.probe2(sync_ltc_o), // input wire [0:0]  probe2 
+// 	.probe3(clockchip_sync), // input wire [0:0]  probe3 
+// 	.probe4(clockchip_sync_r), // input wire [2:0]  probe4 
+// 	.probe5(counter_clk), // input wire [15:0]  probe5
+// 	.probe6(pps_clk_trigger) // input wire [0:0]  probe6
+// );
 endmodule
