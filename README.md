@@ -5,6 +5,7 @@
 - Vivado 2024.2
 - Vivado installation includes packages for UltraScale+ FPGA
 - Install vivado board file for [XEM8310](https://docs.opalkelly.com/xem8310/vivado-board-file/) (Artix UltraScale+ FPGA)
+
 Note: 
 - Install vivado board file is for developers
 - For this specific project, board_part repos is already copied to /abc/boards/
