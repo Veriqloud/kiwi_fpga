@@ -60,10 +60,14 @@ module spi_inout_mngt #(
 //    inout          i1_io,
 //    inout[NBR_OF_SLAVE-1:0]     ioss_io,
 //    inout          iosck_io
-    inout          mosi_io,
+    // inout          mosi_io,
+    // inout          miso_io,
+    // inout[NBR_OF_SLAVE-1:0]     ss_io,
+    // inout          sck_io
+    output          mosi_io,
     inout          miso_io,
-    inout[NBR_OF_SLAVE-1:0]     ss_io,
-    inout          sck_io
+    output[NBR_OF_SLAVE-1:0]     ss_io,
+    output          sck_io
 );
     assign rst_jic = 1'b1;
 	IOBUF QSPI_IO0_TDC  (.O(out0_o),.IO(mosi_io),.I(in0_i),.T(in0t_i));

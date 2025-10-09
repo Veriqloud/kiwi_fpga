@@ -58,6 +58,7 @@ module jesd_transport #(
     output  wire                                    s_axis_tready,
 
     // Ports RNG test out
+    output wire         tx_tready_sync,
     output wire [3:0]   dout4_test,
     output              rd_en_16,
     output              rd_en_4,
@@ -89,7 +90,8 @@ module jesd_transport #(
     input                                         tx_core_clk,
     input                                         tx_core_reset,
     output  reg [127 : 0]                         tx_tdata,
-    input   wire                                  tx_tready
+    input   wire                                  tx_tready,
+    input                                         pps_i
 
     );
     
@@ -221,9 +223,62 @@ always @(posedge tx_core_clk) begin
         end
 end
 
+//Synchronize tx_tready to pps
+wire tx_tready_sync;
+sync_tx_tready sync_tx_tready_inst (
+    .tx_core_clk(tx_core_clk),
+    .tx_core_rst(tx_core_reset),
+    .pps_i(pps_i),
+    .tx_tready(tx_tready),
+    .tx_tready_o(tx_tready_sync)
+);
+
+//Generate rd_en_4 
+reg rd_en_4;
+reg rd_en_16;
+reg [3:0] counter40;
+reg [5:0] counter10;
+reg pps_r;
+reg pps_trigger;
+always @(posedge tx_core_clk) begin
+    if(tx_core_reset) begin
+        rd_en_4 <= 0;
+        rd_en_16 <= 0;
+        counter40 <= 0;
+        counter10 <= 0;
+        pps_trigger <= 0;
+    end else begin
+        pps_r <= pps_i;
+        if (!pps_r && pps_i) begin
+            pps_trigger <= 1;
+        end
+        if (pps_trigger) begin
+            counter40 <= counter40 + 1;
+            counter10 <= counter10 + 1;
+            if (counter40 == 4) begin
+                counter40 <= 0;
+            end
+            if (counter40 == 0) begin
+                rd_en_4 <= 1;
+            end else begin
+                rd_en_4 <= 0;
+            end
+            if (counter10 == 19) begin
+                counter10 <= 0;
+            end
+            if (counter10 == 0) begin
+                rd_en_16 <= 1;
+            end else begin
+                rd_en_16 <= 0;
+            end
+        end
+    end
+end
+
+
 //RNG fifos. Get stream data from axis to fifo 128x16 and 16x4.
 //to get 4 bits of RNG at 40MHz ~ 20 samples 16 bits for dac1
-wire rd_en_16;
+// wire rd_en_16;
 wire [15:0] dout16;
 assign s_axis_tready = 1'b1;
 
@@ -246,7 +301,7 @@ fifo_128x16 fifo_rng_128x16_inst (
     .rd_rst_busy()              // output wire rd_rst_busy
 );
 
-wire rd_en_4;
+// wire rd_en_4;
 wire [4:0] rng_dout4;
 assign dout4_test = rng_dout4;
 
@@ -287,8 +342,8 @@ dpram_seq_64x128_dac0_inst(
     .clkB(tx_core_clk), 
     .enaA(fastdac_sequence_wen_int), 
     .weA(fastdac_sequence_wen_int), 
-    //    .enaB(fastdac_dpram_alpha_rden_dac_r|tx_tready), 
-    .enaB(tx_tready), 
+    //    .enaB(fastdac_dpram_alpha_rden_dac_r|tx_tready_sync), 
+    .enaB(tx_tready_sync), 
     .addrA(fastdac_sequence_addr_int), 
     .addrB(fastdac_dpram_seq_addr_dac0_r), 
     .diA(fastdac_sequence_din_int[15:0]),
@@ -310,8 +365,8 @@ dpram_seq_64x128_dac1_inst(
     .clkB(tx_core_clk), 
     .enaA(fastdac_sequence_wen_int), 
     .weA(fastdac_sequence_wen_int), 
-    //    .enaB(fastdac_dpram_alpha_rden_dac_r|tx_tready), 
-    .enaB(tx_tready), 
+    //    .enaB(fastdac_dpram_alpha_rden_dac_r|tx_tready_sync), 
+    .enaB(tx_tready_sync), 
     .addrA(fastdac_sequence_addr_int), 
     .addrB(fastdac_dpram_seq_addr_dac1_r), 
     .diA(fastdac_sequence_din_int[31:16]),
@@ -333,7 +388,7 @@ dpram_seq_64x128_dac1_inst(
 //     .clkB(tx_core_clk), 
 //     .enaA(fastdac_rng_wen_int), 
 //     .weA(fastdac_rng_wen_int), 
-//     .enaB(tx_tready), 
+//     .enaB(tx_tready_sync), 
 //     .addrA(fastdac_rng_addr_int), 
 //     .addrB(sequence_rng_addr_r), 
 //     .diA(fastdac_rng_din_int[31:0]), 
@@ -355,17 +410,17 @@ dpram_seq_rng_16x4_inst(
     .clkB(tx_core_clk), 
     .enaA(fastdac_rng_wen_int), 
     .weA(fastdac_rng_wen_int), 
-    .enaB(tx_tready), 
+    .enaB(tx_tready_sync), 
     .addrA(fastdac_rng_addr_int), 
     .addrB(sequence_rng_addr_r), 
     .diA(fastdac_rng_din_int[31:0]), 
     .doB(dpram_rng_dout)    
     );
     // Control rd_en and wr_en of rng fifos
-    reg [5:0] counter10; //counter for pulse 10MHz
-    reg [3:0] counter40; //counter for pulse 40MHz
-    wire rd_en_4;
-    wire rd_en_16; 
+    // reg [5:0] counter10; //counter for pulse 10MHz
+    // reg [3:0] counter40; //counter for pulse 40MHz
+    // wire rd_en_4;
+    // wire rd_en_16; 
 
 //State machine to readout the rng_test from dpram
 reg [2:0] state_rng;
@@ -375,7 +430,7 @@ always @(posedge tx_core_clk, posedge tx_core_reset) begin
         sequence_rng_addr_r <= 0;
         state_rng <= SR0;
     end else begin
-        if (tx_tready) begin
+        if (tx_tready_sync) begin
             case (state_rng)
             SR0: begin
                 sequence_rng_addr_r <= 0;
@@ -517,7 +572,6 @@ always @(ext_amp0,ext_amp1,ext_amp2,ext_amp3,zero_amp) begin
 end
 
 reg [2:0] counter_3b;
-reg pps_r;
 reg [2:0] rd_en_4_shift;
 
 always @(posedge tx_core_clk) begin
@@ -748,6 +802,9 @@ assign sam4 = shift1_r[3]? (shift1_r[1]? sam4_a : (shift1_r[0]? sam4_9 : sam4_8)
 : (shift1_r[2] ? (shift1_r[1]? (shift1_r[0]? sam4_7 : sam4_6) : (shift1_r[0]? sam4_5 : sam4_4)) 
     : (shift1_r[1]? (shift1_r[0]? sam4_3 : sam4_2) : (shift1_r[0]? sam4_1 : sam4_0)));
 
+
+
+
 //Control dpram addr reading dac0 and samples of dac1
 reg [63:0] fastdac_dpram_seq_data_dac1_int; 
 reg [63:0] fastdac_one_pulse_data_dac0_int;
@@ -763,15 +820,15 @@ reg [2:0] addr_state_dac0;
 reg [2:0] single_addr_state_dac0;
 reg [2:0] seq_state_dac1;
 
-assign rd_en_16 = (counter10 == 0)?1:0;
-assign rd_en_4 = (counter40 == 0)?1:0;
+// assign rd_en_16 = (counter10 == 0)?1:0;
+// assign rd_en_4 = (counter40 == 0)?1:0;
 
 always@(posedge tx_core_clk, posedge tx_core_reset)
 begin   
     if (tx_core_reset)
     begin
-        counter10 <= 1<<6 - 1;
-        counter40 <= 1<<4 - 1;
+        // counter10 <= 1<<6 - 1;
+        // counter40 <= 1<<4 - 1;
         counter_wait1 <= 0;
         counter_wait0 <= 0;
         counter_wait2 <= 0;
@@ -785,15 +842,15 @@ begin
         seq_state_dac1 <= R0;
   
     end else begin 
-        if (tx_tready) begin
-            counter10 <= counter10 + 1;
-            counter40 <= counter40+ 1;
-            if (counter10 >= 19) begin // work with 20 div, missing dataout with 5 div
-                counter10 <= 0;
-            end 
-            if (counter40 >= 4) begin
-                counter40 <= 0;
-            end 
+        if (tx_tready_sync) begin
+            // counter10 <= counter10 + 1;
+            // counter40 <= counter40+ 1;
+            // if (counter10 >= 19) begin // work with 20 div, missing dataout with 5 div
+            //     counter10 <= 0;
+            // end 
+            // if (counter40 >= 4) begin
+            //     counter40 <= 0;
+            // end 
             //Handle address bus dpram dac0
             case (addr_state_dac0)
                 S0 : begin
@@ -918,8 +975,8 @@ begin
             fastdac_dpram_seq_addr_dac1_r <= 0;
             fastdac_dpram_seq_data_dac1_int <= 0;
             fastdac_one_pulse_data_dac0_int <= 0;
-            counter10 <= 1<<6 -1;
-            counter40 <= 1<<4 -1;
+            // counter10 <= 1<<6 -1;
+            // counter40 <= 1<<4 -1;
             counter_wait1 <= 0;
             counter_wait0 <= 0;
             counter_wait2 <= 0;

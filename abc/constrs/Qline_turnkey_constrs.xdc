@@ -157,20 +157,20 @@ set_property IOSTANDARD LVCMOS33 [get_ports ext_pps]
 
 
 ##SPI buses
-set_property PACKAGE_PIN G11 [get_ports com_ext_spi_tdc_miso_io]
-set_property PACKAGE_PIN H11 [get_ports com_ext_spi_tdc_mosi_io]
-set_property PACKAGE_PIN D10 [get_ports com_ext_spi_tdc_sck_io]
-set_property PACKAGE_PIN C9 [get_ports {com_ext_spi_tdc_ss_io[0]}]
-set_property PACKAGE_PIN K10 [get_ports {com_ext_spi_tdc_ss_io[1]}]
+set_property PACKAGE_PIN G11 [get_ports tdc_miso_io]
+set_property PACKAGE_PIN H11 [get_ports tdc_mosi_io]
+set_property PACKAGE_PIN D10 [get_ports tdc_sck_io]
+set_property PACKAGE_PIN C9 [get_ports {tdc_ss_io[0]}]
+set_property PACKAGE_PIN K10 [get_ports {tdc_ss_io[1]}]
 set_property PACKAGE_PIN J15 [get_ports rst_jic]
 
 
-set_property PACKAGE_PIN C11 [get_ports com_ext_spi_dl_miso_io]
-set_property PACKAGE_PIN B11 [get_ports com_ext_spi_dl_mosi_io]
-set_property PACKAGE_PIN D11 [get_ports com_ext_spi_dl_sck_io]
-set_property PACKAGE_PIN D9 [get_ports {com_ext_spi_dl_ss_io[0]}]
-set_property PACKAGE_PIN J9 [get_ports {com_ext_spi_dl_ss_io[1]}]
-set_property PACKAGE_PIN H9 [get_ports {com_ext_spi_dl_ss_io[2]}]
+set_property PACKAGE_PIN C11 [get_ports dl_miso_io]
+set_property PACKAGE_PIN B11 [get_ports dl_mosi_io]
+set_property PACKAGE_PIN D11 [get_ports dl_sck_io]
+set_property PACKAGE_PIN D9 [get_ports {dl_ss_io[0]}]
+set_property PACKAGE_PIN J9 [get_ports {dl_ss_io[1]}]
+set_property PACKAGE_PIN H9 [get_ports {dl_ss_io[2]}]
 
 set_property PACKAGE_PIN A9 [get_ports ext_clk200_o]
 set_property PACKAGE_PIN B9 [get_ports ext_sysref]
@@ -333,10 +333,15 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_rng_mode_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_rng_mode_240_r_reg/D]
 
-set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/counter40_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
+# set_false_path -from [get_pins Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rd_en_4_reg/C] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
+# set_false_path -from [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/dpram_seq_rng_16x4_inst/RAM_reg_bram_0/CLKARDCLK] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
+# set_false_path -from [get_clocks refclk] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
+
+# set_false_path -from [get_clocks refclk] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_valid_r_reg[0]/D}]
+
 #for dpram data path
-set_false_path -from [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/dpram_seq_rng_16x4_inst/RAM_reg_bram_0/CLKARDCLK] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/counter10_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
+# set_false_path -from [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/dpram_seq_rng_16x4_inst/RAM_reg_bram_0/CLKARDCLK] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/counter10_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
 #for rng_value path
 # set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[100]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[0]/D}]
 # set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack[101]_i_1_psbram/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[1]/D}]
@@ -351,6 +356,6 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 ## CONSTRAINING FOR FPGA FLASH CONFIGURATION
 set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN disable [current_design]
 set_property CONFIG_MODE SPIx4 [current_design]
-set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
+set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]   
 set_property BITSTREAM.CONFIG.SPI_FALL_EDGE YES [current_design]
 set_property BITSTREAM.CONFIG.CONFIGRATE 85.0 [current_design]

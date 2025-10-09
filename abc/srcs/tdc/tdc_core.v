@@ -405,6 +405,7 @@ assign tvalid200_g1_en = ((tvalid200_r[3] == 0 && tvalid200_r[2] == 1) && (tdata
 always @(posedge clk200_i, posedge gc_rst) begin
 	if (gc_rst) begin
 		start_gc_r <= 0;
+		command_enable_r <= 0;
 		start_gc_o <= 0;
 		pps_r <=0;
 		rd_en_4_r <= 0;
@@ -435,6 +436,7 @@ always @(posedge clk200_i, posedge gc_rst) begin
 		case(state_gc)
 			IDLE: begin  //Whenever have gc_rst, should come back to IDLE
 				start_gc_r <= 0;
+				command_enable_r <= 0;
 				start_gc_o <= 0;
 				pps_r <=0;
 				rd_en_4_r <= 0;

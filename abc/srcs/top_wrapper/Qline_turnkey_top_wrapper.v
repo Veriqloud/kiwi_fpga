@@ -2,7 +2,7 @@
 //Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2024.2 (lin64) Build 5239630 Fri Nov 08 22:34:34 MST 2024
-//Date        : Tue Sep  9 16:55:03 2025
+//Date        : Wed Oct  8 16:34:06 2025
 //Host        : hop-MS-7D67 running 64-bit Ubuntu 24.04.2 LTS
 //Command     : generate_target Qline_turnkey_top_wrapper.bd
 //Design      : Qline_turnkey_top_wrapper
@@ -25,14 +25,6 @@ module Qline_turnkey_top_wrapper
     c0_ddr4_dqs_t,
     c0_ddr4_odt,
     c0_ddr4_reset_n,
-    com_ext_spi_dl_miso_io,
-    com_ext_spi_dl_mosi_io,
-    com_ext_spi_dl_sck_io,
-    com_ext_spi_dl_ss_io,
-    com_ext_spi_tdc_miso_io,
-    com_ext_spi_tdc_mosi_io,
-    com_ext_spi_tdc_sck_io,
-    com_ext_spi_tdc_ss_io,
     cr_ext_cr_ext_clk100_n,
     cr_ext_cr_ext_clk100_p,
     cr_ext_cr_ext_clk10_n,
@@ -48,6 +40,10 @@ module Qline_turnkey_top_wrapper
     decoy_signal,
     decoy_signal_n,
     decoy_signal_p,
+    dl_miso_io,
+    dl_mosi_io,
+    dl_sck_io,
+    dl_ss_io,
     ext_clk200_o,
     ext_fastdac_txn_out,
     ext_fastdac_txp_out,
@@ -90,7 +86,11 @@ module Qline_turnkey_top_wrapper
     tdc_ext_in_sdia_n,
     tdc_ext_in_sdia_p,
     tdc_ext_in_sdib_n,
-    tdc_ext_in_sdib_p);
+    tdc_ext_in_sdib_p,
+    tdc_miso_io,
+    tdc_mosi_io,
+    tdc_sck_io,
+    tdc_ss_io);
   output c0_ddr4_act_n;
   output [16:0]c0_ddr4_adr;
   output [1:0]c0_ddr4_ba;
@@ -105,14 +105,6 @@ module Qline_turnkey_top_wrapper
   inout [3:0]c0_ddr4_dqs_t;
   output c0_ddr4_odt;
   output c0_ddr4_reset_n;
-  inout com_ext_spi_dl_miso_io;
-  inout com_ext_spi_dl_mosi_io;
-  inout com_ext_spi_dl_sck_io;
-  inout [2:0]com_ext_spi_dl_ss_io;
-  inout com_ext_spi_tdc_miso_io;
-  inout com_ext_spi_tdc_mosi_io;
-  inout com_ext_spi_tdc_sck_io;
-  inout [1:0]com_ext_spi_tdc_ss_io;
   input cr_ext_cr_ext_clk100_n;
   input cr_ext_cr_ext_clk100_p;
   input cr_ext_cr_ext_clk10_n;
@@ -128,6 +120,10 @@ module Qline_turnkey_top_wrapper
   output decoy_signal;
   output decoy_signal_n;
   output decoy_signal_p;
+  inout dl_miso_io;
+  output dl_mosi_io;
+  output dl_sck_io;
+  output [2:0]dl_ss_io;
   output ext_clk200_o;
   output [3:0]ext_fastdac_txn_out;
   output [3:0]ext_fastdac_txp_out;
@@ -171,6 +167,10 @@ module Qline_turnkey_top_wrapper
   input tdc_ext_in_sdia_p;
   input tdc_ext_in_sdib_n;
   input tdc_ext_in_sdib_p;
+  inout tdc_miso_io;
+  output tdc_mosi_io;
+  output tdc_sck_io;
+  output [1:0]tdc_ss_io;
 
   wire c0_ddr4_act_n;
   wire [16:0]c0_ddr4_adr;
@@ -186,14 +186,6 @@ module Qline_turnkey_top_wrapper
   wire [3:0]c0_ddr4_dqs_t;
   wire c0_ddr4_odt;
   wire c0_ddr4_reset_n;
-  wire com_ext_spi_dl_miso_io;
-  wire com_ext_spi_dl_mosi_io;
-  wire com_ext_spi_dl_sck_io;
-  wire [2:0]com_ext_spi_dl_ss_io;
-  wire com_ext_spi_tdc_miso_io;
-  wire com_ext_spi_tdc_mosi_io;
-  wire com_ext_spi_tdc_sck_io;
-  wire [1:0]com_ext_spi_tdc_ss_io;
   wire cr_ext_cr_ext_clk100_n;
   wire cr_ext_cr_ext_clk100_p;
   wire cr_ext_cr_ext_clk10_n;
@@ -209,6 +201,10 @@ module Qline_turnkey_top_wrapper
   wire decoy_signal;
   wire decoy_signal_n;
   wire decoy_signal_p;
+  wire dl_miso_io;
+  wire dl_mosi_io;
+  wire dl_sck_io;
+  wire [2:0]dl_ss_io;
   wire ext_clk200_o;
   wire [3:0]ext_fastdac_txn_out;
   wire [3:0]ext_fastdac_txp_out;
@@ -252,6 +248,10 @@ module Qline_turnkey_top_wrapper
   wire tdc_ext_in_sdia_p;
   wire tdc_ext_in_sdib_n;
   wire tdc_ext_in_sdib_p;
+  wire tdc_miso_io;
+  wire tdc_mosi_io;
+  wire tdc_sck_io;
+  wire [1:0]tdc_ss_io;
 
   Qline_turnkey_top Qline_turnkey_top_i
        (.c0_ddr4_act_n(c0_ddr4_act_n),
@@ -268,14 +268,6 @@ module Qline_turnkey_top_wrapper
         .c0_ddr4_dqs_t(c0_ddr4_dqs_t),
         .c0_ddr4_odt(c0_ddr4_odt),
         .c0_ddr4_reset_n(c0_ddr4_reset_n),
-        .com_ext_spi_dl_miso_io(com_ext_spi_dl_miso_io),
-        .com_ext_spi_dl_mosi_io(com_ext_spi_dl_mosi_io),
-        .com_ext_spi_dl_sck_io(com_ext_spi_dl_sck_io),
-        .com_ext_spi_dl_ss_io(com_ext_spi_dl_ss_io),
-        .com_ext_spi_tdc_miso_io(com_ext_spi_tdc_miso_io),
-        .com_ext_spi_tdc_mosi_io(com_ext_spi_tdc_mosi_io),
-        .com_ext_spi_tdc_sck_io(com_ext_spi_tdc_sck_io),
-        .com_ext_spi_tdc_ss_io(com_ext_spi_tdc_ss_io),
         .cr_ext_cr_ext_clk100_n(cr_ext_cr_ext_clk100_n),
         .cr_ext_cr_ext_clk100_p(cr_ext_cr_ext_clk100_p),
         .cr_ext_cr_ext_clk10_n(cr_ext_cr_ext_clk10_n),
@@ -291,6 +283,10 @@ module Qline_turnkey_top_wrapper
         .decoy_signal(decoy_signal),
         .decoy_signal_n(decoy_signal_n),
         .decoy_signal_p(decoy_signal_p),
+        .dl_miso_io(dl_miso_io),
+        .dl_mosi_io(dl_mosi_io),
+        .dl_sck_io(dl_sck_io),
+        .dl_ss_io(dl_ss_io),
         .ext_clk200_o(ext_clk200_o),
         .ext_fastdac_txn_out(ext_fastdac_txn_out),
         .ext_fastdac_txp_out(ext_fastdac_txp_out),
@@ -333,5 +329,9 @@ module Qline_turnkey_top_wrapper
         .tdc_ext_in_sdia_n(tdc_ext_in_sdia_n),
         .tdc_ext_in_sdia_p(tdc_ext_in_sdia_p),
         .tdc_ext_in_sdib_n(tdc_ext_in_sdib_n),
-        .tdc_ext_in_sdib_p(tdc_ext_in_sdib_p));
+        .tdc_ext_in_sdib_p(tdc_ext_in_sdib_p),
+        .tdc_miso_io(tdc_miso_io),
+        .tdc_mosi_io(tdc_mosi_io),
+        .tdc_sck_io(tdc_sck_io),
+        .tdc_ss_io(tdc_ss_io));
 endmodule
