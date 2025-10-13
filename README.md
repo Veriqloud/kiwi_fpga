@@ -61,3 +61,8 @@ File -> Project -> Archive. Check in 2 options:
 - You can get full project without building from Tcl script in Released Source Qline_turnkey.xpr.zip. This is whole project including DCPs, waveforms, run results, settings is there is any.
 - unzip and start building your bitstream !
 
+Contributing
+------------
+
+Please check out our [contributing guide](CONTRIBUTING.md) if you're interested in contributing.
+
