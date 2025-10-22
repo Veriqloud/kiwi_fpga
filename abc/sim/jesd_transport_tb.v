@@ -149,29 +149,22 @@ initial begin
       #(PERIOD_pps - PERIOD_pps/10);
   end
 end
-// always begin
-//     pps_i = 1'b1;
-//     #(PERIOD_pps/10) pps_i = 1'b0;
-//     #(PERIOD_pps - PERIOD_pps/10);
-// end
 
 initial begin
     $display("Start simulation");
     $display("Reset sysem");
     SAXI_aresetn <= 0;
+    SAXIS_tresetn <= 0;
     tx_core_reset <= 1;
     #2000000
     SAXI_aresetn <= 1;
+    SAXIS_tresetn <= 1;
     tx_core_reset <= 0;
     // #4000000
     //Wite to axil
 end
 
-initial begin
-    tx_tready = 0;
-    #4000000
-    tx_tready = 1;
-end
+
 
 //Axil_write task
   task axi_write;
@@ -243,7 +236,7 @@ end
       #1;
       SAXI_araddr  = 0;
       SAXI_arvalid = 0;
-      SAXI_rready  = 1;
+      SAXI_rready  = 1; 
       // Read Data Phase
       @(negedge SAXI_aclk);
       while (SAXI_rvalid == 1'b0)
@@ -256,4 +249,60 @@ end
       SAXI_rready  = 0;
     end
   endtask // axi_read
+
+  //Simulated other signals
+  initial begin
+    tx_tready = 0;
+    #4000000
+    tx_tready = 1;
+  end
+  //Write data, addr to dpram from axi 
+  initial begin
+  #2000100
+  //Write sequence fastdac
+  axi_write(32'h0000_1000, 32'h0006_000A);
+  axi_write(32'h0000_1004, 32'h0007_000B);
+  axi_write(32'h0000_1008, 32'h0008_000C);
+  axi_write(32'h0000_100c, 32'h0009_000D);
+  //Write sequence rng
+  axi_write(32'h0000_2000, 32'h0000_0001);
+  axi_write(32'h0000_2004, 32'h0000_0002);
+  axi_write(32'h0000_2008, 32'h0000_0003);
+  axi_write(32'h0000_200c, 32'h0000_0004);
+  end
+  //Write registers
+  initial begin
+    #3000000
+    axi_write(32'h0000_0004, 32'h0000_0000); //[31:16] up_offset, [7:4] zero_pos, [3:0] shift 
+    axi_write(32'h0000_0008, 32'h0000_8000); //amp_dac1
+    axi_write(32'h0000_0010, 32'h0000_0404); //max addr [7:0] dac0, [15:8] dac1
+    axi_write(32'h0000_0014, 32'h0000_0000); //set modes 4 : dac0| 3: zero|2: fb|1: rng|0: dac1
+    axi_write(32'h0000_0018, 32'h0000_8000); //amp_dac2     
+    axi_write(32'h0000_001c, 32'h0000_0004); //max_addr_rng     
+    axi_write(32'h0000_0020, 32'h0000_0002); //division_sp      
+    axi_write(32'h0000_000c, 32'h0000_0000);      
+    axi_write(32'h0000_000c, 32'h0000_0001); 
+  end
+  //Write rng to AXIStream
+  initial begin
+    #3000000
+    SAXIS_tdata  = 128'h0001_0002_0003_0004_0005_0006_0007_0008;
+    SAXIS_tvalid = 1;
+    @(posedge SAXIS_tclk);
+    #1;
+    SAXIS_tdata  = 128'h0009_000A_000B_000C_000D_000E_000F_0010;
+    SAXIS_tvalid = 1;
+    @(posedge SAXIS_tclk);
+    #1;
+    SAXIS_tdata  = 128'h0011_0012_0013_0014_0015_0016_0017_0018;
+    SAXIS_tvalid = 1;
+    @(posedge SAXIS_tclk);
+    #1;
+    SAXIS_tdata  = 128'h0019_001A_001B_001C_001D_001E_001F_0020;
+    SAXIS_tvalid = 1;
+    @(posedge SAXIS_tclk);
+    #1;
+    SAXIS_tvalid = 0;
+    
+  end
 endmodule

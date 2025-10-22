@@ -302,7 +302,7 @@ fifo_128x16 fifo_rng_128x16_inst (
 );
 
 // wire rd_en_4;
-wire [4:0] rng_dout4;
+wire [3:0] rng_dout4;
 assign dout4_test = rng_dout4;
 
 fifo_16x4 fifo_rng_16x4_inst (
