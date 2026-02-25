@@ -51,7 +51,9 @@ module ddr_data(
     input           sr_reg_enable_i,
     input [47:0]    sr_dq_gc_start_i,
     input [31:0]    sr_threshold_i,
-    input [31:0]    sr_threshold_full_i,
+    // input [31:0]    sr_threshold_full_i,
+    input [15:0]    sr_prog_empty_threshold_i,
+    input [15:0]    sr_prog_full_threshold_i,
     input [15:0]    sr_fiber_delay_i,
     input           sr_pair_delay_i,
     input [15:0]    sr_de_fiber_delay_i,
@@ -105,6 +107,8 @@ module ddr_data(
     output rd_en_fifo_gc,
     output fifo_gc_full,
     output fifo_gc_empty,
+    output fifo_gc_prog_empty,
+    output fifo_gc_prog_full,
     output alpha_pack_done,
     output wire [6:0] alpha_cycle_counter,
     output start_save_alpha,
@@ -128,12 +132,12 @@ module ddr_data(
 
 //Debug signals
 // wire [15:0] threshold_wait;
-wire [31:0] threshold_full_debug;
+// wire [31:0] threshold_full_debug;
 wire [31:0] threshold_wait;
 assign s_axis_tvalid_gc_debug = s_axis_tvalid_gc;
 assign current_dq_gc_debug = sr_current_dq_gc[3:0];
 assign dq_gc_start_r_debug = dq_gc_start_r[47:6];
-assign threshold_full_debug = threshold_full_r;
+// assign threshold_full_debug = threshold_full_r;
 // assign threshold_wait = dq_gc_start_r[47:32];
 assign threshold_wait = threshold_r;
 //debug delta number of read out of ddr and global counter received
@@ -158,10 +162,16 @@ wire rd_en_fifo_gc;
 assign rd_en_fifo_gc = (counter_rd_en_gc == 1) ? 1:0;
 wire [63:0] tdata_gc;
 wire fifo_gc_empty;
+wire fifo_gc_prog_empty;
 wire fifo_gc_almost_empty;
+wire [13:0] prog_empty_thresh;
+wire [13:0] prog_full_thresh;
 wire fifo_gc_full;
+wire fifo_gc_prog_full;
 wire rd_gc_valid;
 reg fifo_gc_in_rst;
+assign prog_empty_thresh = prog_empty_threshold_r[13:0];
+assign prog_full_thresh = prog_full_threshold_r[13:0];
 fifo_gc_in_64x64 fifo_gc_in_inst (
     // .rst(!s_gc_aresetn),                    // input wire rst
     .rst(!fifo_gc_in_rst),                    // input wire rst
@@ -170,17 +180,20 @@ fifo_gc_in_64x64 fifo_gc_in_inst (
     .din(s_axis_tdata_gc),                    // input wire [63 : 0] din
     .wr_en(s_axis_tvalid_gc),                // input wire wr_en
     .rd_en(rd_en_fifo_gc),                // input wire rd_en
+    .prog_empty_thresh(prog_empty_thresh),  // input wire [13 : 0] prog_empty_thresh
+    .prog_full_thresh(prog_full_thresh),    // input wire [13 : 0] prog_full_thresh
     .dout(tdata_gc),                  // output wire [63 : 0] dout
     .full(fifo_gc_full),                  // output wire full
     .almost_full(),    // output wire almost_full
     .empty(fifo_gc_empty),                // output wire empty
     .almost_empty(fifo_gc_almost_empty),  // output wire almost_empty
     .valid(rd_gc_valid),                // output wire valid
-    .prog_full(),        // output wire prog_full
-    // .prog_empty(),      // output wire prog_empty
+    .prog_full(fifo_gc_prog_full),        // output wire prog_full
+    .prog_empty(fifo_gc_prog_empty),      // output wire prog_empty
     .wr_rst_busy(),    // output wire wr_rst_busy
     .rd_rst_busy()    // output wire rd_rst_busy
 );
+
 
 
 //Axil register receiver, change clock domain from axil 15MHz to 200MHz
@@ -196,7 +209,9 @@ reg [2:0] command_r;
 reg [2:0] command_gc_r;
 reg [47:0] dq_gc_start_r;
 reg [31:0] threshold_r;
-reg [31:0] threshold_full_r;
+// reg [31:0] threshold_full_r;
+reg [15:0] prog_empty_threshold_r;
+reg [15:0] prog_full_threshold_r;
 reg [15:0] fiber_delay_r;
 reg pair_delay_r;
 reg [15:0] de_fiber_delay_r;
@@ -216,7 +231,9 @@ initial begin
     command_gc_r <= 1'b0; //initial here, axil control later
     dq_gc_start_r <= 48'b0;
     threshold_r <= 32'b0;
-    threshold_full_r <= 32'b0;
+    // threshold_full_r <= 32'b0;
+    prog_empty_threshold_r <= 16'b0;
+    prog_full_threshold_r <= 16'b0;
     fiber_delay_r <= 16'b0;
     pair_delay_r <= 0;
     de_fiber_delay_r <= 16'b0;
@@ -231,7 +248,9 @@ always @(posedge clk200_i) begin
         command_gc_r <= sr_command_gc_i;
         dq_gc_start_r <= sr_dq_gc_start_i;
         threshold_r <= sr_threshold_i;
-        threshold_full_r <= sr_threshold_full_i;
+        // threshold_full_r <= sr_threshold_full_i;
+        prog_empty_threshold_r <= sr_prog_empty_threshold_i;
+        prog_full_threshold_r <= sr_prog_full_threshold_i; //use same value as prog empty
         fiber_delay_r <= sr_fiber_delay_i;
         pair_delay_r <= sr_pair_delay_i;
         de_fiber_delay_r <= sr_de_fiber_delay_i;

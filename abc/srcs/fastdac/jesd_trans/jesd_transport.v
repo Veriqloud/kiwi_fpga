@@ -76,6 +76,8 @@ module jesd_transport #(
     output reg [2:0]    seq_state_dac1,
     output reg [2:0]    state_rng,
     output              fastdac_seq_data_dac0_int,
+    output              pps_trigger,
+    output              pps_r,
     
     // Ports of control (synchronization) & status
     input           tvalid200,

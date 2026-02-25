@@ -45,7 +45,9 @@ module ddr_data_axil_mngt #
         output wire [31:0] dq_gc_start_lsb_o,
         output wire [15:0] dq_gc_start_msb_o,
         output wire [31:0] threshold_o,
-        output wire [31:0] threshold_full_o,
+        // output wire [31:0] threshold_full_o,
+        output wire [15:0] prog_empty_threshold_o,
+        output wire [15:0] prog_full_threshold_o,
         output wire [15:0] fiber_delay_o,
         output wire pair_delay_o,
         output wire [15:0] de_fiber_delay_o,
@@ -54,7 +56,7 @@ module ddr_data_axil_mngt #
         input [31:0] current_dq_gc_lsb_i,
         input [16:0] current_dq_gc_msb_i,
         input        current_dq_gc_valid_i,
-        input [8:0] ddr_fifos_status_i,
+        input [10:0] ddr_fifos_status_i,
         input status_200_valid_i,
         input [2:0] fifos_status_i,
         input status_250_valid_i,
@@ -182,7 +184,9 @@ module ddr_data_axil_mngt #
     assign dq_gc_start_lsb_o = slv_reg4[31:0];
     assign dq_gc_start_msb_o = slv_reg5[15:0]; 
     assign threshold_o = slv_reg8[31:0];
-    assign threshold_full_o = slv_reg9[31:0];
+    // assign threshold_full_o = slv_reg9[31:0]; this register was used to debug full vfifo condition
+    assign prog_empty_threshold_o = slv_reg9[15:0];
+    assign prog_full_threshold_o = slv_reg9[31:16];
     assign fiber_delay_o = slv_reg10[15:0];
     assign pair_delay_o = slv_reg6[1];
     assign de_fiber_delay_o = slv_reg10[31:16];
@@ -528,6 +532,14 @@ module ddr_data_axil_mngt #
         end
       end
     end
+
+    ila_ddr_axil ila_ddr_axil_inst (
+	    .clk(S_AXI_ACLK), // input wire clk
+    	.probe0(slv_reg13), // input wire [0:0]  probe0  
+	    .probe1(status_200_valid_r), // input wire [0:0]  probe1 
+	    .probe2(status_200_valid_i), // input wire [0:0]  probe2
+      .probe3(ddr_fifos_status_i)
+  );
 
     //Read pps for synchronisation
     reg pps_sync1;

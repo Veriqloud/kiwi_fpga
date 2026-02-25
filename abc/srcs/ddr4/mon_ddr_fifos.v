@@ -33,10 +33,12 @@ module mon_ddr_fifos(
     input       gc_out_fifo_empty,
     input       gc_in_fifo_full,
     input       gc_in_fifo_empty,
+    input       gc_in_fifo_prog_empty,
+    input       gc_in_fifo_prog_full,
     input       alpha_out_fifo_full,
     input       alpha_out_fifo_empty,
 
-    output [8:0]    status_200_o,
+    output [10:0]    status_200_o,
     output          status_200_valid_o,
     output [2:0]    status_250_o,
     output          status_250_valid_o
@@ -46,12 +48,12 @@ reg [25:0] counter_200;
 reg [25:0] counter_250;
 reg mon_trigger_200;
 
-wire [8:0] status_200;
-assign status_200 = {vfifo_idle,vfifo_full,vfifo_empty,gc_out_fifo_full,gc_in_fifo_empty,alpha_out_fifo_full};
+wire [10:0] status_200;
+assign status_200 = {vfifo_idle,vfifo_full,vfifo_empty,gc_in_fifo_prog_full,gc_in_fifo_prog_empty,gc_out_fifo_full,gc_in_fifo_empty,alpha_out_fifo_full};
 
 wire status_200_valid_o;
 assign status_200_valid_o = mon_trigger_200_r[2];
-reg [8:0] status_200_o;
+reg [10:0] status_200_o;
 reg [2:0] mon_trigger_200_r;
 initial begin
     mon_trigger_200_r <= 0;
@@ -64,7 +66,7 @@ always @(posedge clk200_i) begin
         status_200_o <= 0;
     end else begin
         counter_200 <= counter_200 + 1;
-        if (counter_200 > 199999) begin
+        if (counter_200 > 19999) begin
             counter_200 <= 0;
         end
         if (counter_200 >= 1 && counter_200 <= 99) begin
@@ -73,6 +75,7 @@ always @(posedge clk200_i) begin
         if (mon_trigger_200) begin
             status_200_o <= status_200;
         end else status_200_o <= status_200_o;
+        mon_trigger_200_r <= {mon_trigger_200_r[1:0],mon_trigger_200};
     end
 end
 

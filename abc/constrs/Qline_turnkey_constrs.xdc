@@ -234,11 +234,10 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/cl
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clockchip_sync_r_reg[0]/D}]
 
 ### SET CONSTRAINTS DDR_DATA
-# set_false_path -from [get_clocks refclk] -to $xdma_axi_aclk
-set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_200_reg/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_250_r_reg[0]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_250_r_reg[2]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/status_250_valid_r_reg[0]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/status_250_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg14_reg[*]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/status_200_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg13_reg[*]/D}]
+#set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_200_reg/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_250_r_reg[0]/D}]
+#set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_250_r_reg[2]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/status_250_valid_r_reg[0]/D}]
+#set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/status_250_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg14_reg[*]/D}]
+#set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/status_200_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg13_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/current_dq_gc_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg15_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/current_dq_gc_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg16_reg[*]/D}]
 set_false_path -from [get_pins Qline_turnkey_top_i/ddr4/ddr_data_0/inst/s_axis_tready_gc_200_reg/C] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/s_axis_tready_gc_r_reg[0]/D}]

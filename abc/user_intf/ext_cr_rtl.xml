@@ -7,42 +7,6 @@
   <spirit:busType spirit:vendor="Veriqloud" spirit:library="cr" spirit:name="ext_cr" spirit:version="1.0"/>
   <spirit:ports>
     <spirit:port>
-      <spirit:logicalName>fastdac_refclki_p</spirit:logicalName>
-      <spirit:displayName>fastdac_refclki_p</spirit:displayName>
-      <spirit:wire>
-        <spirit:qualifier>
-          <spirit:isClock>true</spirit:isClock>
-        </spirit:qualifier>
-        <spirit:onMaster>
-          <spirit:presence>required</spirit:presence>
-          <spirit:width>1</spirit:width>
-        </spirit:onMaster>
-        <spirit:onSlave>
-          <spirit:width>1</spirit:width>
-          <spirit:direction>in</spirit:direction>
-        </spirit:onSlave>
-        <spirit:defaultValue>0</spirit:defaultValue>
-      </spirit:wire>
-    </spirit:port>
-    <spirit:port>
-      <spirit:logicalName>fastdac_refclki_n</spirit:logicalName>
-      <spirit:displayName>fastdac_refclki_n</spirit:displayName>
-      <spirit:wire>
-        <spirit:qualifier>
-          <spirit:isClock>true</spirit:isClock>
-        </spirit:qualifier>
-        <spirit:onMaster>
-          <spirit:presence>required</spirit:presence>
-          <spirit:width>1</spirit:width>
-        </spirit:onMaster>
-        <spirit:onSlave>
-          <spirit:width>1</spirit:width>
-          <spirit:direction>in</spirit:direction>
-        </spirit:onSlave>
-        <spirit:defaultValue>0</spirit:defaultValue>
-      </spirit:wire>
-    </spirit:port>
-    <spirit:port>
       <spirit:logicalName>fastdac_sysref_p</spirit:logicalName>
       <spirit:displayName>fastdac_sysref_p</spirit:displayName>
       <spirit:wire>
@@ -184,6 +148,40 @@
           <spirit:direction>in</spirit:direction>
         </spirit:onSlave>
         <spirit:defaultValue>0</spirit:defaultValue>
+      </spirit:wire>
+    </spirit:port>
+    <spirit:port>
+      <spirit:logicalName>fastdac_refclki_p</spirit:logicalName>
+      <spirit:displayName>fastdac_refclki_p</spirit:displayName>
+      <spirit:wire>
+        <spirit:qualifier>
+          <spirit:isClock>true</spirit:isClock>
+        </spirit:qualifier>
+        <spirit:onMaster>
+          <spirit:presence>required</spirit:presence>
+          <spirit:width>1</spirit:width>
+        </spirit:onMaster>
+        <spirit:onSlave>
+          <spirit:width>1</spirit:width>
+          <spirit:direction>in</spirit:direction>
+        </spirit:onSlave>
+      </spirit:wire>
+    </spirit:port>
+    <spirit:port>
+      <spirit:logicalName>fastdac_refclki_n</spirit:logicalName>
+      <spirit:displayName>fastdac_refclki_n</spirit:displayName>
+      <spirit:wire>
+        <spirit:qualifier>
+          <spirit:isClock>true</spirit:isClock>
+        </spirit:qualifier>
+        <spirit:onMaster>
+          <spirit:presence>required</spirit:presence>
+          <spirit:width>1</spirit:width>
+        </spirit:onMaster>
+        <spirit:onSlave>
+          <spirit:width>1</spirit:width>
+          <spirit:direction>in</spirit:direction>
+        </spirit:onSlave>
       </spirit:wire>
     </spirit:port>
   </spirit:ports>
