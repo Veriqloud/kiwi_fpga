@@ -93,15 +93,20 @@ module axi_virtual_controller_wrapper(
     //Monitoring custom ports
     output [47:0] counter_read,
     output [47:0] counter_write,
-    output [47:0] delta_count
+    output [47:0] delta_count,
+    output [31:0] delta_addr,
+    output [31:0] mismatch_addr
 
 );
 
 reg [47:0] counter_read;
 reg [47:0] counter_write;
 wire [47:0] delta_count;
+wire [31:0] delta_addr;
+wire [31:0] mismatch_addr;
 assign delta_count = counter_write - counter_read;
-
+assign delta_addr = (m_axi_awaddr > m_axi_araddr)?(m_axi_awaddr - m_axi_araddr):(m_axi_awaddr - 32'h80000000 + 32'h81ff7fe0 - m_axi_araddr);
+assign mismatch_addr = delta_count - delta_addr/32;
 always @(posedge aclk) begin
     if (!aresetn) begin
         counter_read <= 0;
