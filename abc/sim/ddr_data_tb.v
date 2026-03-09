@@ -45,7 +45,6 @@ module ddr_data_tb();
     reg           sr_reg_enable_i;
     reg [47:0]    sr_dq_gc_start_i;
     reg [31:0]    sr_threshold_i;
-    reg [31:0]    sr_threshold_full_i;
     reg [15:0]    sr_fiber_delay_i;
     reg           sr_pair_delay_i;
     reg [15:0]    sr_de_fiber_delay_i;
@@ -125,7 +124,6 @@ ddr_data ddr_data_int(
     .sr_reg_enable_i(sr_reg_enable_i),
     .sr_dq_gc_start_i(sr_dq_gc_start_i),
     .sr_threshold_i(sr_threshold_i),
-    .sr_threshold_full_i(sr_threshold_full_i),
     .sr_current_dq_gc(sr_current_dq_gc),
     .sr_fiber_delay_i(sr_fiber_delay_i),
     .sr_pair_delay_i(sr_pair_delay_i),

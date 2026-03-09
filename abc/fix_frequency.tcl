@@ -1,5 +1,6 @@
 set_property CONFIG.FREQ_HZ 200000000 [get_bd_pins /tdc/tdc_mngt/tdc_core_0/m_axis_clk]
 set_property CONFIG.FREQ_HZ 200000000 [get_bd_pins /ddr4/axi_virtual_controll_0/aclk]
+set_property CONFIG.FREQ_HZ 200000000 [get_bd_pins /ddr4/axis_burst_0/aclk]
 set_property CONFIG.FREQ_HZ 200000000 [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_alpha]
 set_property CONFIG.FREQ_HZ 200000000 [get_bd_intf_pins /ddr4/fifos_out_0/s_axis_gco]
 set_property CONFIG.FREQ_HZ 200000000 [get_bd_intf_pins /tdc/tdc_mngt/fifo_gc_tdc_rtl_0/s_axis]

@@ -46,7 +46,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# ttl_gate_apd, pcierefclk, spi_inout_mngt, jesd204b_tx_wrapper, jesd_transport, led_test, clk_rst_mngt, axi_virtual_controller_wrapper, axi_clock_converter_rtl, fifos_out, mon_ddr_fifos, ddr_data_reg_mngt, ddr_data, decoy, decoy_rng_fifos, spi_inout_mngt, tdc_clk_rst_mngt, tdc_olvds, tdc_ilvds, fifo_gc_tdc_rtl, tdc_reg_mngt, tdc_core
+# ttl_gate_apd, pcierefclk, spi_inout_mngt, jesd204b_tx_wrapper, jesd_transport, led_test, clk_rst_mngt, axi_virtual_controller_wrapper, axi_clock_converter_rtl, fifos_out, mon_ddr_fifos, ddr_data_reg_mngt, ddr_data, axis_burst, decoy, decoy_rng_fifos, spi_inout_mngt, tdc_clk_rst_mngt, tdc_olvds, tdc_ilvds, fifo_gc_tdc_rtl, tdc_reg_mngt, tdc_core
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -184,6 +184,7 @@ fifos_out\
 mon_ddr_fifos\
 ddr_data_reg_mngt\
 ddr_data\
+axis_burst\
 decoy\
 decoy_rng_fifos\
 spi_inout_mngt\
@@ -1119,7 +1120,8 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
     CONFIG.ADDN_UI_CLKOUT2_FREQ_HZ {100} \
     CONFIG.C0.BANK_GROUP_WIDTH {1} \
     CONFIG.C0.DDR4_AxiAddressWidth {31} \
-    CONFIG.C0.DDR4_AxiArbitrationScheme {ROUND_ROBIN} \
+    CONFIG.C0.DDR4_AxiArbitrationScheme {RD_PRI_REG} \
+    CONFIG.C0.DDR4_AxiIDWidth {1} \
     CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4} \
   ] $ddr4_0
 
@@ -1127,7 +1129,7 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
   set_property -dict [list \
-    CONFIG.CONST_VAL {0} \
+    CONFIG.CONST_VAL {2} \
     CONFIG.CONST_WIDTH {2} \
   ] $xlconstant_0
 
@@ -1137,7 +1139,7 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [list \
     CONFIG.C_MON_TYPE {MIX} \
     CONFIG.C_NUM_MONITOR_SLOTS {3} \
-    CONFIG.C_NUM_OF_PROBES {25} \
+    CONFIG.C_NUM_OF_PROBES {26} \
     CONFIG.C_PROBE10_WIDTH {2} \
     CONFIG.C_PROBE11_WIDTH {4} \
     CONFIG.C_PROBE12_WIDTH {64} \
@@ -1150,10 +1152,11 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
     CONFIG.C_PROBE19_WIDTH {1} \
     CONFIG.C_PROBE1_WIDTH {1} \
     CONFIG.C_PROBE20_WIDTH {3} \
-    CONFIG.C_PROBE21_WIDTH {48} \
+    CONFIG.C_PROBE21_WIDTH {32} \
     CONFIG.C_PROBE22_WIDTH {1} \
     CONFIG.C_PROBE23_WIDTH {48} \
     CONFIG.C_PROBE24_WIDTH {48} \
+    CONFIG.C_PROBE25_WIDTH {32} \
     CONFIG.C_PROBE26_WIDTH {1} \
     CONFIG.C_PROBE2_WIDTH {1} \
     CONFIG.C_PROBE3_WIDTH {48} \
@@ -1196,6 +1199,10 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_intf_pins /ddr4/axi_virtual_controll_0/m_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /ddr4/axi_virtual_controll_0/s_axis]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
@@ -1310,6 +1317,14 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis_gc]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_pins /ddr4/ddr_data_0/m_axis_alpha_clk]
 
   set_property -dict [ list \
@@ -1328,6 +1343,29 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /ddr4/ddr_data_0/s_axis_gc_clk]
 
+  # Create instance: axis_burst_0, and set properties
+  set block_name axis_burst
+  set block_cell_name axis_burst_0
+  if { [catch {set axis_burst_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $axis_burst_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /ddr4/axis_burst_0/m_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_intf_pins /ddr4/axis_burst_0/s_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {200000000} \
+ ] [get_bd_pins /ddr4/axis_burst_0/s_aclk]
+
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins s_axil] [get_bd_intf_pins ddr_data_reg_mngt_0/s_axil]
   connect_bd_intf_net -intf_net axi_clock_converter_0_m_axi [get_bd_intf_pins axi_clock_converter_0/m_axi] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
@@ -1335,8 +1373,9 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_intf_net -intf_net [get_bd_intf_nets axi_vfifo_ctrl_0_M_AXI1] [get_bd_intf_pins axi_virtual_controll_0/m_axi] [get_bd_intf_pins system_ila_ddr/SLOT_0_AXI]
   connect_bd_intf_net -intf_net axi_vfifo_ctrl_0_M_AXIS [get_bd_intf_pins axi_virtual_controll_0/m_axis] [get_bd_intf_pins ddr_data_0/s_axis]
   connect_bd_intf_net -intf_net [get_bd_intf_nets axi_vfifo_ctrl_0_M_AXIS] [get_bd_intf_pins axi_virtual_controll_0/m_axis] [get_bd_intf_pins system_ila_ddr/SLOT_2_AXIS]
+  connect_bd_intf_net -intf_net axis_burst_0_m_axis [get_bd_intf_pins axis_burst_0/m_axis] [get_bd_intf_pins axi_virtual_controll_0/s_axis]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_pins c0_ddr4] [get_bd_intf_pins ddr4_0/C0_DDR4]
-  connect_bd_intf_net -intf_net ddr_data_0_m_axis [get_bd_intf_pins ddr_data_0/m_axis] [get_bd_intf_pins axi_virtual_controll_0/s_axis]
+  connect_bd_intf_net -intf_net ddr_data_0_m_axis [get_bd_intf_pins ddr_data_0/m_axis] [get_bd_intf_pins axis_burst_0/s_axis]
   connect_bd_intf_net -intf_net [get_bd_intf_nets ddr_data_0_m_axis] [get_bd_intf_pins ddr_data_0/m_axis] [get_bd_intf_pins system_ila_ddr/SLOT_1_AXIS]
   connect_bd_intf_net -intf_net ddr_data_0_m_axis_alpha [get_bd_intf_pins fifos_out_0/s_axis_alpha] [get_bd_intf_pins ddr_data_0/m_axis_alpha]
   connect_bd_intf_net -intf_net ddr_data_0_m_axis_gc [get_bd_intf_pins ddr_data_0/m_axis_gc] [get_bd_intf_pins fifos_out_0/s_axis_gco]
@@ -1364,25 +1403,30 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   [get_bd_pins system_ila_ddr/probe23]
   connect_bd_net -net axi_virtual_controll_0_counter_write  [get_bd_pins axi_virtual_controll_0/counter_write] \
   [get_bd_pins system_ila_ddr/probe24]
+  connect_bd_net -net axi_virtual_controll_0_delta_addr  [get_bd_pins axi_virtual_controll_0/delta_addr] \
+  [get_bd_pins system_ila_ddr/probe21]
   connect_bd_net -net axi_virtual_controll_0_delta_count  [get_bd_pins axi_virtual_controll_0/delta_count] \
   [get_bd_pins system_ila_ddr/probe15]
+  connect_bd_net -net axi_virtual_controll_0_mismatch_addr  [get_bd_pins axi_virtual_controll_0/mismatch_addr] \
+  [get_bd_pins system_ila_ddr/probe25]
   connect_bd_net -net axi_virtual_controll_0_vfifo_idle  [get_bd_pins axi_virtual_controll_0/vfifo_idle] \
   [get_bd_pins mon_ddr_fifos_0/vfifo_idle]
   connect_bd_net -net c0_ddr4_aresetn_1  [get_bd_pins c0_ddr4_aresetn] \
   [get_bd_pins ddr4_0/c0_ddr4_aresetn] \
   [get_bd_pins axi_clock_converter_0/m_axi_aresetn]
   connect_bd_net -net clk200_i_1  [get_bd_pins clk200_i] \
-  [get_bd_pins axi_virtual_controll_0/aclk] \
   [get_bd_pins axi_clock_converter_0/s_axi_aclk] \
   [get_bd_pins fifos_out_0/s_gco_aclk] \
   [get_bd_pins fifos_out_0/s_alpha_aclk] \
   [get_bd_pins mon_ddr_fifos_0/clk200_i] \
+  [get_bd_pins system_ila_ddr/clk] \
   [get_bd_pins ddr_data_0/clk200_i] \
   [get_bd_pins ddr_data_0/m_axis_clk] \
   [get_bd_pins ddr_data_0/s_axis_clk] \
   [get_bd_pins ddr_data_0/m_axis_gc_clk] \
   [get_bd_pins ddr_data_0/m_axis_alpha_clk] \
-  [get_bd_pins system_ila_ddr/clk]
+  [get_bd_pins axi_virtual_controll_0/aclk] \
+  [get_bd_pins axis_burst_0/s_aclk]
   connect_bd_net -net ddr4_0_addn_ui_clkout1  [get_bd_pins ddr4_0/addn_ui_clkout1] \
   [get_bd_pins addn_ui_clkout1] \
   [get_bd_pins ddr_data_reg_mngt_0/s_axil_aclk]
@@ -1405,8 +1449,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   [get_bd_pins system_ila_ddr/probe20]
   connect_bd_net -net ddr_data_0_cycle_counter  [get_bd_pins ddr_data_0/cycle_counter] \
   [get_bd_pins system_ila_ddr/probe8]
-  connect_bd_net -net ddr_data_0_debug_rc_gc_div  [get_bd_pins ddr_data_0/debug_rc_gc_div] \
-  [get_bd_pins system_ila_ddr/probe21]
   connect_bd_net -net ddr_data_0_dq_gc  [get_bd_pins ddr_data_0/dq_gc] \
   [get_bd_pins system_ila_ddr/probe14]
   connect_bd_net -net ddr_data_0_fifo_alpha_rst  [get_bd_pins ddr_data_0/fifo_alpha_rst] \
@@ -1446,19 +1488,20 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   connect_bd_net -net ddr_data_0_tdata_gc  [get_bd_pins ddr_data_0/tdata_gc] \
   [get_bd_pins system_ila_ddr/probe12]
   connect_bd_net -net ddr_data_rstn_1  [get_bd_pins ddr_data_rstn] \
-  [get_bd_pins axi_virtual_controll_0/aresetn] \
   [get_bd_pins axi_clock_converter_0/s_axi_aresetn] \
   [get_bd_pins mon_ddr_fifos_0/ddr_data_rstn] \
+  [get_bd_pins system_ila_ddr/resetn] \
   [get_bd_pins ddr_data_0/ddr_data_rstn] \
-  [get_bd_pins system_ila_ddr/resetn]
+  [get_bd_pins axi_virtual_controll_0/aresetn] \
+  [get_bd_pins axis_burst_0/s_aresetn]
   connect_bd_net -net ddr_sys_clk_n_1  [get_bd_pins ddr_sys_clk_n] \
   [get_bd_pins ddr4_0/c0_sys_clk_n]
   connect_bd_net -net ddr_sys_clk_p_1  [get_bd_pins ddr_sys_clk_p] \
   [get_bd_pins ddr4_0/c0_sys_clk_p]
   connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
   [get_bd_pins ddr_data_reg_mngt_0/pps_i] \
-  [get_bd_pins ddr_data_0/pps_i] \
-  [get_bd_pins system_ila_ddr/probe1]
+  [get_bd_pins system_ila_ddr/probe1] \
+  [get_bd_pins ddr_data_0/pps_i]
   connect_bd_net -net fifos_out_0_axis_prog_empty_alpha  [get_bd_pins fifos_out_0/axis_prog_empty_alpha] \
   [get_bd_pins mon_ddr_fifos_0/alpha_out_fifo_empty]
   connect_bd_net -net fifos_out_0_axis_prog_empty_gco  [get_bd_pins fifos_out_0/axis_prog_empty_gco] \

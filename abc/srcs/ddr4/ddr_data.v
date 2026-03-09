@@ -69,6 +69,7 @@ module ddr_data(
     input   wire             m_axis_tready,
     output  reg              m_axis_tvalid,
     input                    m_axis_clk,
+    output reg               m_axis_tlast,
 
     //AXI-Stream slave ports for reading alpha from ddr
     input [255:0]    s_axis_tdata,
@@ -129,6 +130,31 @@ module ddr_data(
     output command_gc_enable_r,
     output debug_rc_gc_div
 );
+
+
+//Generate m_axis_tlast for debug
+// reg m_axis_tlast;
+// reg [3:0] counter_tlast;
+// always @(posedge clk200_i) begin
+//     if (!ddr_data_rstn) begin
+//         m_axis_tlast <= 0;
+//         counter_tlast <= 0;
+//     end else begin
+//         if (m_axis_tready == 1'b1 && m_axis_tvalid == 1'b1) begin
+//             counter_tlast <= counter_tlast + 1;
+//             if (counter_tlast == 15) begin
+//                 counter_tlast <= 0;
+//                 m_axis_tlast <= 1;
+//             end else begin
+//                 counter_tlast <= counter_tlast;
+//                 m_axis_tlast <= 0;
+//             end
+//         end else begin
+//             counter_tlast <= 0;
+//             m_axis_tlast <= 0;
+//         end
+//     end
+// end
 
 //Debug signals
 // wire [15:0] threshold_wait;
@@ -280,6 +306,7 @@ reg [47:0] sr_current_dq_gc;
 reg [51:0] counter_datout;
 reg [31:0] counter_wait;
 reg [31:0] counter_rd_en_gc;
+reg [3:0] counter_tlast;
 
 //wires
 wire [15:0] tdata200_mod_dq;
@@ -391,12 +418,14 @@ always @(posedge clk200_i) begin
         counter_datout <= 0;
         counter_wait <= 0;
         counter_rd_en_gc <= 0;
+        counter_tlast <= 0;
 
         command_enable_r <= 0;
         command_gc_enable_r <= 0;
 
         m_axis_tdata <= 256'b0; //m_axis to ddr fifo
         m_axis_tvalid <= 0;
+        m_axis_tlast <= 0;
         s_axis_tready <= 0;
 
         m_axis_tdata_gc <= 64'b0; //m_axis to gc_fifo
@@ -433,6 +462,7 @@ always @(posedge clk200_i) begin
 
                 m_axis_tdata <= 256'b0;
                 m_axis_tvalid <= 0;
+                m_axis_tlast <= 0;
                 s_axis_tready <= 0;
 
                 m_axis_tdata_gc <= 64'b0;
@@ -509,36 +539,6 @@ always @(posedge clk200_i) begin
                     m_axis_tdata_gc <= m_axis_tdata_gc;
                     m_axis_tvalid_gc <= 1'b0;
                 end
-
-                // if (tvalid200) begin
-                //     counter_valid <= counter_valid + 1;
-                //     if (counter_valid == 1) begin
-                //         if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625)) begin
-                //             m_axis_tdata_gc <= {2'b00,dq_gc}; //2'b00: click_result|q_pos
-                //             m_axis_tvalid_gc <= 1'b1;
-                //         end else if ((tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1) && (tdata200_mod_dq >=625 && tdata200_mod_dq <1250)) begin
-                //             m_axis_tdata_gc <= {2'b01,dq_gc};
-                //             m_axis_tvalid_gc <= 1'b1;
-                //         end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (tdata200_mod_dq > 0 && tdata200_mod_dq < 625)) begin
-                //             m_axis_tdata_gc <= {2'b10,dq_gc};
-                //             m_axis_tvalid_gc <= 1'b1;
-                //         end else if ((tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3) && (tdata200_mod_dq >=625 && tdata200_mod_dq <1250)) begin
-                //             m_axis_tdata_gc <= {2'b11,dq_gc};
-                //             m_axis_tvalid_gc <= 1'b1;
-                //         end else begin
-                //             m_axis_tdata_gc <= m_axis_tdata_gc;
-                //             m_axis_tvalid_gc <= 1'b0;
-                //         end                               
-                //     end else begin
-                //         m_axis_tdata_gc <= m_axis_tdata_gc;
-                //         m_axis_tvalid_gc <= 1'b0;
-                //     end 
-                // end else begin
-                //     counter_valid <= 0;
-                //     m_axis_tdata_gc <= m_axis_tdata_gc;
-                //     m_axis_tvalid_gc <= 1'b0;
-                // end
-
                 //Get current global counter
                 //if (command_r == 3'b010) begin
                 command_enable_r <= {command_enable_r[1:0],sr_command_enable};
@@ -569,6 +569,12 @@ always @(posedge clk200_i) begin
                 end else begin
                     m_axis_tdata <= m_axis_tdata;
                     m_axis_tvalid <= 1'b0;
+                    m_axis_tlast <= 0;
+                end
+                if (pack_done == 1'b1 && dq_gc[8:0] == 9'd511) begin
+                    m_axis_tlast <= 1;
+                end else begin
+                    m_axis_tlast <= 0;
                 end
 
                 //Reading saved alpha from ddr and reading received gc from fifo_gc,

@@ -533,13 +533,6 @@ module ddr_data_axil_mngt #
       end
     end
 
-    ila_ddr_axil ila_ddr_axil_inst (
-	    .clk(S_AXI_ACLK), // input wire clk
-    	.probe0(slv_reg13), // input wire [0:0]  probe0  
-	    .probe1(status_200_valid_r), // input wire [0:0]  probe1 
-	    .probe2(status_200_valid_i), // input wire [0:0]  probe2
-      .probe3(ddr_fifos_status_i)
-  );
 
     //Read pps for synchronisation
     reg pps_sync1;
