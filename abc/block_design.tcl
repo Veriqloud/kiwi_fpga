@@ -1202,10 +1202,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/axi_virtual_controll_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_pins /ddr4/axi_virtual_controll_0/aclk]
 
   # Create instance: axi_clock_converter_0, and set properties
@@ -1317,14 +1313,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /ddr4/ddr_data_0/s_axis_gc]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_pins /ddr4/ddr_data_0/m_axis_alpha_clk]
 
   set_property -dict [ list \
@@ -1357,10 +1345,6 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
  ] [get_bd_intf_pins /ddr4/axis_burst_0/m_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {200000000} \
- ] [get_bd_intf_pins /ddr4/axis_burst_0/s_axis]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {200000000} \
