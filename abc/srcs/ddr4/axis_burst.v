@@ -21,8 +21,8 @@
 
 
 module axis_burst(
-   input wire s_aclk,
-   input wire s_aresetn,
+   input wire aclk,
+   input wire aresetn,
    input wire s_axis_tvalid,
    output wire s_axis_tready,
    input wire [255 : 0] s_axis_tdata,
@@ -41,8 +41,8 @@ module axis_burst(
 
 
 fifo_burst_formation your_instance_name (
-  .s_aclk(s_aclk),                    // input wire s_aclk
-  .s_aresetn(s_aresetn),              // input wire s_aresetn
+  .s_aclk(aclk),                    // input wire s_aclk
+  .s_aresetn(aresetn),              // input wire s_aresetn
   .s_axis_tvalid(s_axis_tvalid),      // input wire s_axis_tvalid
   .s_axis_tready(s_axis_tready),      // output wire s_axis_tready
   .s_axis_tdata(s_axis_tdata),        // input wire [255 : 0] s_axis_tdata
