@@ -33,8 +33,6 @@ module mon_ddr_fifos(
     input       gc_out_fifo_empty,
     input       gc_in_fifo_full,
     input       gc_in_fifo_empty,
-    input       gc_in_fifo_prog_empty,
-    input       gc_in_fifo_prog_full,
     input       alpha_out_fifo_full,
     input       alpha_out_fifo_empty,
 
@@ -49,7 +47,7 @@ reg [25:0] counter_250;
 reg mon_trigger_200;
 
 wire [10:0] status_200;
-assign status_200 = {vfifo_idle,vfifo_full,vfifo_empty,gc_in_fifo_prog_full,gc_in_fifo_prog_empty,gc_out_fifo_full,gc_in_fifo_empty,alpha_out_fifo_full};
+assign status_200 = {vfifo_idle,vfifo_full,vfifo_empty,1'b0,1'b0,gc_out_fifo_full,gc_in_fifo_empty,alpha_out_fifo_full};
 
 wire status_200_valid_o;
 assign status_200_valid_o = mon_trigger_200_r[2];

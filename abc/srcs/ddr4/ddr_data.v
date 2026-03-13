@@ -26,7 +26,6 @@
 module ddr_data(
     input           clk200_i,
     input           pps_i,
-    // input           ddr_data_rst,
     input           ddr_data_rstn,
     //input from fastdac
     input           rd_en_4,
@@ -51,9 +50,6 @@ module ddr_data(
     input           sr_reg_enable_i,
     input [47:0]    sr_dq_gc_start_i,
     input [31:0]    sr_threshold_i,
-    // input [31:0]    sr_threshold_full_i,
-    input [15:0]    sr_prog_empty_threshold_i,
-    input [15:0]    sr_prog_full_threshold_i,
     input [15:0]    sr_fiber_delay_i,
     input           sr_pair_delay_i,
     input [15:0]    sr_de_fiber_delay_i,
@@ -108,22 +104,15 @@ module ddr_data(
     output rd_en_fifo_gc,
     output fifo_gc_full,
     output fifo_gc_empty,
-    output fifo_gc_prog_empty,
-    output fifo_gc_prog_full,
     output alpha_pack_done,
     output wire [6:0] alpha_cycle_counter,
     output start_save_alpha,
     output read_done,
     output wire [31:0] dq_gc_start_r_debug,
-    // output [31:0] threshold_full_debug,
-    // output counter_datout,
     output rd_gc_valid,
     output cycle_counter,
     output pack_done,
     output data_pack,
-    // output wire [31:0] threshold_wait,
-    // output [41:0] delta_time_count,
-    // output debug_empty_flag,
     output gc_time_valid_div,
     output gc_time_valid_mod,
     output dq_gc,
@@ -132,39 +121,12 @@ module ddr_data(
 );
 
 
-//Generate m_axis_tlast for debug
-// reg m_axis_tlast;
-// reg [3:0] counter_tlast;
-// always @(posedge clk200_i) begin
-//     if (!ddr_data_rstn) begin
-//         m_axis_tlast <= 0;
-//         counter_tlast <= 0;
-//     end else begin
-//         if (m_axis_tready == 1'b1 && m_axis_tvalid == 1'b1) begin
-//             counter_tlast <= counter_tlast + 1;
-//             if (counter_tlast == 15) begin
-//                 counter_tlast <= 0;
-//                 m_axis_tlast <= 1;
-//             end else begin
-//                 counter_tlast <= counter_tlast;
-//                 m_axis_tlast <= 0;
-//             end
-//         end else begin
-//             counter_tlast <= 0;
-//             m_axis_tlast <= 0;
-//         end
-//     end
-// end
 
 //Debug signals
-// wire [15:0] threshold_wait;
-// wire [31:0] threshold_full_debug;
 wire [31:0] threshold_wait;
 assign s_axis_tvalid_gc_debug = s_axis_tvalid_gc;
 assign current_dq_gc_debug = sr_current_dq_gc[3:0];
 assign dq_gc_start_r_debug = dq_gc_start_r[47:6];
-// assign threshold_full_debug = threshold_full_r;
-// assign threshold_wait = dq_gc_start_r[47:32];
 assign threshold_wait = threshold_r;
 //debug delta number of read out of ddr and global counter received
 wire [47:0] debug_rc_gc_div; 
@@ -183,31 +145,22 @@ assign s_axis_tready_gc = s_axis_tready_gc_r[2];
 //Instant the fifo_gc_in, from AXI-Stream to 200MHz
 //Need to manage wr and re with ddr reading
 wire rd_en_fifo_gc;
-// assign rd_en_fifo_gc = rd_en_gc;
-// assign rd_en_fifo_gc = rd_en_gc_test;
 assign rd_en_fifo_gc = (counter_rd_en_gc == 1) ? 1:0;
 wire [63:0] tdata_gc;
 wire fifo_gc_empty;
 wire fifo_gc_prog_empty;
 wire fifo_gc_almost_empty;
-wire [13:0] prog_empty_thresh;
-wire [13:0] prog_full_thresh;
 wire fifo_gc_full;
 wire fifo_gc_prog_full;
 wire rd_gc_valid;
 reg fifo_gc_in_rst;
-assign prog_empty_thresh = prog_empty_threshold_r[13:0];
-assign prog_full_thresh = prog_full_threshold_r[13:0];
 fifo_gc_in_64x64 fifo_gc_in_inst (
-    // .rst(!s_gc_aresetn),                    // input wire rst
     .rst(!fifo_gc_in_rst),                    // input wire rst
     .wr_clk(s_axis_gc_clk),              // input wire wr_clk
     .rd_clk(clk200_i),              // input wire rd_clk
     .din(s_axis_tdata_gc),                    // input wire [63 : 0] din
     .wr_en(s_axis_tvalid_gc),                // input wire wr_en
     .rd_en(rd_en_fifo_gc),                // input wire rd_en
-    .prog_empty_thresh(prog_empty_thresh),  // input wire [13 : 0] prog_empty_thresh
-    .prog_full_thresh(prog_full_thresh),    // input wire [13 : 0] prog_full_thresh
     .dout(tdata_gc),                  // output wire [63 : 0] dout
     .full(fifo_gc_full),                  // output wire full
     .almost_full(),    // output wire almost_full
@@ -235,9 +188,6 @@ reg [2:0] command_r;
 reg [2:0] command_gc_r;
 reg [47:0] dq_gc_start_r;
 reg [31:0] threshold_r;
-// reg [31:0] threshold_full_r;
-reg [15:0] prog_empty_threshold_r;
-reg [15:0] prog_full_threshold_r;
 reg [15:0] fiber_delay_r;
 reg pair_delay_r;
 reg [15:0] de_fiber_delay_r;
@@ -253,13 +203,10 @@ initial begin
     command_alpha_enable_r <= 0;
     command_gc_enable_r <= 0;
     reg_enable_r <= 0;
-    command_r <= 3'b000; //initial here, axil control later
-    command_gc_r <= 1'b0; //initial here, axil control later
+    command_r <= 3'b000; 
+    command_gc_r <= 1'b0; 
     dq_gc_start_r <= 48'b0;
     threshold_r <= 32'b0;
-    // threshold_full_r <= 32'b0;
-    prog_empty_threshold_r <= 16'b0;
-    prog_full_threshold_r <= 16'b0;
     fiber_delay_r <= 16'b0;
     pair_delay_r <= 0;
     de_fiber_delay_r <= 16'b0;
@@ -274,9 +221,6 @@ always @(posedge clk200_i) begin
         command_gc_r <= sr_command_gc_i;
         dq_gc_start_r <= sr_dq_gc_start_i;
         threshold_r <= sr_threshold_i;
-        // threshold_full_r <= sr_threshold_full_i;
-        prog_empty_threshold_r <= sr_prog_empty_threshold_i;
-        prog_full_threshold_r <= sr_prog_full_threshold_i; //use same value as prog empty
         fiber_delay_r <= sr_fiber_delay_i;
         pair_delay_r <= sr_pair_delay_i;
         de_fiber_delay_r <= sr_de_fiber_delay_i;
@@ -303,7 +247,6 @@ reg rd_en_gc;
 reg rd_en_gc_test;
 reg [31:0] count_wait_long;
 reg [47:0] sr_current_dq_gc;
-reg [51:0] counter_datout;
 reg [31:0] counter_wait;
 reg [31:0] counter_rd_en_gc;
 reg [3:0] counter_tlast;
@@ -340,18 +283,6 @@ always @(*) begin
 end
 wire [47:0] dq_gc_div64;
 assign dq_gc_div64 = ((dq_gc-12)>>6)<<6; //12 gcs is delay time from click to tvalid200
-
-//global counter read out of gc_fifo_in
-// wire [47:0] gc_time_valid;
-// wire [41:0] gc_time_valid_div;
-// wire [6:0] gc_time_valid_mod;
-// wire q_pos;
-
-// assign gc_time_valid = (pair_delay_r == 1)?(tdata_gc[47:0] - fiber_delay_r)
-// :((tdata_gc[48] == 1)?(tdata_gc[47:0] - fiber_delay_r + 1):(tdata_gc[47:0] - fiber_delay_r));
-// assign gc_time_valid_div = gc_time_valid[47:6];
-// assign gc_time_valid_mod = gc_time_valid[5:0];
-// assign q_pos = (pair_delay_r == 1)?(tdata_gc[48]):(~tdata_gc[48]); 
 
 //pack alpha: 32x8bits
 wire [47:0] gc_time_valid;
@@ -415,7 +346,6 @@ always @(posedge clk200_i) begin
         rd_en_gc_test <= 0;
         count_wait_long <= 0;
         sr_current_dq_gc <= 0;
-        counter_datout <= 0;
         counter_wait <= 0;
         counter_rd_en_gc <= 0;
         counter_tlast <= 0;
@@ -456,7 +386,6 @@ always @(posedge clk200_i) begin
                 read_done <= 0;
                 rd_en_gc <= 0;
                 sr_current_dq_gc <= 0;
-                counter_datout <= 0;
                 counter_wait <= 0;
                 counter_rd_en_gc <= 0;
 
@@ -504,10 +433,6 @@ always @(posedge clk200_i) begin
                 end else begin
                     dq_gc <= dq_gc;
                 end
-                // command_gc_enable_r <= {command_gc_enable_r[1:0],command_gc_enable};
-                // if (command_gc_enable_r[2]) begin
-                //     fifo_gc_rst <= 1;
-                // end else fifo_gc_rst <= 0;
                 command_gc_enable_r <= {command_gc_enable_r[1:0],sr_command_gc_enable};
                 if ((command_gc_enable_r[2]) && (dq_gc > ab_fiber_delay_r)) begin
                 // if ((command_gc_enable_r[2]) && (dq_gc > de_fiber_delay_r)) begin
@@ -540,7 +465,6 @@ always @(posedge clk200_i) begin
                     m_axis_tvalid_gc <= 1'b0;
                 end
                 //Get current global counter
-                //if (command_r == 3'b010) begin
                 command_enable_r <= {command_enable_r[1:0],sr_command_enable};
                 if(command_enable_r[2] == 0 && command_enable_r[1] == 1) begin
                     sr_current_dq_gc <= dq_gc;
@@ -550,9 +474,7 @@ always @(posedge clk200_i) begin
                 //Pack data to save in ddr, verify number of write and read are matched
                 if (rd_en_4_r[1] == 1'b1) begin
                     cycle_counter <= cycle_counter + 1;
-                    // data_pack[(4*cycle_counter)+:4] <= rng_data;
                     data_pack[(8*cycle_counter)+:8] <= {2'b00,rng_a_data,rng_data};
-                    // if (cycle_counter >= 7'd63) begin
                     if (cycle_counter >= 7'd31) begin
                             cycle_counter <= 7'b0;
                         pack_done <= 1'b1;
@@ -581,9 +503,6 @@ always @(posedge clk200_i) begin
                 //get the right alpha out
                 s_axis_tready_gc_200 <= 1'b1; //ready to receive dq_gc and click_result
                 fifo_gc_in_rst <= 1'b1;
-                counter_datout <= counter_datout + 1;
-
-                // rd_en_gc_test <= m_axis_tvalid_gc;
 
                 counter_rd_en_gc <= counter_rd_en_gc + 1;
                 if ((counter_rd_en_gc >= threshold_wait) && (state_alpha==WAIT)) begin
@@ -597,59 +516,8 @@ always @(posedge clk200_i) begin
                 end else begin
                     state_alpha <= WAIT;
                 end
-
-
-                // state_alpha <= IDLE_AL;
-                // if (counter_datout >= threshold_full_debug) begin
-                //     state_alpha <= COUNTING;
-                //     counter_datout <= counter_datout;
-                // end
-
             end
         endcase
-
-        // case (state_alpha)
-        //     IDLE_AL: begin
-        //         read_count <= 48'b0;
-        //         read_done <= 1'b0;
-        //     end
-        //     WAIT: begin
-        //         read_done <= 0;
-        //         if (rd_gc_valid) begin
-        //             state_alpha <= COUNTING;
-        //         end else state_alpha <= WAIT;
-        //     end
-        //     COUNTING: begin
-        //         s_axis_tready <= 1;
-        //         read_done <= 0;
-        //         if (s_axis_tvalid && s_axis_tready) begin
-        //             read_count <= read_count + 1;
-        //         end else begin
-        //             read_count <= read_count;
-        //         end
-
-        //         if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
-        //             alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
-        //             state_alpha <= DONE;
-        //             s_axis_tready <= 0;
-        //         end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
-        //             alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
-        //             state_alpha <= DONE;
-        //             s_axis_tready <= 0;
-        //         end else begin
-        //             state_alpha <= COUNTING;
-        //         end
-
-        //         if (dq_gc == 0) begin
-        //             state_alpha <= IDLE_AL;
-        //         end
-        //     end
-        //     DONE: begin
-        //         read_done <= 1;
-        //         read_count <= read_count;
-        //         state_alpha <= WAIT;
-        //     end
-        // endcase
 
         case (state_alpha)
             IDLE_AL: begin
@@ -837,8 +705,6 @@ always @(posedge clk200_i) begin
                     start_save_alpha <= 1'b1;
                     if (start_save_alpha == 1'b1 && read_done == 1'b1) begin
                         alpha_cycle_counter <= alpha_cycle_counter + 1;
-                        // alpha_pack[(2*alpha_cycle_counter)+:2] <= alpha_q;
-                        // if (alpha_cycle_counter >= 7'd63) begin
                         alpha_pack[(4*alpha_cycle_counter)+:4] <= {1'b0,decoy_q,alpha_q};
                         if (alpha_cycle_counter >= 7'd31) begin
                             alpha_cycle_counter <= 0;
@@ -863,7 +729,6 @@ always @(posedge clk200_i) begin
             end else begin
                 m_axis_tdata_alpha <= m_axis_tdata_alpha;
                 m_axis_tvalid_alpha <= 1'b0;
-                // fifo_alpha_rst <= 0;
             end
         end else if (command_r == 3'b100) begin //stop read_angle, reset fifo
             fifo_alpha_rst = 1'b0;

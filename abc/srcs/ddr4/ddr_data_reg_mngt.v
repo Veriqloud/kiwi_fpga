@@ -35,9 +35,6 @@ module ddr_data_reg_mngt #(
     output wire         mr_reg_enable_i,
     output wire [47:0]  mr_dq_gc_start_i,
     output wire [31:0]  mr_threshold_i,
-    // output wire [31:0]  mr_threshold_full_i, #not used anymore
-    output wire [15:0]  mr_prog_empty_threshold_i,
-    output wire [15:0]  mr_prog_full_threshold_i,
     output wire [15:0]  mr_fiber_delay_i,
     output wire         mr_pair_delay_i,
     output wire [15:0]  mr_de_fiber_delay_i,
@@ -152,9 +149,6 @@ ddr_data_axil_mngt # (
     .dq_gc_start_lsb_o(dq_gc_start_lsb_o),
     .dq_gc_start_msb_o(dq_gc_start_msb_o),
     .threshold_o(mr_threshold_i),
-    // .threshold_full_o(mr_threshold_full_i), not used anymore
-    .prog_empty_threshold_o(mr_prog_empty_threshold_i), 
-    .prog_full_threshold_o(mr_prog_full_threshold_i), 
     .fiber_delay_o(mr_fiber_delay_i),
     .pair_delay_o(mr_pair_delay_i),
     .de_fiber_delay_o(mr_de_fiber_delay_i),

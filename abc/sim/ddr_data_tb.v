@@ -271,7 +271,7 @@ end
 initial begin
     ddr_data_rstn = 0;
     #10 ddr_data_rstn = 1;
-    #2400000 ddr_data_rstn = 0;
+    #5400000 ddr_data_rstn = 0;
     #1000000 ddr_data_rstn = 1;
 end
 
@@ -314,15 +314,26 @@ initial begin
     s_axis_tvalid_gc = 0;
     #200000 s_axis_tvalid_gc = 0;
     wait (s_axis_tready_gc == 1'b1)
-    forever begin
+    // forever begin
+    //     begin
+    //         s_axis_tvalid_gc = 1;
+    //         s_axis_tdata_gc = s_axis_tdata_gc + 64'd800;
+    //         #4 s_axis_tvalid_gc = 0; 
+    //     end
+    //     #20000 s_axis_tvalid_gc = 0;
+    // end
+    for (integer i = 0; i < 8; i = i + 1) begin
         begin
             s_axis_tvalid_gc = 1;
             s_axis_tdata_gc = s_axis_tdata_gc + 64'd800;
             #4 s_axis_tvalid_gc = 0; 
         end
         #20000 s_axis_tvalid_gc = 0;
-
     end
+    s_axis_tvalid_gc = 1;
+    s_axis_tdata_gc = s_axis_tdata_gc + 2;
+    #4 s_axis_tvalid_gc = 0;
+
 end
 
 
