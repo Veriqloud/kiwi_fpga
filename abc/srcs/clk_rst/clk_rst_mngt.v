@@ -105,7 +105,8 @@ module clk_rst_mngt #(
     output wire   decoy_rst,
     output        gc_rst_o,
     output        ddr_data_rstn_o,
-    output        ltc_rst_o
+    output        ltc_rst_o,
+    output        rng_rst_o
 );
 
 clk_rst_axil_mngt # ( 
@@ -121,6 +122,7 @@ clk_rst_axil_mngt # (
     .fpga_turnkey_fastdac_rst_o(fpga_turnkey_fastdac_rst),
     .ddr_data_rst_o(ddr_data_rst),
     .ltc_sync_rst_o(ltc_sync_rst),
+    .rng_rst_o(rng_rst),
     .S_AXI_ACLK(s_axil_aclk),
     .S_AXI_ARESETN(rstn_axil_o),
     .S_AXI_AWADDR(s_axil_awaddr),
@@ -243,6 +245,7 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_clk10_inst (
 (* ASYNC_REG = "TRUE" *) reg [2:0] gc_rst_r;
 (* ASYNC_REG = "TRUE" *) reg [2:0] lrst_i_r;
 (* ASYNC_REG = "TRUE" *) reg [2:0] ddr_data_rst_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
 
 initial begin
     fpga_turnkey_fastdac_rst_r <= 0;
@@ -250,6 +253,7 @@ initial begin
     gc_rst_r <= 0;
     lrst_i_r <= 0;
     ddr_data_rst_r <= 1;
+    rng_rst_r <= 0;
 end
 always @(posedge fastdac_coreclk_o) begin
     fpga_turnkey_fastdac_rst_r <= {fpga_turnkey_fastdac_rst_r[1:0],fpga_turnkey_fastdac_rst};
@@ -257,6 +261,7 @@ always @(posedge fastdac_coreclk_o) begin
     gc_rst_r <= {gc_rst_r[1:0],gc_rst};
     lrst_i_r <= {lrst_i_r[1:0],lrst_i};
     ddr_data_rst_r <= {ddr_data_rst_r[1:0], ddr_data_rst};
+    rng_rst_r <= {rng_rst_r[1:0], rng_rst};
 end
 
 
@@ -303,6 +308,15 @@ reset_register #(.RST_ACTIVE_LEVEL("LOW")) ddr_data_resetn_inst (
     .rstn_i(ddr_data_rst_r[1]),
     .clk_o(fastdac_coreclk),
     .rstn_o(ddr_data_rstn_o));
+
+wire rng_rst_o;
+wire rng_rstn_o;
+reset_register #(.RST_ACTIVE_LEVEL("HIGH")) rng_reset_inst (
+    .clk_i(fastdac_coreclk_o),
+    .rst_i(rng_rst_r[1]),
+    .clk_o(fastdac_coreclk),
+    .rstn_o(rng_rstn_o),
+    .rst_o(rng_rst_o)); 
 
 //Generate SYNC signal for clockchip LTC6951
 reg sync_ltc_o;

@@ -27,6 +27,7 @@
 		output wire fpga_turnkey_fastdac_rst_o,
 		output wire ddr_data_rst_o,
 		output wire ltc_sync_rst_o,
+		output wire rng_rst_o,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -141,6 +142,7 @@
 	assign lrst_o = slv_reg1[1];
 	assign ddr_data_rst_o = slv_reg4[0];
 	assign ltc_sync_rst_o = slv_reg6[0];
+	assign rng_rst_o = slv_reg7[0];
 
 //	assign fpga_turnkey_fastdac_sel_o = slv_reg0[1];
 //	assign fpga_turnkey_fastdac_sync_o = slv_reg1[0];

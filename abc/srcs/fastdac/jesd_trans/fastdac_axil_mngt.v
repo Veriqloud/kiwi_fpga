@@ -38,7 +38,9 @@
         // Control data output
         // Control register
         output fastdac_en_jesd_o,
-        output ld_ddr_status_o,
+        output command_rng_fifo_status_o,
+		input [3:0] rng_fifo_status_i,
+		input rng_fifo_status_valid_i,
         output fastdac_reg_en_o,
         // output slv_reg_wren,
         output [7:0] fastdac_dpram_max_addr_seq_dac0_o,
@@ -184,6 +186,7 @@
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg6;
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg7;
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg8;
+	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg9;
 	wire [C_S_AXI_DATA_WIDTH-1:0]	slv_reg16;
 	wire	 slv_reg_rden;
 	wire	 slv_reg_wren;
@@ -193,7 +196,7 @@
 	// 
 	// Registers connections to output signal
 	assign fastdac_en_jesd_o = slv_reg0[0];
-	assign ld_ddr_status_o = slv_reg0[1];
+	assign command_rng_fifo_status_o = slv_reg0[1];
 	// assign fastdac_dpram_max_addr_seq_dac0_o = slv_reg1[6:0];
 	// assign fastdac_dpram_max_addr_seq_dac1_o = slv_reg1[22:16];
 	// assign fastdac_dpram_max_addr_pos_dac0_o = slv_reg2[7:0];
@@ -527,7 +530,25 @@
 	          axi_arready <= 1'b0;
 	        end
 	    end 
-	end       
+	end
+	
+	(* ASYNC_REG = "TRUE" *) reg [2:0] rng_fifo_status_valid_r;
+	initial begin
+		rng_fifo_status_valid_r <= 0;
+		slv_reg9 <= 0;
+	end     
+
+	always @(posedge S_AXI_ACLK) begin
+		if (S_AXI_ARESETN == 1'b0) begin
+			slv_reg9 <= 0;
+			rng_fifo_status_valid_r <= 0;
+		end else begin
+			rng_fifo_status_valid_r <= {rng_fifo_status_valid_r[1:0],rng_fifo_status_valid_i};
+			if (rng_fifo_status_valid_r[2] == 0 && rng_fifo_status_valid_r[1] == 1) begin
+				slv_reg9 <= rng_fifo_status_i;
+			end
+		end
+	end
 
 	// Implement axi_arvalid generation
 	// axi_rvalid is asserted for one S_AXI_ACLK clock cycle when both 
@@ -577,6 +598,7 @@
 	        4'h6   : reg_data_out <= slv_reg6;
 	        4'h7   : reg_data_out <= slv_reg7;
 	        4'h8   : reg_data_out <= slv_reg8;
+	        4'h9   : reg_data_out <= slv_reg9;
 	        default : reg_data_out <= slv_reg16;
 	      endcase
 	end

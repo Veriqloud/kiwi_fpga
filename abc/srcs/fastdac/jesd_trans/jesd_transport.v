@@ -78,7 +78,9 @@ module jesd_transport #(
     output              fastdac_seq_data_dac0_int,
     output              pps_trigger,
     output              pps_r,
-    
+    output              tready_flag,
+    output              almost_full_16,
+    output              [3:0]rng_fifo_status,
     // Ports of control (synchronization) & status
     input           tvalid200,
     input [15:0]    tdata200_mod,
@@ -91,6 +93,7 @@ module jesd_transport #(
     // Ports of AXI-s master(alpha argument)
     input                                         tx_core_clk,
     input                                         tx_core_reset,
+    input                                         rng_reset,
     output  reg [127 : 0]                         tx_tdata,
     input   wire                                  tx_tready,
     input                                         pps_i
@@ -126,6 +129,9 @@ fastdac_axil_mngt # (
 ) fastdac_axil_mngt_inst (
     .fastdac_en_jesd_o(fastdac_en_jesd_int),
     .fastdac_reg_en_o(reg_en_o),
+    .command_rng_fifo_status_o(command_rng_fifo_status_int),
+    .rng_fifo_status_i(rng_fifo_status),
+    .rng_fifo_status_valid_i(rng_fifo_status_valid),
     .fastdac_dpram_max_addr_seq_dac0_o(fastdac_dpram_max_addr_seq_dac0_int),
     .fastdac_dpram_max_addr_seq_dac1_o(fastdac_dpram_max_addr_seq_dac1_int),
     .fastdac_dpram_max_addr_rng_dac1_o(fastdac_dpram_max_addr_rng_dac1_int),
@@ -282,20 +288,34 @@ end
 //to get 4 bits of RNG at 40MHz ~ 20 samples 16 bits for dac1
 // wire rd_en_16;
 wire [15:0] dout16;
-assign s_axis_tready = 1'b1;
+wire almost_full_16;
+assign s_axis_tready = tready_flag;
+reg tready_flag;
+initial begin
+    tready_flag <= 1;
+end
+always @(posedge s_axis_clk) begin
+    if (almost_full_16) begin
+        tready_flag <= 0;
+    end else begin
+        tready_flag <= 1;
+    end
+
+end
 
 //Test fifo with deth smaller for resource optimize
 fifo_128x16 fifo_rng_128x16_inst (
-    .rst(!s_axis_tresetn),                              // input wire rst
+    // .rst(!s_axis_tresetn),                              // input wire rst
+    .rst(rng_reset),                              // input wire rst
     .wr_clk(s_axis_clk),                        // input wire wr_clk
     .rd_clk(tx_core_clk),                        // input wire rd_clk
     .din(s_axis_tdata),                              // input wire [127 : 0] din
-    .wr_en(s_axis_tvalid),                          // input wire wr_en
+    .wr_en(s_axis_tvalid && s_axis_tready),                          // input wire wr_en
     .rd_en(rd_en_16),                          // input wire rd_en
     .dout(dout16),                            // output wire [15 : 0] dout
-    .full(),                            // output wire full
-    .almost_full(),              // output wire almost_full
-    .empty(),                  // output wire empty
+    .full(full_16),                            // output wire full
+    .almost_full(almost_full_16),              // output wire almost_full
+    .empty(empty_16),                  // output wire empty
     .almost_empty(),    // output wire almost_empty
     .rd_data_count(),  // output wire [15: 0] rd_data_count
     .wr_data_count(),  // output wire [12 : 0] wr_data_count
@@ -308,17 +328,18 @@ wire [3:0] rng_dout4;
 assign dout4_test = rng_dout4;
 
 fifo_16x4 fifo_rng_16x4_inst (
-    .rst(tx_core_reset),                      // input wire rst
+    // .rst(tx_core_reset),                      // input wire rst
+    .rst(rng_reset),                      // input wire rst
     .wr_clk(tx_core_clk),                // input wire wr_clk
     .rd_clk(tx_core_clk),                // input wire rd_clk
     .din(dout16),                      // input wire [15 : 0] din
     .wr_en(rd_en_16),                  // input wire wr_en
     .rd_en(rd_en_4),                  // input wire rd_en
     .dout(rng_dout4),                    // output wire [3 : 0] dout
-    .full(full),                            // output wire full
+    .full(full_4),                            // output wire full
     .almost_full(almost_full),              // output wire almost_full
     .wr_ack(wr_ack),                // output wire wr_ack
-    .empty(empty),                  // output wire empty
+    .empty(empty_4),                  // output wire empty
     .almost_empty(almost_empty),    // output wire almost_empty
     .valid(valid),                  // output wire valid
     .rd_data_count(rd_data_count),  // output wire [8 : 0] rd_data_count
@@ -326,6 +347,30 @@ fifo_16x4 fifo_rng_16x4_inst (
     .wr_rst_busy(),      // output wire wr_rst_busy
     .rd_rst_busy()      // output wire rd_rst_busy
 );
+
+reg [2:0] command_rng_status_r;
+reg [3:0] rng_fifo_status;
+reg rng_fifo_status_valid;
+initial begin
+    command_rng_status_r <= 0;
+    rng_fifo_status <= 0;
+    rng_fifo_status_valid <= 0;
+end
+always @(posedge tx_core_clk) begin
+    if (rng_reset) begin
+        rng_fifo_status <= 0;
+        rng_fifo_status_valid <= 0;
+    end else begin
+        command_rng_status_r <= {command_rng_status_r[1:0],command_rng_fifo_status_int};
+        if (command_rng_status_r[2] == 0 && command_rng_status_r[0] == 1) begin
+            rng_fifo_status <= {full_16,empty_16,full_4,empty_4};
+            rng_fifo_status_valid <= 1;
+        end else begin
+            rng_fifo_status <= rng_fifo_status;
+            rng_fifo_status_valid <= 0;
+        end   
+    end
+end
 
 //Port ram data_write from axil and data_read is 4 samples for DACs    
 reg [7:0] fastdac_dpram_seq_addr_dac0_r;
