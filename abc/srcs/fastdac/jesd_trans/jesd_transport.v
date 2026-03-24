@@ -81,6 +81,7 @@ module jesd_transport #(
     output              tready_flag,
     output              almost_full_16,
     output              [3:0]rng_fifo_status,
+    output              command_rng_status_r,
     // Ports of control (synchronization) & status
     input           tvalid200,
     input [15:0]    tdata200_mod,
@@ -89,6 +90,7 @@ module jesd_transport #(
     input [31:0]    gate_pos2,
     input [31:0]    gate_pos3,
     input [3:0]     q_gc_time_valid_mod16,
+    input [1:0]     de_rng_flags,
 
     // Ports of AXI-s master(alpha argument)
     input                                         tx_core_clk,
@@ -350,24 +352,24 @@ fifo_16x4 fifo_rng_16x4_inst (
 
 reg [2:0] command_rng_status_r;
 reg [3:0] rng_fifo_status;
-reg rng_fifo_status_valid;
+wire rng_fifo_status_valid;
+assign rng_fifo_status_valid = command_rng_status_r[2];
 initial begin
     command_rng_status_r <= 0;
     rng_fifo_status <= 0;
-    rng_fifo_status_valid <= 0;
 end
 always @(posedge tx_core_clk) begin
     if (rng_reset) begin
         rng_fifo_status <= 0;
-        rng_fifo_status_valid <= 0;
+        // rng_fifo_status_valid <= 0;
     end else begin
         command_rng_status_r <= {command_rng_status_r[1:0],command_rng_fifo_status_int};
         if (command_rng_status_r[2] == 0 && command_rng_status_r[0] == 1) begin
-            rng_fifo_status <= {full_16,empty_16,full_4,empty_4};
-            rng_fifo_status_valid <= 1;
+            rng_fifo_status <= {almost_full_16,empty_16,de_rng_flags};
+            // rng_fifo_status_valid <= 1;
         end else begin
             rng_fifo_status <= rng_fifo_status;
-            rng_fifo_status_valid <= 0;
+            // rng_fifo_status_valid <= 0;
         end   
     end
 end

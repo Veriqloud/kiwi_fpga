@@ -29,51 +29,48 @@ module decoy_rng_fifos(
 
     input           clk200,
     input           tx_core_rst,
+    input           rng_reset,
     input           rd_en_16,
     input           rd_en_4,
     output [1:0]    de_rng_dout4,
-    // output [1:0]    de_rng_ddr,
+    output [1:0]    de_rng_flags,
     output          valid
 );
 
 assign s_axis_tready = 1'b1;
 wire [15:0] dout16;
+wire de_almost_full_16;
+wire de_empty;
+wire [1:0] de_rng_flags;
+assign de_rng_flags = {de_almost_full_16,de_empty};
+assign s_axis_tready = tready_flag;
+reg tready_flag;
+initial begin
+    tready_flag <= 1;
+end
+always @(posedge s_axis_clk) begin
+    if (de_almost_full_16) begin
+        tready_flag <= 0;
+    end else begin
+        tready_flag <= 1;
+    end
 
+end
 fifo_decoy_rng_128x16 fifo_decoy_rng_16_inst (
-    .rst(!s_axis_tresetn),                  // input wire rst
+    .rst(rng_reset),                  // input wire rst
     .wr_clk(s_axis_clk),            // input wire wr_clk
     .rd_clk(clk200),            // input wire rd_clk
     .din(s_axis_tdata),                  // input wire [127 : 0] din
-    .wr_en(s_axis_tvalid),              // input wire wr_en
+    .wr_en(s_axis_tvalid & s_axis_tready),              // input wire wr_en
     .rd_en(rd_en_16),              // input wire rd_en
     .dout(dout16),                // output wire [15 : 0] dout
     .full(),                // output wire full
-    .empty(),              // output wire empty
+    .almost_full(de_almost_full_16),       // output wire almost_full
+    .wr_ack(),          // output wire [3 : 0] wr_ack
+    .empty(de_empty),              // output wire empty
     .wr_rst_busy(),  // output wire wr_rst_busy
     .rd_rst_busy()  // output wire rd_rst_busy
 );
-// fifo in common clock domain
-wire wr_ack;
-wire valid;
-// reg [1:0] de_rng_ddr;
-// always @(posedge clk200) begin
-//     de_rng_ddr <= de_rng_dout4;
-// end
-// assign de_rng_ddr = de_rng_dout4;
-// fifo_decoy_rng_16x4 fifo_decoy_rng_4_inst (
-//     .clk(clk200),                  // input wire clk
-//     .srst(tx_core_rst),                // input wire srst
-//     .din(dout16),                  // input wire [15 : 0] din
-//     .wr_en(rd_en_16),              // input wire wr_en
-//     .rd_en(rd_en_4),              // input wire rd_en
-//     .dout(de_rng_dout4),                // output wire [1 : 0] dout
-//     .wr_ack(wr_ack),          // output wire [3 : 0] wr_ack
-//     .valid(valid),            // output wire valid
-//     .full(),                // output wire full
-//     .empty(),              // output wire empty
-//     .wr_rst_busy(),  // output wire wr_rst_busy
-//     .rd_rst_busy()  // output wire rd_rst_busy
-// );
 
 // fifo in independant clock domains
 wire wr_ack;

@@ -550,6 +550,14 @@
 		end
 	end
 
+	ila_ddr_axil ila_fastdac_axil (
+		.clk(S_AXI_ACLK), // input wire clk
+		.probe0(slv_reg9), // input wire [8:0]  probe0  
+		.probe1(rng_fifo_status_valid_r), // input wire [2:0]  probe1 
+		.probe2(rng_fifo_status_valid_i), // input wire [0:0]  probe2 
+		.probe3(rng_fifo_status_i) // input wire [8:0]  probe3
+	);
+
 	// Implement axi_arvalid generation
 	// axi_rvalid is asserted for one S_AXI_ACLK clock cycle when both 
 	// S_AXI_ARVALID and axi_arready are asserted. The slave registers 
