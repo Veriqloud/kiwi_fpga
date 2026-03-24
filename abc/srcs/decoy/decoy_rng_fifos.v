@@ -37,7 +37,6 @@ module decoy_rng_fifos(
     output          valid
 );
 
-assign s_axis_tready = 1'b1;
 wire [15:0] dout16;
 wire de_almost_full_16;
 wire de_empty;
@@ -61,12 +60,11 @@ fifo_decoy_rng_128x16 fifo_decoy_rng_16_inst (
     .wr_clk(s_axis_clk),            // input wire wr_clk
     .rd_clk(clk200),            // input wire rd_clk
     .din(s_axis_tdata),                  // input wire [127 : 0] din
-    .wr_en(s_axis_tvalid & s_axis_tready),              // input wire wr_en
+    .wr_en(s_axis_tvalid && s_axis_tready),              // input wire wr_en
     .rd_en(rd_en_16),              // input wire rd_en
     .dout(dout16),                // output wire [15 : 0] dout
     .full(),                // output wire full
     .almost_full(de_almost_full_16),       // output wire almost_full
-    .wr_ack(),          // output wire [3 : 0] wr_ack
     .empty(de_empty),              // output wire empty
     .wr_rst_busy(),  // output wire wr_rst_busy
     .rd_rst_busy()  // output wire rd_rst_busy

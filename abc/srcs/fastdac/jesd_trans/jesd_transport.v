@@ -288,7 +288,6 @@ end
 
 //RNG fifos. Get stream data from axis to fifo 128x16 and 16x4.
 //to get 4 bits of RNG at 40MHz ~ 20 samples 16 bits for dac1
-// wire rd_en_16;
 wire [15:0] dout16;
 wire almost_full_16;
 assign s_axis_tready = tready_flag;
@@ -307,7 +306,6 @@ end
 
 //Test fifo with deth smaller for resource optimize
 fifo_128x16 fifo_rng_128x16_inst (
-    // .rst(!s_axis_tresetn),                              // input wire rst
     .rst(rng_reset),                              // input wire rst
     .wr_clk(s_axis_clk),                        // input wire wr_clk
     .rd_clk(tx_core_clk),                        // input wire rd_clk
@@ -325,7 +323,6 @@ fifo_128x16 fifo_rng_128x16_inst (
     .rd_rst_busy()              // output wire rd_rst_busy
 );
 
-// wire rd_en_4;
 wire [3:0] rng_dout4;
 assign dout4_test = rng_dout4;
 
@@ -361,15 +358,12 @@ end
 always @(posedge tx_core_clk) begin
     if (rng_reset) begin
         rng_fifo_status <= 0;
-        // rng_fifo_status_valid <= 0;
     end else begin
         command_rng_status_r <= {command_rng_status_r[1:0],command_rng_fifo_status_int};
         if (command_rng_status_r[2] == 0 && command_rng_status_r[0] == 1) begin
             rng_fifo_status <= {almost_full_16,empty_16,de_rng_flags};
-            // rng_fifo_status_valid <= 1;
         end else begin
             rng_fifo_status <= rng_fifo_status;
-            // rng_fifo_status_valid <= 0;
         end   
     end
 end
