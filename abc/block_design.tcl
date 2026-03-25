@@ -1,4 +1,4 @@
-G
+
 ################################################################
 # This is a generated script based on design: Qline_turnkey_top
 #
@@ -723,6 +723,8 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   create_bd_pin -dir I -type clk s_axis_clk
   create_bd_pin -dir I s_axis_tresetn
   create_bd_pin -dir O -from 1 -to 0 rng_a
+  create_bd_pin -dir I -type rst rng_reset
+  create_bd_pin -dir O -from 1 -to 0 de_rng_flags
 
   # Create instance: decoy_0, and set properties
   set block_name decoy
@@ -769,8 +771,8 @@ proc create_hier_cell_decoy { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net clk200_1  [get_bd_pins clk200] \
-  [get_bd_pins decoy_rng_fifos_0/clk200] \
-  [get_bd_pins decoy_0/clk200]
+  [get_bd_pins decoy_0/clk200] \
+  [get_bd_pins decoy_rng_fifos_0/clk200]
   connect_bd_net -net clk80_1  [get_bd_pins clk80] \
   [get_bd_pins decoy_0/clk80]
   connect_bd_net -net clk_wiz_0_clk_out1  [get_bd_pins clk240] \
@@ -801,6 +803,8 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   [get_bd_pins ila_0/probe2]
   connect_bd_net -net decoy_rng_fifos_0_de_rng_dout4  [get_bd_pins decoy_rng_fifos_0/de_rng_dout4] \
   [get_bd_pins decoy_0/rng_value]
+  connect_bd_net -net decoy_rng_fifos_0_de_rng_flags  [get_bd_pins decoy_rng_fifos_0/de_rng_flags] \
+  [get_bd_pins de_rng_flags]
   connect_bd_net -net decoy_rng_fifos_0_valid  [get_bd_pins decoy_rng_fifos_0/valid] \
   [get_bd_pins decoy_0/rng_value_valid]
   connect_bd_net -net decoy_rst_1  [get_bd_pins decoy_rst] \
@@ -809,10 +813,12 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   [get_bd_pins ila_0/probe5] \
   [get_bd_pins decoy_0/pps_i]
   connect_bd_net -net probe7_1  [get_bd_pins rd_en_4] \
-  [get_bd_pins decoy_rng_fifos_0/rd_en_4] \
-  [get_bd_pins decoy_0/rd_en_4]
+  [get_bd_pins decoy_0/rd_en_4] \
+  [get_bd_pins decoy_rng_fifos_0/rd_en_4]
   connect_bd_net -net rd_en_16_1  [get_bd_pins rd_en_16] \
   [get_bd_pins decoy_rng_fifos_0/rd_en_16]
+  connect_bd_net -net rng_reset_1  [get_bd_pins rng_reset] \
+  [get_bd_pins decoy_rng_fifos_0/rng_reset]
   connect_bd_net -net s_axil_aclk_1  [get_bd_pins s_axil_aclk] \
   [get_bd_pins decoy_0/s_axil_aclk]
   connect_bd_net -net s_axil_aresetn_1  [get_bd_pins s_axil_aresetn] \
@@ -1767,6 +1773,7 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   create_bd_pin -dir I -from 3 -to 0 q_gc_time_valid_mod16
   create_bd_pin -dir O rd_en_16
   create_bd_pin -dir I -type rst rng_reset
+  create_bd_pin -dir I -from 1 -to 0 de_rng_flags
 
   # Create instance: jesd204_phy_0, and set properties
   set jesd204_phy_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jesd204_phy:4.1 jesd204_phy_0 ]
@@ -1790,7 +1797,7 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
     CONFIG.C_PROBE10_WIDTH {1} \
     CONFIG.C_PROBE11_WIDTH {1} \
     CONFIG.C_PROBE12_WIDTH {1} \
-    CONFIG.C_PROBE13_WIDTH {4} \
+    CONFIG.C_PROBE13_WIDTH {3} \
     CONFIG.C_PROBE14_WIDTH {1} \
     CONFIG.C_PROBE3_WIDTH {4} \
     CONFIG.C_PROBE4_WIDTH {4} \
@@ -1828,10 +1835,6 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /fastdac/jesd_transport_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /fastdac/jesd_transport_0/s_axis_clk]
 
   # Create interface connections
@@ -1846,6 +1849,8 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   [get_bd_pins jesd_transport_0/s_axis_tresetn]
   connect_bd_net -net btx_sysref_i_1  [get_bd_pins btx_sysref_i] \
   [get_bd_pins jesd204b_tx_wrapper_0/btx_sysref_i]
+  connect_bd_net -net de_rng_flags_1  [get_bd_pins de_rng_flags] \
+  [get_bd_pins jesd_transport_0/de_rng_flags]
   connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
   [get_bd_pins ila_fastdac/probe1] \
   [get_bd_pins jesd_transport_0/pps_i]
@@ -1891,6 +1896,8 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   [get_bd_pins ila_fastdac/probe6]
   connect_bd_net -net jesd_transport_0_almost_full_16  [get_bd_pins jesd_transport_0/almost_full_16] \
   [get_bd_pins ila_fastdac/probe12]
+  connect_bd_net -net jesd_transport_0_command_rng_status_r  [get_bd_pins jesd_transport_0/command_rng_status_r] \
+  [get_bd_pins ila_fastdac/probe13]
   connect_bd_net -net jesd_transport_0_counter10  [get_bd_pins jesd_transport_0/counter10] \
   [get_bd_pins ila_fastdac/probe5]
   connect_bd_net -net jesd_transport_0_counter40  [get_bd_pins jesd_transport_0/counter40] \
@@ -1905,8 +1912,6 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   connect_bd_net -net jesd_transport_0_rd_en_16  [get_bd_pins jesd_transport_0/rd_en_16] \
   [get_bd_pins rd_en_16] \
   [get_bd_pins ila_fastdac/probe9]
-  connect_bd_net -net jesd_transport_0_rng_fifo_status  [get_bd_pins jesd_transport_0/rng_fifo_status] \
-  [get_bd_pins ila_fastdac/probe13]
   connect_bd_net -net jesd_transport_0_rng_value  [get_bd_pins jesd_transport_0/rng_value] \
   [get_bd_pins rng_value] \
   [get_bd_pins ila_fastdac/probe3]
@@ -2387,6 +2392,8 @@ proc create_root_design { parentCell } {
   [get_bd_ports read_done]
   connect_bd_net -net ddr_data_rstn_1  [get_bd_pins clk_rst/ddr_data_rstn_o] \
   [get_bd_pins ddr4/ddr_data_rstn]
+  connect_bd_net -net de_rng_flags_1  [get_bd_pins decoy/de_rng_flags] \
+  [get_bd_pins fastdac/de_rng_flags]
   connect_bd_net -net decoy_decoy_signal_0  [get_bd_pins decoy/decoy_signal_0] \
   [get_bd_ports decoy_signal]
   connect_bd_net -net decoy_decoy_signal_n_0  [get_bd_pins decoy/decoy_signal_n_0] \
@@ -2433,7 +2440,8 @@ proc create_root_design { parentCell } {
   connect_bd_net -net rng_data_1  [get_bd_pins fastdac/rng_value] \
   [get_bd_pins ddr4/rng_data]
   connect_bd_net -net rng_reset_1  [get_bd_pins clk_rst/rng_rst_o] \
-  [get_bd_pins fastdac/rng_reset]
+  [get_bd_pins fastdac/rng_reset] \
+  [get_bd_pins decoy/rng_reset]
   connect_bd_net -net spi_dacs_ltc_dl_mosi_io  [get_bd_pins spi_dacs_ltc/dl_mosi_io] \
   [get_bd_ports dl_mosi_io]
   connect_bd_net -net spi_dacs_ltc_dl_sck_io  [get_bd_pins spi_dacs_ltc/dl_sck_io] \
