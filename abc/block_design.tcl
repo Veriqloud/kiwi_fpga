@@ -719,12 +719,12 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   create_bd_pin -dir I clk80
   create_bd_pin -dir I clk200
   create_bd_pin -dir I -type rst tx_core_rst
-  create_bd_pin -dir I rd_en_16
   create_bd_pin -dir I -type clk s_axis_clk
   create_bd_pin -dir I s_axis_tresetn
   create_bd_pin -dir O -from 1 -to 0 rng_a
   create_bd_pin -dir I -type rst rng_reset
   create_bd_pin -dir O -from 1 -to 0 de_rng_flags
+  create_bd_pin -dir I rd_en_16_de
 
   # Create instance: decoy_0, and set properties
   set block_name decoy
@@ -748,6 +748,10 @@ proc create_hier_cell_decoy { parentCell nameHier } {
      return 1
    }
   
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /decoy/decoy_rng_fifos_0/s_axis]
+
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /decoy/decoy_rng_fifos_0/s_axis_clk]
@@ -801,7 +805,7 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   [get_bd_pins ila_0/probe3]
   connect_bd_net -net decoy_0_temp_signal2  [get_bd_pins decoy_0/temp_signal2] \
   [get_bd_pins ila_0/probe2]
-  connect_bd_net -net decoy_rng_fifos_0_de_rng_dout4  [get_bd_pins decoy_rng_fifos_0/de_rng_dout4] \
+  connect_bd_net -net decoy_rng_fifos_0_de_rng_dout2  [get_bd_pins decoy_rng_fifos_0/de_rng_dout2] \
   [get_bd_pins decoy_0/rng_value]
   connect_bd_net -net decoy_rng_fifos_0_de_rng_flags  [get_bd_pins decoy_rng_fifos_0/de_rng_flags] \
   [get_bd_pins de_rng_flags]
@@ -815,8 +819,8 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   connect_bd_net -net probe7_1  [get_bd_pins rd_en_4] \
   [get_bd_pins decoy_0/rd_en_4] \
   [get_bd_pins decoy_rng_fifos_0/rd_en_4]
-  connect_bd_net -net rd_en_16_1  [get_bd_pins rd_en_16] \
-  [get_bd_pins decoy_rng_fifos_0/rd_en_16]
+  connect_bd_net -net rd_en_16_de_1  [get_bd_pins rd_en_16_de] \
+  [get_bd_pins decoy_rng_fifos_0/rd_en_16_de]
   connect_bd_net -net rng_reset_1  [get_bd_pins rng_reset] \
   [get_bd_pins decoy_rng_fifos_0/rng_reset]
   connect_bd_net -net s_axil_aclk_1  [get_bd_pins s_axil_aclk] \
@@ -1771,9 +1775,9 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   create_bd_pin -dir I -from 31 -to 0 gate_pos3
   create_bd_pin -dir I -from 47 -to 0 gc_time_valid
   create_bd_pin -dir I -from 3 -to 0 q_gc_time_valid_mod16
-  create_bd_pin -dir O rd_en_16
   create_bd_pin -dir I -type rst rng_reset
   create_bd_pin -dir I -from 1 -to 0 de_rng_flags
+  create_bd_pin -dir O rd_en_16_de
 
   # Create instance: jesd204_phy_0, and set properties
   set jesd204_phy_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jesd204_phy:4.1 jesd204_phy_0 ]
@@ -1793,11 +1797,11 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   set_property -dict [list \
     CONFIG.C_ENABLE_ILA_AXI_MON {FALSE} \
     CONFIG.C_MONITOR_TYPE {Native} \
-    CONFIG.C_NUM_OF_PROBES {14} \
+    CONFIG.C_NUM_OF_PROBES {12} \
     CONFIG.C_PROBE10_WIDTH {1} \
     CONFIG.C_PROBE11_WIDTH {1} \
     CONFIG.C_PROBE12_WIDTH {1} \
-    CONFIG.C_PROBE13_WIDTH {3} \
+    CONFIG.C_PROBE13_WIDTH {1} \
     CONFIG.C_PROBE14_WIDTH {1} \
     CONFIG.C_PROBE3_WIDTH {4} \
     CONFIG.C_PROBE4_WIDTH {4} \
@@ -1832,6 +1836,10 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
    }
     set_property CONFIG.C_s_axil_ADDR_WIDTH {16} $jesd_transport_0
 
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /fastdac/jesd_transport_0/s_axis]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
@@ -1894,10 +1902,6 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   [get_bd_pins jesd204_phy_0/gt3_txdata]
   connect_bd_net -net jesd_transport_0_addr_state_dac0  [get_bd_pins jesd_transport_0/addr_state_dac0] \
   [get_bd_pins ila_fastdac/probe6]
-  connect_bd_net -net jesd_transport_0_almost_full_16  [get_bd_pins jesd_transport_0/almost_full_16] \
-  [get_bd_pins ila_fastdac/probe12]
-  connect_bd_net -net jesd_transport_0_command_rng_status_r  [get_bd_pins jesd_transport_0/command_rng_status_r] \
-  [get_bd_pins ila_fastdac/probe13]
   connect_bd_net -net jesd_transport_0_counter10  [get_bd_pins jesd_transport_0/counter10] \
   [get_bd_pins ila_fastdac/probe5]
   connect_bd_net -net jesd_transport_0_counter40  [get_bd_pins jesd_transport_0/counter40] \
@@ -1906,17 +1910,18 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   [get_bd_pins ila_fastdac/probe7]
   connect_bd_net -net jesd_transport_0_pps_r  [get_bd_pins jesd_transport_0/pps_r] \
   [get_bd_pins ila_fastdac/probe11]
+  connect_bd_net -net jesd_transport_0_pps_trigger  [get_bd_pins jesd_transport_0/pps_trigger] \
+  [get_bd_pins ila_fastdac/probe10]
+  connect_bd_net -net jesd_transport_0_rd_en_16  [get_bd_pins jesd_transport_0/rd_en_16] \
+  [get_bd_pins ila_fastdac/probe9]
+  connect_bd_net -net jesd_transport_0_rd_en_16_de  [get_bd_pins jesd_transport_0/rd_en_16_de] \
+  [get_bd_pins rd_en_16_de]
   connect_bd_net -net jesd_transport_0_rd_en_4  [get_bd_pins jesd_transport_0/rd_en_4] \
   [get_bd_pins rd_en_4] \
   [get_bd_pins ila_fastdac/probe8]
-  connect_bd_net -net jesd_transport_0_rd_en_16  [get_bd_pins jesd_transport_0/rd_en_16] \
-  [get_bd_pins rd_en_16] \
-  [get_bd_pins ila_fastdac/probe9]
   connect_bd_net -net jesd_transport_0_rng_value  [get_bd_pins jesd_transport_0/rng_value] \
   [get_bd_pins rng_value] \
   [get_bd_pins ila_fastdac/probe3]
-  connect_bd_net -net jesd_transport_0_tready_flag  [get_bd_pins jesd_transport_0/tready_flag] \
-  [get_bd_pins ila_fastdac/probe10]
   connect_bd_net -net jesd_transport_0_tx_tdata  [get_bd_pins jesd_transport_0/tx_tdata] \
   [get_bd_pins jesd204b_tx_wrapper_0/vtx_tdata_i]
   connect_bd_net -net jesd_transport_0_tx_tready_sync  [get_bd_pins jesd_transport_0/tx_tready_sync] \
@@ -2433,8 +2438,8 @@ proc create_root_design { parentCell } {
   [get_bd_pins decoy/rd_en_4]
   connect_bd_net -net q_gc_time_valid_mod16_1  [get_bd_pins tdc/q_gc_time_valid_mod16] \
   [get_bd_pins fastdac/q_gc_time_valid_mod16]
-  connect_bd_net -net rd_en_16_1  [get_bd_pins fastdac/rd_en_16] \
-  [get_bd_pins decoy/rd_en_16]
+  connect_bd_net -net rd_en_16_de_1  [get_bd_pins fastdac/rd_en_16_de] \
+  [get_bd_pins decoy/rd_en_16_de]
   connect_bd_net -net rng_a_data_1  [get_bd_pins decoy/rng_a] \
   [get_bd_pins ddr4/rng_a_data]
   connect_bd_net -net rng_data_1  [get_bd_pins fastdac/rng_value] \

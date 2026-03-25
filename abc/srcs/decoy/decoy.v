@@ -63,7 +63,7 @@ module decoy#(
     input           pps_i,
     input           decoy_rst,
     //rng temp from fastdac
-    input   wire [3:0]    rng_value, 
+    input   wire [1:0]    rng_value, 
     input                 rd_en_4,
     input           rng_value_valid,
     //output pulse

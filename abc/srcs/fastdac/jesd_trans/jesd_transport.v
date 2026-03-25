@@ -61,6 +61,7 @@ module jesd_transport #(
     output wire         tx_tready_sync,
     output wire [3:0]   dout4_test,
     output              rd_en_16,
+    output              rd_en_16_de,
     output              rd_en_4,
     output [3:0]        dpram_rng_dout,
     output [3:0]        rng_value,
@@ -246,16 +247,20 @@ sync_tx_tready sync_tx_tready_inst (
 //Generate rd_en_4 
 reg rd_en_4;
 reg rd_en_16;
+reg rd_en_16_de;
 reg [3:0] counter40;
 reg [5:0] counter10;
+reg [6:0] counter5;
 reg pps_r;
 reg pps_trigger;
 always @(posedge tx_core_clk) begin
     if(tx_core_reset) begin
         rd_en_4 <= 0;
         rd_en_16 <= 0;
+        rd_en_16_de <= 0;
         counter40 <= 0;
         counter10 <= 0;
+        counter5 <= 0;
         pps_trigger <= 0;
     end else begin
         pps_r <= pps_i;
@@ -265,6 +270,7 @@ always @(posedge tx_core_clk) begin
         if (pps_trigger) begin
             counter40 <= counter40 + 1;
             counter10 <= counter10 + 1;
+            counter5 <= counter5 + 1;
             if (counter40 == 4) begin
                 counter40 <= 0;
             end
@@ -280,6 +286,14 @@ always @(posedge tx_core_clk) begin
                 rd_en_16 <= 1;
             end else begin
                 rd_en_16 <= 0;
+            end
+            if (counter5 == 39) begin
+                counter5 <= 0;
+            end
+            if (counter5 == 0) begin
+                rd_en_16_de <= 1;
+            end else begin
+                rd_en_16_de <= 0;
             end
         end
     end

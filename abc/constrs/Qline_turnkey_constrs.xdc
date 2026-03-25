@@ -230,6 +230,7 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/cl
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rst_80_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rst_200_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg6_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/ltc_sync_rst_r_reg[0]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/rng_rst_r_reg[0]/D}]
 # set_false_path -from $mmcm_ddr_clkout -to [get_clocks clk_10]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clockchip_sync_r_reg[0]/D}]
 
