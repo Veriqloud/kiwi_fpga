@@ -358,7 +358,7 @@ initial begin
     forever begin
         wait (s_axis_tready == 1'b1) s_axis_tvalid = 1;
         repeat(40) begin
-            #5 s_axis_tvalid = 0; s_axis_tdata = 256'h010101010101011010101010101f100202020202020202303030303030303001;
+            #5 s_axis_tvalid = 0; s_axis_tdata = 256'h01010101010101101010101010aa100202020202020202303030303030303001;
             #295 s_axis_tvalid = 1;
             #5 s_axis_tvalid = 0; s_axis_tdata = 256'h010101010101011010101010101e103333333333333333303030303030303001;
             #295 s_axis_tvalid = 1;

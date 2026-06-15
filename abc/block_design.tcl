@@ -750,10 +750,6 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /decoy/decoy_rng_fifos_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /decoy/decoy_rng_fifos_0/s_axis_clk]
 
   # Create instance: ila_0, and set properties
@@ -1836,10 +1832,6 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
    }
     set_property CONFIG.C_s_axil_ADDR_WIDTH {16} $jesd_transport_0
 
-
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {250000000} \
- ] [get_bd_intf_pins /fastdac/jesd_transport_0/s_axis]
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \

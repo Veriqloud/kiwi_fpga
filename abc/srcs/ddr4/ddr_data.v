@@ -545,12 +545,22 @@ always @(posedge clk200_i) begin
                     read_count <= read_count;
                 end
 
-                if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
+                if (((read_count-0) == gc_time_valid_div) && ({q_pos,de_q_pos} == 2'b00) && s_axis_tvalid && s_axis_tready) begin
                     alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
                     decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
                     state_alpha <= DONE;
                     s_axis_tready <= 0;
-                end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
+                end else if (((read_count-0) == gc_time_valid_div) && ({q_pos,de_q_pos} == 2'b01) && s_axis_tvalid && s_axis_tready) begin
+                    alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
+                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1]; 
+                    state_alpha <= DONE;
+                    s_axis_tready <= 0;
+                end else if (((read_count-0) == gc_time_valid_div) && ({q_pos,de_q_pos} == 2'b10) && s_axis_tvalid && s_axis_tready) begin
+                    alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
+                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
+                    state_alpha <= DONE;
+                    s_axis_tready <= 0; 
+                end else if (((read_count-0) == gc_time_valid_div) && ({q_pos,de_q_pos} == 2'b11) && s_axis_tvalid && s_axis_tready) begin
                     alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
                     decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1];
                     state_alpha <= DONE;
