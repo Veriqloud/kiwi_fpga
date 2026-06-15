@@ -32,12 +32,12 @@ When you make little changes you can set design check point (DCP) for incrementa
 This is my flow to create the Tcl scripts. I want to separate project and block design so vivado won't copy the sources to local vivado project.
 Before create Tcl scripts, remove all design checkpoints (.dcp) and waveforms (.wcfg) in vivado Sources
 ### Create project.tcl
-File -> Project -> Write Tcl. Check in 2 options:
+File -> Project -> Write Tcl. Check in 2 options (or could save Tcl without any option):
 - Write all properties
 - Write objects values
 
 Modify the project.tcl:
-- Removes everything regarding block design file (.bd)
+- Removes everything regarding block design file (.bd), (.dcp), (.wcfg)
 - Replace parameter of board_part_repos_path to "$origin_dir/boards"
 - Save the project.tcl
 ### Create block_design.tcl
@@ -52,13 +52,13 @@ source fix_frequency.tcl
 ```
 - Save block_design.tcl
 ## Archive project (for Dev)
-File -> Project -> Archive. Check in 2 options:
+File -> Project -> Archive. Check in 2 options (or could archive without any option):
 - Include configuration settings
 - Include run results
 - Exclude local IP cache results to reduce size of the archive. 
 - Save Qline_turnkey.xpr.zip
 ## Release
-- You can get full project without building from Tcl script in Released Source Qline_turnkey.xpr.zip. This is whole project including DCPs, waveforms, run results, settings is there is any.
+- You can get full project without building from Tcl script in Released Source Qline_turnkey.xpr.zip. This is whole project including DCPs, waveforms, run results, settings if there is any.
 - unzip and start building your bitstream !
 
 Contributing
