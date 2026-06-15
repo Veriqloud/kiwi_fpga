@@ -559,7 +559,7 @@ set_msg_config  -id {[BD 41-1306]}  -suppress  -ruleid {99}  -source 2
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../../../Xprojects/XilinxBoardStore/boards/OpalKelly"]" -objects $obj
+set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/boards"]" -objects $obj
 set_property -name "board_part" -value "opalkelly.com:xem8310-au25p:part0:1.0" -objects $obj
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "enable_resource_estimation" -value "0" -objects $obj
