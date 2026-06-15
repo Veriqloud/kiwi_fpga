@@ -961,10 +961,10 @@ set files [list \
 add_files -norecurse -fileset $obj $files
 
 # Add local files from the original project (-no_copy_sources specified)
-set files [list \
- [file normalize "${origin_dir}/Qline_turnkey/ddr_data_tb_behav.wcfg" ]\
-]
-set added_files [add_files -fileset sim_1 $files]
+# set files [list \
+#  [file normalize "${origin_dir}/Qline_turnkey/ddr_data_tb_behav.wcfg" ]\
+# ]
+# set added_files [add_files -fileset sim_1 $files]
 
 # Set 'sim_1' fileset file properties for remote files
 # None
