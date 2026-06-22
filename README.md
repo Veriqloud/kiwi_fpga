@@ -20,37 +20,39 @@ Run these command in vivado Tcl console:
 cd [your local directory]/abc/
 ```
 ```
-source run_all.tcl
+source build_all.tcl
 ```
 If output message is "Done", you can generate bitstream.The first time you generate, it takes around 30 minutes because Vivado has to Synthesis all modules from scratch. 
 When you make little changes you can set design check point (DCP) for incremental synthesis to save time.
 ### Known issues
 1.You got "Done" message but you don't see block design : Because there are some vivado ips are locked. 
 - Upgrade locked IPs, the red status of IPs should be gone
-- source block_design.tcl in Tcl console
+- source build_bd.tcl in Tcl console and create top wrapper for block design
 ## Create TCL scripts (for Dev)
 This is my flow to create the Tcl scripts. I want to separate project and block design so vivado won't copy the sources to local vivado project.
-Before create Tcl scripts, remove all design checkpoints (.dcp) and waveforms (.wcfg) in vivado Sources
-### Create project.tcl
+### Create build_project.tcl from vivado
+Before create Tcl scripts, remove all design checkpoints (.dcp) and waveforms (.wcfg) in vivado Sources.
 File -> Project -> Write Tcl. Check in 2 options (or could save Tcl without any option):
 - Write all properties
 - Write objects values
 
-Modify the project.tcl:
+Modify the build_project.tcl:
 - Removes everything regarding block design file (.bd), (.dcp), (.wcfg)
 - Replace parameter of board_part_repos_path to "$origin_dir/boards"
-- Save the project.tcl
-### Create block_design.tcl
+- Save the build_project.tcl
+### (Or) Write your own build_project.tcl
+The build_project.tcl file in this repos is short version of vivado generated project Tcl
+### Create build_bd.tcl
 File -> Export -> Export Block Design
 
 AXI and AXIS interfaces in vivado project will reset to default clock frequency (100MHz), generate the mistmatched FREQ_HZ errors.
-Modify the block_design.tcl as follow:
+Modify the build_bd.tcl as follow:
 
 - Before the line 'validate_bd_design', add:
 ```
 source fix_frequency.tcl
 ```
-- Save block_design.tcl
+- Save build_bd.tcl
 ## Archive project (for Dev)
 File -> Project -> Archive. Check in 2 options (or could archive without any option):
 - Include configuration settings
