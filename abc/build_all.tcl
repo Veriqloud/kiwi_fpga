@@ -4,7 +4,7 @@ puts "Running project setup script..."
 source build_project.tcl
 
 puts "Running block design script..."
-source block_design.tcl
+source build_bd.tcl
 
 puts "Create wrapper for top level block design..."
 set design_name [get_bd_designs]

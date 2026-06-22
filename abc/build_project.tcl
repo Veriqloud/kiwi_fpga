@@ -23,7 +23,7 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
-set files [glob -nocomplain "${origin_dir}/srcs/*.v" "$origin_dir/ips/*/*.xci"]
+set files [glob -nocomplain "${origin_dir}/srcs/**/*.v" "${origin_dir}/srcs/**/**/*.v" "$origin_dir/ip/*/*.xci"]
 set added_files [add_files -fileset sources_1 $files]
 
 
@@ -36,9 +36,9 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 set obj [get_filesets constrs_1]
 
 # Add/Import constrs file and set constrs file properties
-set file "[file normalize "$origin_dir/constr/Qline_turnkey_constr.xdc"]"
+set file "[file normalize "$origin_dir/constrs/Qline_turnkey_constrs.xdc"]"
 set file_added [add_files -norecurse -fileset $obj [list $file]]
-set file "constr/Qline_turnkey_constr.xdc"
+set file "constrs/Qline_turnkey_constrs.xdc"
 set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 
