@@ -50,3 +50,9 @@ set obj [get_filesets constrs_1]
 if {[string equal [get_filesets -quiet sim_1] ""]} {
   create_fileset -simset sim_1
 }
+
+#Update Ip catalog
+update_compile_order -fileset sources_1
+update_ip_catalog -rebuild -scan_changes
+report_ip_status -name ip_status
+update_compile_order -fileset sources_1
