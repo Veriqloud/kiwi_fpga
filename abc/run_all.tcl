@@ -1,7 +1,7 @@
 # run_all.tcl
 
 puts "Running project setup script..."
-source project.tcl
+source build_project.tcl
 
 puts "Running block design script..."
 source block_design.tcl
