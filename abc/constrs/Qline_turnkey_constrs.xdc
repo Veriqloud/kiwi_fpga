@@ -353,6 +353,22 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg5_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_params_80_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg6_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_params_slv_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg7_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_dpram_max_addr_rng_r_reg[*]/D}]
+########################################################################
+## AI suggestion : 
+########################################################################
+set_false_path -to [get_pins {Qline_turnkey_top_i/decoy/decoy_rng_fifos_0/inst/u_rangedec_top_wrapper/rst80_meta_reg[*]/D}]
+set_false_path -from [get_clocks refclk] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
+set_false_path -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rng_fifo_status_reg[*]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rd_en_4_reg/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
+
+set_multicycle_path 2 -setup \
+  -through [get_nets {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/rng_data[*] Qline_turnkey_top_i/ddr4/ddr_data_0/inst/rng_a_data[*]}] \
+  -to [get_cells {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack_reg[*]}]
+set_multicycle_path 1 -hold \
+  -through [get_nets {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/rng_data[*] Qline_turnkey_top_i/ddr4/ddr_data_0/inst/rng_a_data[*]}] \
+  -to [get_cells {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack_reg[*]}]
+########################################################################
+
 ## CONSTRAINING FOR FPGA FLASH CONFIGURATION
 set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN disable [current_design]
 set_property CONFIG_MODE SPIx4 [current_design]

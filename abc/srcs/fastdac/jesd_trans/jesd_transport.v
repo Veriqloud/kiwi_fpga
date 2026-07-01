@@ -330,7 +330,6 @@ fifo_128x16 fifo_rng_128x16_inst (
     .full(full_16),                            // output wire full
     .almost_full(almost_full_16),              // output wire almost_full
     .empty(empty_16),                  // output wire empty
-    .almost_empty(),    // output wire almost_empty
     .rd_data_count(),  // output wire [15: 0] rd_data_count
     .wr_data_count(),  // output wire [12 : 0] wr_data_count
     .wr_rst_busy(),              // output wire wr_rst_busy

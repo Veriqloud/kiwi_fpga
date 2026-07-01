@@ -718,7 +718,6 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   create_bd_pin -dir I -type rst decoy_rst
   create_bd_pin -dir I clk80
   create_bd_pin -dir I clk200
-  create_bd_pin -dir I -type rst tx_core_rst
   create_bd_pin -dir I -type clk s_axis_clk
   create_bd_pin -dir I s_axis_tresetn
   create_bd_pin -dir O -from 1 -to 0 rng_a
@@ -750,6 +749,10 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /decoy/decoy_rng_fifos_0/s_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /decoy/decoy_rng_fifos_0/s_axis_clk]
 
   # Create instance: ila_0, and set properties
@@ -774,7 +777,8 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   [get_bd_pins decoy_0/clk200] \
   [get_bd_pins decoy_rng_fifos_0/clk200]
   connect_bd_net -net clk80_1  [get_bd_pins clk80] \
-  [get_bd_pins decoy_0/clk80]
+  [get_bd_pins decoy_0/clk80] \
+  [get_bd_pins decoy_rng_fifos_0/clk80]
   connect_bd_net -net clk_wiz_0_clk_out1  [get_bd_pins clk240] \
   [get_bd_pins ila_0/clk] \
   [get_bd_pins decoy_0/clk240]
@@ -827,8 +831,6 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   [get_bd_pins decoy_rng_fifos_0/s_axis_clk]
   connect_bd_net -net s_axis_tresetn_1  [get_bd_pins s_axis_tresetn] \
   [get_bd_pins decoy_rng_fifos_0/s_axis_tresetn]
-  connect_bd_net -net tx_core_rst_1  [get_bd_pins tx_core_rst] \
-  [get_bd_pins decoy_rng_fifos_0/tx_core_rst]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1835,6 +1837,10 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {250000000} \
+ ] [get_bd_intf_pins /fastdac/jesd_transport_0/s_axis]
+
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {250000000} \
  ] [get_bd_pins /fastdac/jesd_transport_0/s_axis_clk]
 
   # Create interface connections
@@ -2363,8 +2369,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net clk_rst_ttl_rst  [get_bd_pins clk_rst/ttl_rst] \
   [get_bd_pins ttl_gate_apd_0/ttl_rst]
   connect_bd_net -net clk_rst_tx_core_reset_o  [get_bd_pins clk_rst/tx_core_reset_o] \
-  [get_bd_pins fastdac/tx_core_reset] \
-  [get_bd_pins decoy/tx_core_rst]
+  [get_bd_pins fastdac/tx_core_reset]
   connect_bd_net -net clk_wiz_0_clk_out1  [get_bd_pins clk_wiz_0/clk_out1] \
   [get_bd_pins decoy/clk240] \
   [get_bd_pins ttl_gate_apd_0/clk240]
@@ -2528,7 +2533,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
   source fix_frequency.tcl
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2540,4 +2544,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
