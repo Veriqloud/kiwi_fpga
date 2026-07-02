@@ -3,7 +3,7 @@
   "ip_inst": {
     "xci_name": "dpram_32x16",
     "component_reference": "xilinx.com:ip:blk_mem_gen:8.4",
-    "ip_revision": "5",
+    "ip_revision": "9",
     "gen_directory": "../../../../XilinxProject.gen/sources_1/ip/dpram_32x16",
     "parameters": {
       "component_parameters": {
@@ -35,7 +35,7 @@
         "Write_Width_A": [ { "value": "32", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Write_Depth_A": [ { "value": "256", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Read_Width_A": [ { "value": "32", "resolve_type": "user", "enabled": false, "usage": "all" } ],
-        "Operating_Mode_A": [ { "value": "NO_CHANGE", "resolve_type": "user", "usage": "all" } ],
+        "Operating_Mode_A": [ { "value": "NO_CHANGE", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "Enable_A": [ { "value": "Always_Enabled", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "Write_Width_B": [ { "value": "16", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "Read_Width_B": [ { "value": "16", "resolve_type": "user", "usage": "all" } ],
@@ -44,7 +44,7 @@
         "Register_PortA_Output_of_Memory_Primitives": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Register_PortA_Output_of_Memory_Core": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Use_REGCEA_Pin": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
-        "Register_PortB_Output_of_Memory_Primitives": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
+        "Register_PortB_Output_of_Memory_Primitives": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Register_PortB_Output_of_Memory_Core": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Use_REGCEB_Pin": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "register_porta_input_of_softecc": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
@@ -66,10 +66,10 @@
         "Additional_Inputs_for_Power_Estimation": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Port_A_Clock": [ { "value": "100", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Port_A_Write_Rate": [ { "value": "50", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "Port_B_Clock": [ { "value": "100", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "Port_B_Clock": [ { "value": "100", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Port_B_Write_Rate": [ { "value": "0", "resolve_type": "user", "format": "long", "enabled": false, "usage": "all" } ],
         "Port_A_Enable_Rate": [ { "value": "100", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "Port_B_Enable_Rate": [ { "value": "100", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "Port_B_Enable_Rate": [ { "value": "100", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
         "Collision_Warnings": [ { "value": "ALL", "resolve_type": "user", "usage": "all" } ],
         "Disable_Collision_Warnings": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Disable_Out_of_Range_Warnings": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
@@ -168,18 +168,16 @@
         "SIMULATOR_LANGUAGE": [ { "value": "MIXED" } ],
         "SPEEDGRADE": [ { "value": "-2" } ],
         "STATIC_POWER": [ { "value": "" } ],
-        "TEMPERATURE_GRADE": [ { "value": "E" } ],
-        "USE_RDI_CUSTOMIZATION": [ { "value": "TRUE" } ],
-        "USE_RDI_GENERATION": [ { "value": "TRUE" } ]
+        "TEMPERATURE_GRADE": [ { "value": "E" } ]
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
-        "IPREVISION": [ { "value": "5" } ],
+        "IPREVISION": [ { "value": "9" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../XilinxProject.gen/sources_1/ip/dpram_32x16" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
-        "SWVERSION": [ { "value": "2022.2" } ],
+        "SWVERSION": [ { "value": "2024.2" } ],
         "SYNTHESISFLOW": [ { "value": "OUT_OF_CONTEXT" } ]
       }
     },
@@ -223,6 +221,7 @@
           "abstraction_type": "xilinx.com:interface:bram_rtl:1.0",
           "mode": "slave",
           "parameters": {
+            "MEM_ADDRESS_MODE": [ { "value": "BYTE_ADDRESS", "resolve_type": "user", "usage": "all" } ],
             "MEM_SIZE": [ { "value": "8192", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "MEM_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "MEM_ECC": [ { "value": "NONE", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
@@ -242,6 +241,7 @@
           "abstraction_type": "xilinx.com:interface:bram_rtl:1.0",
           "mode": "slave",
           "parameters": {
+            "MEM_ADDRESS_MODE": [ { "value": "BYTE_ADDRESS", "resolve_type": "user", "usage": "all" } ],
             "MEM_SIZE": [ { "value": "8192", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "MEM_WIDTH": [ { "value": "32", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "MEM_ECC": [ { "value": "NONE", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],

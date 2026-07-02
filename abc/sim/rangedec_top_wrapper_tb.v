@@ -99,6 +99,7 @@ module rangedec_top_wrapper_tb;
             ent_wr_en <= 1'b0;
             wstart    <= 8'd0;
         end else begin
+            // ent_din <= 128'h22222222222222222222222222222222;  // fixed pattern for now
             lfsr    <= {lfsr[30:0], fb};
             ent_din <= { lfsr,
                          ~lfsr,

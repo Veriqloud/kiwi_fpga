@@ -101,7 +101,8 @@ module rangedec_top_wrapper #(
     // upstream FIFO (128b entropy -> 16b words) read in the clk80 domain
     // ---------------------------------------------------------------------
     wire [15:0] up_dout;
-    wire        up_empty;
+    // NOTE: up_empty is declared as an output port above (exposed as an
+    // upstream-FIFO status flag); it is also consumed here by the controller.
     wire        ctrl_fifo_rd_en;
 
     fifo_up_wrapper u_fifo_up (
@@ -209,6 +210,25 @@ module rangedec_top_wrapper #(
     // NOTE(1) [resolved above]: the rng_ready gate holds basis_rangedec in reset
     // (and zeroes the controller's 'take') until the controller has prefetched
     // PRIME_BITS real bits, so the decoder never primes on power-on zero-fill.
+
+    // ---------------------------------------------------------------------
+    // debug: ILA on the clk80 datapath (ila_rdec)
+    // ---------------------------------------------------------------------
+    // Clocked by clk80 -- captures the upstream-FIFO read side, the range-
+    // decoder handshake, and the downstream (uneven) output. NOTE: uneven_dout
+    // and uneven_empty live in the clk200 read domain; they are sampled here
+    // asynchronously (debug-only), so treat those two probes as CDC-unsafe.
+    ila_rdec u_ila_rdec (
+        .clk    (clk80),
+        .probe0 (ctrl_fifo_rd_en), // 1b  upstream FIFO read enable
+        .probe1 (up_dout),         // 16b upstream FIFO data
+        .probe2 (ctrl_rnd_in),        // 1b  upstream FIFO empty
+        .probe3 (rdec_take),       // 4b  range-decoder 'take'
+        .probe4 (rdec_bit),        // 1b  decoded basis bit
+        .probe5 (rdec_valid),      // 1b  basis bit valid
+        .probe6 (uneven_dout),     // 2b  uneven output (clk200, async sample)
+        .probe7 (uneven_wr_en)     // 1b  uneven FIFO empty (clk200, async sample)
+    );
 
 endmodule
 
