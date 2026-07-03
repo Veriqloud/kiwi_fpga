@@ -294,6 +294,7 @@ set_false_path -from $_shared_i0 -to [get_clocks refclk]
 set_false_path -from [get_clocks refclk] -to $_shared_i0 
 
 ## JESD_TRANSPORT
+set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg10_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rdec_p0_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/up_offset_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/shift1_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg2_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_amp_dac1_r_reg[*]/D}]
@@ -352,6 +353,7 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/tune_step_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg5_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_params_80_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg6_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_params_slv_r_reg[*]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg4_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rdec_p0_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg7_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_dpram_max_addr_rng_r_reg[*]/D}]
 ########################################################################
 ## AI suggestion : 

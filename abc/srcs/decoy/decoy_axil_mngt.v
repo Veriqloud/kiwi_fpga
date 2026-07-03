@@ -43,6 +43,7 @@ module decoy_axil_mngt#
         output reg [2:0] decoy_rng_addr_int,
         output reg [31:0] decoy_rng_din_int,
         output wire [5:0] decoy_dpram_max_addr_rng_int,
+        output wire [15:0] rdec_p0_o,
         // User ports ends
         // Do not modify the ports beyond this line
 
@@ -156,6 +157,7 @@ module decoy_axil_mngt#
     assign decoy_params_80_o = slv_reg5; //decoy params
     assign decoy_params_slv_o = slv_reg6; //decoy params
     assign decoy_dpram_max_addr_rng_int = slv_reg7[5:0]; //decoy dpram max addr
+    assign rdec_p0_o = slv_reg4[15:0]; //decoy rng p0
     // I/O Connections assignments
 
     assign S_AXI_AWREADY    = axi_awready;

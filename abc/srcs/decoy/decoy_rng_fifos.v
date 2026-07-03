@@ -30,11 +30,11 @@ module decoy_rng_fifos(
     input           clk200,
     input           clk80,
     input           rng_reset,
+    input [15:0]    rdec_p0_i,
     input           rd_en_16_de,
     input           rd_en_4,
     output [1:0]    de_rng_dout2,
-    output [1:0]    de_rng_flags,
-    output          valid
+    output [1:0]    de_rng_flags
 );
 
 wire [15:0] dout16;
@@ -90,8 +90,7 @@ end
 //);
 
 rangedec_top_wrapper #(
-    .PREC (15),
-    .P0   (16'd3277)
+    .PREC (15)
 ) u_rangedec_top_wrapper (
     .rst         (rng_reset),
     .wr_clk      (s_axis_clk),
@@ -102,6 +101,7 @@ rangedec_top_wrapper #(
     .up_empty    (de_empty),
 
     .clk80       (clk80),  // using clk200 as clk80 for this wrapper
+    .rdec_p0_i   (rdec_p0_i),   // runtime P(bit==0) from AXIL
     .clk200      (clk200),
     .uneven_rd_en(rd_en_4),
     .uneven_dout (de_rng_dout2),

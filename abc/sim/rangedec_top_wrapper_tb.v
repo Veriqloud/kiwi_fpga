@@ -60,8 +60,7 @@ module rangedec_top_wrapper_tb;
     wire         uneven_empty;
 
     rangedec_top_wrapper #(
-        .PREC (PREC),
-        .P0   (P0)
+        .PREC (PREC)
     ) dut (
         .rst         (rst),
         .wr_clk      (wr_clk),
@@ -71,6 +70,7 @@ module rangedec_top_wrapper_tb;
         .ent_almost_full (ent_almost_full),
         .up_empty    (up_empty),
         .clk80       (clk80),
+        .rdec_p0_i   (P0),            // runtime P(bit==0); held constant in this tb
         .clk200      (clk200),
         .uneven_rd_en (uneven_rd_en),
         .uneven_dout  (uneven_dout),

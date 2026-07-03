@@ -53,8 +53,7 @@
 `default_nettype none
 
 module rangedec_top_wrapper #(
-    parameter        PREC = 15,
-    parameter [15:0] P0   = 16'd3277          // P(bit==0) in Q(PREC); 0.1
+    parameter        PREC = 15
 )(
     input  wire         rst,                  // async active-high (to FIFOs)
 
@@ -68,6 +67,8 @@ module rangedec_top_wrapper #(
 
     // ---- processing clock (80 MHz domain) ----
     input  wire         clk80,
+    input  wire [15:0]  rdec_p0_i,            // P(bit==0) in Q(PREC); MUST be clk80-synchronous
+                                             //   (latched upstream via the reg_enable handshake)
 
     // ---- uneven (biased) read interface (consumer / 200 MHz domain) ----
     input  wire         clk200,
@@ -97,6 +98,8 @@ module rangedec_top_wrapper #(
         .rst_o  (rst_clk80)
     );
 
+    // ---------------------------------------------------------------------
+    // P0 (Bernoulli threshold)
     // ---------------------------------------------------------------------
     // upstream FIFO (128b entropy -> 16b words) read in the clk80 domain
     // ---------------------------------------------------------------------
@@ -167,11 +170,11 @@ module rangedec_top_wrapper #(
     wire rdec_valid;
 
     basis_rangedec #(
-        .PREC (PREC),
-        .P0   (P0)
+        .PREC (PREC)
     ) u_rdec (
         .clk         (clk80),
         .rst         (rdec_rst),       // held until controller buffer is primed
+        .p0_i        (rdec_p0_i),      // runtime Bernoulli threshold (clk80-synced upstream)
         .rnd_in      (ctrl_rnd_in),
         .take        (rdec_take),
         .basis_bit   (rdec_bit),

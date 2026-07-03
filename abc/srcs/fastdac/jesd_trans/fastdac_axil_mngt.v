@@ -47,6 +47,7 @@
         output [7:0] fastdac_dpram_max_addr_seq_dac1_o,
         output [14:0] fastdac_dpram_max_addr_rng_dac1_o,
         output fastdac_rng_mode_o,
+        output [15:0] rdec_p0_o,        // range-decoder P0 (Bernoulli threshold, Q15)
         output fastdac_dac1_mode_o,
         output fastdac_dac0_mode_o,
         // output [7:0] fastdac_dpram_max_addr_pos_dac0_o,
@@ -187,6 +188,7 @@
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg7;
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg8;
 	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg9;
+	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg10;
 	wire [C_S_AXI_DATA_WIDTH-1:0]	slv_reg16;
 	wire	 slv_reg_rden;
 	wire	 slv_reg_wren;
@@ -215,6 +217,7 @@
 	assign fastdac_dpram_max_addr_seq_dac1_o = slv_reg4[15:8];
 	assign fastdac_dpram_max_addr_rng_dac1_o = slv_reg7[14:0];
 	assign fastdac_rng_mode_o = slv_reg5[0];
+	assign rdec_p0_o = slv_reg10[15:0];
 	assign fastdac_dac1_mode_o = slv_reg5[1];
 	assign fastdac_fb_mode_o = slv_reg5[2];
 	assign fastdac_zero_mode_o = slv_reg5[3];
@@ -347,6 +350,7 @@
 	      slv_reg6 <= 0;
 	      slv_reg7 <= 0;
 	      slv_reg8 <= 0;
+	      slv_reg10 <= 0;
 	      fastdac_sequence_wen_o     <= 0;
 	      fastdac_alpha_pos_wen_o    <= 0;
 	      fastdac_rng_wen_o <= 0;
@@ -423,6 +427,12 @@
 	                   // Respective byte enables are asserted as per write strobes 
 	                   // Slave register 3
 	                   slv_reg8[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	                   end
+	               4'hA:
+	                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+	                   // Slave register 10 (range-decoder P0)
+	                   slv_reg10[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	                   end
 	               default : begin
 	                      slv_reg0 <= slv_reg0;
@@ -607,6 +617,7 @@
 	        4'h7   : reg_data_out <= slv_reg7;
 	        4'h8   : reg_data_out <= slv_reg8;
 	        4'h9   : reg_data_out <= slv_reg9;
+	        4'hA   : reg_data_out <= slv_reg10;
 	        default : reg_data_out <= slv_reg16;
 	      endcase
 	end

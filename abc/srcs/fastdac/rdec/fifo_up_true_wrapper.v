@@ -3,16 +3,17 @@
 // Company: Veriqloud
 // Engineer: Hop DINH
 //
-// Create Date: 06/29/2026
+// Create Date: 06/30/2026
 // Design Name: rng_test
-// Module Name: fifo_up_wrapper
+// Module Name: fifo_up_true_wrapper
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
-// Description: Thin wrapper around the fifo_128x16 FIFO Generator IP.
-//              Async (independent clocks) block-RAM Standard FIFO, asymmetric
-//              128-bit write / 16-bit read; bridges entropy producer to the
-//              controller read domain.
+// Description: Thin wrapper around the fifo_128x16 FIFO Generator IP. Async
+//              (independent clocks) block-RAM Standard FIFO, asymmetric 128-bit
+//              write / 16-bit read. Shared "fifo1" used by both the basis-entropy
+//              (fifo1_up) and even (fifo1_true) split branches; exposes full
+//              flag/data-count set for the source word demux/arbiter.
 //
 // Dependencies: ip/fifo_128x16/fifo_128x16.xci
 // Revision:
@@ -22,8 +23,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 `default_nettype none
 
-module fifo_up_wrapper (
-    input  wire         rst,       // async, active high
+module fifo_up_true_wrapper (
+    input  wire         rst,           // async, active high
 
     // ---- write side (entropy producer domain) ----
     input  wire         wr_clk,
@@ -31,12 +32,14 @@ module fifo_up_wrapper (
     input  wire         wr_en,
     output wire         full,
     output wire         almost_full,
+    output wire [11:0]  wr_data_count,
 
-    // ---- read side (controller domain) ----
+    // ---- read side (consumer domain: clk80 for _up, clk200 for _true) ----
     input  wire         rd_clk,
     input  wire         rd_en,
     output wire [15:0]  dout,
     output wire         empty,
+    output wire [14:0]  rd_data_count,
 
     // ---- status ----
     output wire         wr_rst_busy,
@@ -54,6 +57,8 @@ module fifo_up_wrapper (
         .full          (full),
         .almost_full   (almost_full),
         .empty         (empty),
+        .wr_data_count (wr_data_count),
+        .rd_data_count (rd_data_count),
         .wr_rst_busy   (wr_rst_busy),
         .rd_rst_busy   (rd_rst_busy)
     );

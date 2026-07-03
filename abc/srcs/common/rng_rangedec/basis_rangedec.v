@@ -47,11 +47,12 @@
 `default_nettype none
 
 module basis_rangedec #(
-    parameter        PREC = 15,             // probability precision (Q-format)
-    parameter [15:0] P0   = 16'd3277        // P(bit==0) in Q(PREC); 3277/2^15 = 0.1
+    parameter        PREC = 15              // probability precision (Q-format)
 )(
     input  wire        clk,
     input  wire        rst,                 // synchronous, active high
+    input  wire [15:0] p0_i,                // P(bit==0) in Q(PREC); runtime (AXIL) value,
+                                            //   quasi-static -- see wrapper CDC note
     input  wire [7:0]  rnd_in,              // up to 8 uniform bits; [7] = next
     output wire [3:0]  take,                // uniform bits consumed this cycle (0..8)
     output wire        basis_bit,           // the biased output bit
@@ -67,7 +68,7 @@ module basis_rangedec #(
     reg        primed;
 
     // ---- combinational decode ----
-    wire [31:0] bound = (range >> PREC) * P0;       // one small constant multiply
+    wire [31:0] bound = (range >> PREC) * p0_i;      // one small multiply (runtime p0)
     wire        bit_d = (code >= bound);            // 0 -> lower interval
     wire [31:0] r_sel = bit_d ? (range - bound) : bound;
     wire [31:0] c_sel = bit_d ? (code  - bound) : code;

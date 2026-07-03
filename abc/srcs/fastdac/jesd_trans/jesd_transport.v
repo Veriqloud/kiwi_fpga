@@ -79,7 +79,7 @@ module jesd_transport #(
     output              fastdac_seq_data_dac0_int,
     output              pps_trigger,
     output              pps_r,
-    output              tready_flag,
+    // output              tready_flag,
     output              almost_full_16,
     output              [3:0]rng_fifo_status,
     output              command_rng_status_r,
@@ -95,6 +95,7 @@ module jesd_transport #(
 
     // Ports of AXI-s master(alpha argument)
     input                                         tx_core_clk,
+    input                                         clk80,          // 80 MHz basis-processing clock (range decoder)
     input                                         tx_core_reset,
     input                                         rng_reset,
     output  reg [127 : 0]                         tx_tdata,
@@ -119,6 +120,7 @@ wire [7:0]         fastdac_dpram_max_addr_seq_dac0_int;
 wire [7:0]         fastdac_dpram_max_addr_seq_dac1_int;
 wire [14:0]        fastdac_dpram_max_addr_rng_dac1_int;
 wire               fastdac_rng_mode_i;
+wire [15:0]        rdec_p0_o;     // range-decoder P0 (raw AXIL value, s_axil_aclk domain)
 wire               fastdac_dac1_mode_i;
 wire               fastdac_dac0_mode_i;
 wire               fastdac_fb_mode_i;
@@ -139,6 +141,7 @@ fastdac_axil_mngt # (
     .fastdac_dpram_max_addr_seq_dac1_o(fastdac_dpram_max_addr_seq_dac1_int),
     .fastdac_dpram_max_addr_rng_dac1_o(fastdac_dpram_max_addr_rng_dac1_int),
     .fastdac_rng_mode_o(fastdac_rng_mode_i),
+    .rdec_p0_o(rdec_p0_o),
     .fastdac_dac1_mode_o(fastdac_dac1_mode_i),
     .fastdac_amp_dac1_shift_o(shift1_i),
     .fastdac_amp_dac1_o(fastdac_amp_dac1_i),
@@ -234,6 +237,24 @@ always @(posedge tx_core_clk) begin
         end
 end
 
+//------ range-decoder P0 into the clk80 domain -------------------------------
+// Latch the AXIL P0 value (rdec_p0_o, held stable in s_axil_aclk) into clk80 on
+// the synchronized reg_en rising edge. Live-safe multi-bit CDC: stable source +
+// synced load-enable (same pattern as the tx_core_clk handshake above). Write
+// P0 (slv_reg10) first, then pulse reg_en (slv_reg3[0]) for it to take effect.
+(* ASYNC_REG = "TRUE" *) reg [2:0] reg_en_80_r;
+reg [15:0] rdec_p0_r;
+initial begin
+    reg_en_80_r = 0;
+    rdec_p0_r   = 0;
+end
+always @(posedge clk80) begin
+    reg_en_80_r <= {reg_en_80_r[1:0], reg_en_o};
+    if ((reg_en_80_r[2] == 0) && (reg_en_80_r[1] == 1)) begin
+        rdec_p0_r <= rdec_p0_o;
+    end
+end
+
 //Synchronize tx_tready to pps
 wire tx_tready_sync;
 sync_tx_tready sync_tx_tready_inst (
@@ -300,65 +321,108 @@ always @(posedge tx_core_clk) begin
 end
 
 
-//RNG fifos. Get stream data from axis to fifo 128x16 and 16x4.
-//to get 4 bits of RNG at 40MHz ~ 20 samples 16 bits for dac1
-wire [15:0] dout16;
-wire almost_full_16;
-assign s_axis_tready = tready_flag;
-reg tready_flag;
-initial begin
-    tready_flag <= 1;
-end
-always @(posedge s_axis_clk) begin
-    if (almost_full_16) begin
-        tready_flag <= 0;
-    end else begin
-        tready_flag <= 1;
-    end
+// ======================= OLD RNG datapath (replaced by angles_top_wrapper) ===
+// //RNG fifos. Get stream data from axis to fifo 128x16 and 16x4.
+// //to get 4 bits of RNG at 40MHz ~ 20 samples 16 bits for dac1
+// wire [15:0] dout16;
+// wire almost_full_16;
+// assign s_axis_tready = tready_flag;
+// reg tready_flag;
+// initial begin
+//     tready_flag <= 1;
+// end
+// always @(posedge s_axis_clk) begin
+//     if (almost_full_16) begin
+//         tready_flag <= 0;
+//     end else begin
+//         tready_flag <= 1;
+//     end
+//
+// end
+//
+// //Test fifo with deth smaller for resource optimize
+// fifo_128x16 fifo_rng_128x16_inst (
+//     .rst(rng_reset),                              // input wire rst
+//     .wr_clk(s_axis_clk),                        // input wire wr_clk
+//     .rd_clk(tx_core_clk),                        // input wire rd_clk
+//     .din(s_axis_tdata),                              // input wire [127 : 0] din
+//     .wr_en(s_axis_tvalid && s_axis_tready),                          // input wire wr_en
+//     .rd_en(rd_en_16),                          // input wire rd_en
+//     .dout(dout16),                            // output wire [15 : 0] dout
+//     .full(full_16),                            // output wire full
+//     .almost_full(almost_full_16),              // output wire almost_full
+//     .empty(empty_16),                  // output wire empty
+//     .rd_data_count(),  // output wire [15: 0] rd_data_count
+//     .wr_data_count(),  // output wire [12 : 0] wr_data_count
+//     .wr_rst_busy(),              // output wire wr_rst_busy
+//     .rd_rst_busy()              // output wire rd_rst_busy
+// );
+//
+// wire [3:0] rng_dout4;
+// assign dout4_test = rng_dout4;
+//
+// fifo_16x4 fifo_rng_16x4_inst (
+//     // .rst(tx_core_reset),                      // input wire rst
+//     .rst(rng_reset),                      // input wire rst
+//     .wr_clk(tx_core_clk),                // input wire wr_clk
+//     .rd_clk(tx_core_clk),                // input wire rd_clk
+//     .din(dout16),                      // input wire [15 : 0] din
+//     .wr_en(rd_en_16),                  // input wire wr_en
+//     .rd_en(rd_en_4),                  // input wire rd_en
+//     .dout(rng_dout4),                    // output wire [3 : 0] dout
+//     .full(full_4),                            // output wire full
+//     .almost_full(almost_full),              // output wire almost_full
+//     .wr_ack(wr_ack),                // output wire wr_ack
+//     .empty(empty_4),                  // output wire empty
+//     .almost_empty(almost_empty),    // output wire almost_empty
+//     .valid(valid),                  // output wire valid
+//     .rd_data_count(rd_data_count),  // output wire [8 : 0] rd_data_count
+//     .wr_data_count(wr_data_count),  // output wire [6 : 0] wr_data_count
+//     .wr_rst_busy(),      // output wire wr_rst_busy
+//     .rd_rst_busy()      // output wire rd_rst_busy
+// );
+// =============================================================================
 
-end
-
-//Test fifo with deth smaller for resource optimize
-fifo_128x16 fifo_rng_128x16_inst (
-    .rst(rng_reset),                              // input wire rst
-    .wr_clk(s_axis_clk),                        // input wire wr_clk
-    .rd_clk(tx_core_clk),                        // input wire rd_clk
-    .din(s_axis_tdata),                              // input wire [127 : 0] din
-    .wr_en(s_axis_tvalid && s_axis_tready),                          // input wire wr_en
-    .rd_en(rd_en_16),                          // input wire rd_en
-    .dout(dout16),                            // output wire [15 : 0] dout
-    .full(full_16),                            // output wire full
-    .almost_full(almost_full_16),              // output wire almost_full
-    .empty(empty_16),                  // output wire empty
-    .rd_data_count(),  // output wire [15: 0] rd_data_count
-    .wr_data_count(),  // output wire [12 : 0] wr_data_count
-    .wr_rst_busy(),              // output wire wr_rst_busy
-    .rd_rst_busy()              // output wire rd_rst_busy
-);
+//RNG datapath: angles_top_wrapper adds range-decode to the RNG stream.
+//Replaces the former fifo_128x16 + fifo_16x4 pair. It splits the 128-bit
+//AXIS entropy into an even/true path (fifo_up_true, 128->16) and an
+//uneven/basis path (range decoder), then recombines to 4 RNG bits
+//{E,U,E,U} drained at 40MHz (rd_en_4) in the tx_core_clk (200MHz) domain.
+//s_axis_tready is now driven by the wrapper (deasserts when both branches full).
+wire almost_full_16;   // even/true-path FIFO almost_full (feeds rng_fifo_status)
+wire empty_16;         // even/true-path FIFO empty      (feeds rng_fifo_status)
 
 wire [3:0] rng_dout4;
 assign dout4_test = rng_dout4;
 
-fifo_16x4 fifo_rng_16x4_inst (
-    // .rst(tx_core_reset),                      // input wire rst
-    .rst(rng_reset),                      // input wire rst
-    .wr_clk(tx_core_clk),                // input wire wr_clk
-    .rd_clk(tx_core_clk),                // input wire rd_clk
-    .din(dout16),                      // input wire [15 : 0] din
-    .wr_en(rd_en_16),                  // input wire wr_en
-    .rd_en(rd_en_4),                  // input wire rd_en
-    .dout(rng_dout4),                    // output wire [3 : 0] dout
-    .full(full_4),                            // output wire full
-    .almost_full(almost_full),              // output wire almost_full
-    .wr_ack(wr_ack),                // output wire wr_ack
-    .empty(empty_4),                  // output wire empty
-    .almost_empty(almost_empty),    // output wire almost_empty
-    .valid(valid),                  // output wire valid
-    .rd_data_count(rd_data_count),  // output wire [8 : 0] rd_data_count
-    .wr_data_count(wr_data_count),  // output wire [6 : 0] wr_data_count
-    .wr_rst_busy(),      // output wire wr_rst_busy
-    .rd_rst_busy()      // output wire rd_rst_busy
+angles_top_wrapper #(
+    .PREC (15)
+) angles_rng_inst (
+    .rst           (rng_reset),
+    // entropy producer: AXI4-Stream slave (s_axis_clk); wrapper drives tready
+    .s_axis_aclk   (s_axis_clk),
+    .s_axis_tdata  (s_axis_tdata),
+    .s_axis_tvalid (s_axis_tvalid),
+    .s_axis_tready (s_axis_tready),
+    .s_axis_tkeep  (16'hFFFF),                 // ignored (always full 128-bit beats)
+    .s_axis_tlast  (1'b0),                     // ignored (continuous entropy stream)
+    // basis-processing clock (80 MHz)
+    .clk80         (clk80),
+    .rdec_p0_i     (rdec_p0_r),                // P(bit==0), AXIL slv_reg10 synced to clk80
+    // output / consumer domain (200 MHz)
+    .clk200        (tx_core_clk),
+    .rd_en_4       (rd_en_4),
+    .dout          (rng_dout4),                // {E,U,E,U} @ 40 MHz
+    .dout_empty    (/* unused */),
+    // even/true 128->16 FIFO status -> keep legacy fifo_status signal names
+    .even_almost_full (almost_full_16),
+    .even_empty       (empty_16)
 );
+
+// tready_flag is a status/debug output that historically mirrored s_axis_tready
+// (old: assign s_axis_tready = tready_flag). The wrapper now drives s_axis_tready
+// directly, so mirror it back out to keep the port's meaning.
+// assign tready_flag = s_axis_tready;
 
 reg [2:0] command_rng_status_r;
 reg [3:0] rng_fifo_status;

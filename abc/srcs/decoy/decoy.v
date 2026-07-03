@@ -65,17 +65,17 @@ module decoy#(
     //rng temp from fastdac
     input   wire [1:0]    rng_value, 
     input                 rd_en_4,
-    input           rng_value_valid,
     //output pulse
     output          decoy_signal_p,
     output          decoy_signal_n,
+    //output registers
+    output reg  [15:0]   rdec_p0_r,   
 
     //debug signal
     output          counter,
     output          temp_signal2,
     output          temp_signal1,
     output          rd_en_4_r,
-    output          rng_valid_r,
     output [1:0]    rng_a_r,
     output [1:0]    rng_a_r_test,
     output [1:0]    rng_a,
@@ -103,12 +103,8 @@ wire decoy_rng_wen_int; //decoy rng write enable
 wire [2:0] decoy_rng_addr_int; //decoy rng address
 wire [31:0] decoy_rng_din_int; //decoy rng data in
 wire [5:0] decoy_dpram_max_addr_rng_int; //decoy dpram max address
+wire [15:0] rdec_p0_o; //range-decoder P0 (raw AXIL value, s_axil_aclk domain)
 
-// generate if (SIMULATION) begin
-//     assign reg_enable_o = 1;
-//     assign decoy_rng_mode_o = 1;
-// end
-// endgenerate
 
 
 decoy_axil_mngt # ( 
@@ -127,6 +123,7 @@ decoy_axil_mngt # (
     .decoy_rng_addr_int(decoy_rng_addr_int), //decoy rng address
     .decoy_rng_din_int(decoy_rng_din_int), //decoy rng data in
     .decoy_dpram_max_addr_rng_int(decoy_dpram_max_addr_rng_int), //decoy dpram max address
+    .rdec_p0_o(rdec_p0_o), //decoy rng p0
     .S_AXI_ACLK(s_axil_aclk),
     .S_AXI_ARESETN(s_axil_aresetn),
     .S_AXI_AWADDR(s_axil_awaddr),
@@ -313,19 +310,22 @@ reg [31:0] decoy_params_slv_r;
 initial begin
     reg_enable_80_r = 0;
     decoy_params_80_r = 0;
-    decoy_params_slv_r = 0;    
+    decoy_params_slv_r = 0;
+    rdec_p0_r = 0;
 end
 always @(posedge clk80) begin
     if (rst_80_o) begin
         reg_enable_80_r <= 0;
         decoy_params_80_r <= 0;
         decoy_params_slv_r <= 0;
+        rdec_p0_r <= 0;
     end else begin
         reg_enable_80_r <= {reg_enable_80_r[1:0], reg_enable_o};
         if (reg_enable_80_r[2] == 0 && reg_enable_80_r[1] == 1) begin
             decoy_params_80_r <= decoy_params_80_o;
             decoy_params_slv_r <= decoy_params_slv_o;
-        end            
+            rdec_p0_r <= rdec_p0_o;
+        end
     end
 end
 
@@ -378,11 +378,9 @@ assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
 (* ASYNC_REG = "TRUE" *) reg [2:0] rd_en_4_r;
 reg [1:0] rng_a_r;
 reg [1:0] rng_a_r_test;
-(* ASYNC_REG = "TRUE" *) reg [2:0] rng_valid_r;
 initial begin
     rd_en_4_r = 0;
     rng_a_r = 0;
-    rng_valid_r = 0;
     rng_a_r_test = 0;
 end
 
@@ -391,7 +389,6 @@ always @(posedge clk240) begin
     if (rst_240_o) begin
         rd_en_4_r <= 0;
         rng_a_r <= 0;
-        rng_valid_r <= 0;
         rng_a_r_test <= 0;
         decoy_signal <= 0;
     end else begin
@@ -399,10 +396,6 @@ always @(posedge clk240) begin
         if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
             rng_a_r <= rng_a;    
         end
-        // rng_valid_r <= {rng_valid_r[1:0], rng_value_valid};
-        // if (rng_valid_r[1] == 0 && rng_valid_r[0] == 1) begin
-        //     rng_a_r_test <= rng_a;
-        // end
 
         case(rng_a_r)
             2'b00: decoy_signal <= 0;

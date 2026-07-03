@@ -55,6 +55,7 @@ wire        SAXIS_tready;
 
 //Others ports
 reg         tx_core_clk;
+reg         clk80;          // 80 MHz basis-processing clock (range decoder)
 reg         tx_core_reset;
 reg         tx_tready;
 wire[127:0] tx_tdata;
@@ -111,6 +112,7 @@ jesd_transport jesd_transport_inst(
     // fastdac_sync_i,
     // fastdac_ddr_status_i,
     .tx_core_clk(tx_core_clk),
+    .clk80(clk80),
     .tx_core_reset(tx_core_reset),
     .tx_tdata(tx_tdata),
     .tx_tready(tx_tready),
@@ -131,6 +133,13 @@ always begin
     #(PERIOD_AXIS/2) SAXIS_tclk = 1'b0;
     #(PERIOD_AXIS/2);
 end
+//clk80 (80 MHz, period 12.5 ns)
+always begin
+    clk80 = 1'b1;
+    #6.25 clk80 = 1'b0;
+    #6.25;
+end
+
 //Atx_core_clk
 localparam PERIOD_tx_core = 5;
 always begin
