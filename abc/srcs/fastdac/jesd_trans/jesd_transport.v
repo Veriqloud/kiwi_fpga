@@ -81,7 +81,7 @@ module jesd_transport #(
     output              pps_r,
     // output              tready_flag,
     output              almost_full_16,
-    output              [3:0]rng_fifo_status,
+    output              [9:0]rng_fifo_status,
     output              command_rng_status_r,
     // Ports of control (synchronization) & status
     input           tvalid200,
@@ -91,7 +91,7 @@ module jesd_transport #(
     input [31:0]    gate_pos2,
     input [31:0]    gate_pos3,
     input [3:0]     q_gc_time_valid_mod16,
-    input [1:0]     de_rng_flags,
+    input [3:0]     de_rng_flags,
 
     // Ports of AXI-s master(alpha argument)
     input                                         tx_core_clk,
@@ -392,6 +392,11 @@ end
 wire almost_full_16;   // even/true-path FIFO almost_full (feeds rng_fifo_status)
 wire empty_16;         // even/true-path FIFO empty      (feeds rng_fifo_status)
 
+wire uv_almost_full_16;  // uneven/basis-path FIFO almost_full (feeds rng_fifo_status)
+wire uv_empty_16;      // uneven/basis-path FIFO empty      (feeds rng_fifo_status)
+wire uv_almost_full_2;  // uneven/basis-path FIFO almost_full (feeds rng_fifo_status)
+wire uv_empty_2;      // uneven/basis-path FIFO empty      (feeds rng_fifo_status)
+
 wire [3:0] rng_dout4;
 assign dout4_test = rng_dout4;
 
@@ -399,6 +404,7 @@ angles_top_wrapper #(
     .PREC (15)
 ) angles_rng_inst (
     .rst           (rng_reset),
+    .rst_clk200    (rng_rst_clk200),
     // entropy producer: AXI4-Stream slave (s_axis_clk); wrapper drives tready
     .s_axis_aclk   (s_axis_clk),
     .s_axis_tdata  (s_axis_tdata),
@@ -416,8 +422,27 @@ angles_top_wrapper #(
     .dout_empty    (/* unused */),
     // even/true 128->16 FIFO status -> keep legacy fifo_status signal names
     .even_almost_full (almost_full_16),
-    .even_empty       (empty_16)
+    .even_empty       (empty_16),
+    .up_almost_full   (uv_almost_full_16),
+    .up_empty         (uv_empty_16),
+    .uneven_almost_full (uv_almost_full_2),
+    .uneven_empty       (uv_empty_2)
 );
+
+//Sync rng_reset to tx_core_clk domain
+
+(* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
+initial begin rng_rst_r <= 0; end
+always @(posedge clk80) begin
+    rng_rst_r <= {rng_rst_r[1:0], rng_reset};
+end
+wire rng_rst_clk200;
+reset_register #(.RST_ACTIVE_LEVEL("HIGH")) rng_reset_inst (
+    .clk_i(tx_core_clk),
+    .rst_i(rng_rst_r[1]),
+    .clk_o(/*unused*/),
+    .rstn_o(/*unused*/),
+    .rst_o(rng_rst_clk200)); 
 
 // tready_flag is a status/debug output that historically mirrored s_axis_tready
 // (old: assign s_axis_tready = tready_flag). The wrapper now drives s_axis_tready
@@ -425,20 +450,43 @@ angles_top_wrapper #(
 // assign tready_flag = s_axis_tready;
 
 reg [2:0] command_rng_status_r;
-reg [3:0] rng_fifo_status;
+reg [9:0] rng_fifo_status;
 wire rng_fifo_status_valid;
+wire [5:0] rng_flags;
 assign rng_fifo_status_valid = command_rng_status_r[2];
+
+// ---- CDC: sync the cross-domain FIFO flags into tx_core_clk (200 MHz) ----
+// almost_full_16 / uv_almost_full_16 originate in s_axis_aclk (250 MHz, FIFO
+// write side); uv_empty_16 / uv_almost_full_2 originate in clk80 (80 MHz).
+// empty_16 and uv_empty_2 are already in the clk200/tx_core_clk domain and are
+// used directly. (de_rng_flags is concatenated separately below.)
+wire almost_full_16_sync;
+wire uv_almost_full_16_sync;
+wire uv_empty_16_sync;
+wire uv_almost_full_2_sync;
+
+cdc_sync_single #(.STAGES(2)) u_sync_af16 (
+    .clk_i (tx_core_clk), .d_i (almost_full_16),    .q_o (almost_full_16_sync));
+cdc_sync_single #(.STAGES(2)) u_sync_uv_af16 (
+    .clk_i (tx_core_clk), .d_i (uv_almost_full_16), .q_o (uv_almost_full_16_sync));
+cdc_sync_single #(.STAGES(2)) u_sync_uv_e16 (
+    .clk_i (tx_core_clk), .d_i (uv_empty_16),       .q_o (uv_empty_16_sync));
+cdc_sync_single #(.STAGES(2)) u_sync_uv_af2 (
+    .clk_i (tx_core_clk), .d_i (uv_almost_full_2),  .q_o (uv_almost_full_2_sync));
+
+assign rng_flags = {almost_full_16_sync, empty_16, uv_almost_full_16_sync,
+                    uv_empty_16_sync, uv_almost_full_2_sync, uv_empty_2};
 initial begin
     command_rng_status_r <= 0;
     rng_fifo_status <= 0;
 end
 always @(posedge tx_core_clk) begin
-    if (rng_reset) begin
+    if (rng_rst_clk200) begin
         rng_fifo_status <= 0;
     end else begin
         command_rng_status_r <= {command_rng_status_r[1:0],command_rng_fifo_status_int};
         if (command_rng_status_r[2] == 0 && command_rng_status_r[0] == 1) begin
-            rng_fifo_status <= {almost_full_16,empty_16,de_rng_flags};
+            rng_fifo_status <= {rng_flags,de_rng_flags};
         end else begin
             rng_fifo_status <= rng_fifo_status;
         end   

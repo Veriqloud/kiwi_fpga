@@ -14,8 +14,10 @@
 // non-empty FIFO.
 //
 // Usage notes for the entropy -> uneven-bit bridge:
-//   - Gate writes: wr_en should be (basis_valid & ~full); basis_bit is only
-//     meaningful while basis_valid is high, and writing while full corrupts.
+//   - Gate writes: wr_en should be (basis_valid & ~almost_full); basis_bit is
+//     only meaningful while basis_valid is high. Gating on almost_full (rather
+//     than full) leaves write headroom so surplus bits are dropped early and the
+//     FIFO never reaches full. 'full' remains available as a hard backstop.
 //   - Gate reads:  only assert rd_en while ~empty; reading empty returns stale
 //     data (repeated bits), which is bad for the RNG.
 //
@@ -53,6 +55,7 @@ module fifo_uneven_1x2_wrapper (
     input  wire        din,       // 1-bit (e.g. basis_bit)
     input  wire        wr_en,
     output wire        full,
+    output wire        almost_full,
 
     // ---- read side (uneven/biased consumer domain) ----
     input  wire        rd_clk,
@@ -72,6 +75,7 @@ module fifo_uneven_1x2_wrapper (
         .din         (din),
         .wr_en       (wr_en),
         .full        (full),
+        .almost_full (almost_full),
         .rd_en       (rd_en),
         .dout        (dout),
         .empty       (empty),

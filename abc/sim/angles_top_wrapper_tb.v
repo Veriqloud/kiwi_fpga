@@ -17,9 +17,10 @@
 //              {E,U,E,U} ordering of the recombine.
 //
 //              NOTE: instantiates Xilinx FIFO IP (fifo_128x16,
-//              fifo_decoy_rng_128x16, fifo_decoy_1x2, fifo_4x4). Run under Vivado
-//              xsim with those IPs added so their sim models are generated from
-//              the .xci files.
+//              fifo_decoy_rng_128x16, fifo_decoy_1x2). Run under Vivado xsim
+//              with those IPs added so their sim models are generated from the
+//              .xci files. (fifo_4x4 removed: the recombine now captures a
+//              nibble directly on rd_en_4 with no output FIFO.)
 //
 // Dependencies: angles_top_wrapper.v and its submodules + FIFO IP
 // Revision:
@@ -115,8 +116,10 @@ module angles_top_wrapper_tb;
     end
 
     // =====================================================================
-    // output consumer (clk200): pulse rd_en_4 at 40 MHz gated by ~dout_empty;
-    // fifo_4x4 is a Standard FIFO so dout is valid the cycle AFTER rd_en_4.
+    // output consumer (clk200): pulse rd_en_4 at 40 MHz gated by ~dout_empty
+    // (dout_empty now = "both branches not ready this tick"). dout is registered
+    // in the DUT on rd_en_4, so it is valid the cycle AFTER rd_en_4 (same latency
+    // as the old Standard FIFO) and holds stable until the next tick.
     // Tally even lanes (dout[3],dout[1]) and uneven lanes (dout[2],dout[0]).
     // =====================================================================
     integer rdcnt;
@@ -126,7 +129,7 @@ module angles_top_wrapper_tb;
     integer nread;
     integer even_ones,   even_total;
     integer uneven_ones, uneven_total;
-    integer underflow_att;       // wanted to read but fifo2 was empty
+    integer underflow_att;       // wanted to read but a branch was not ready
 
     always @(posedge clk200) begin
         if (rst) begin

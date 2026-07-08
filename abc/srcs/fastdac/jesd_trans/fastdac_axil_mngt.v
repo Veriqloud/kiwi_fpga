@@ -39,7 +39,7 @@
         // Control register
         output fastdac_en_jesd_o,
         output command_rng_fifo_status_o,
-		input [3:0] rng_fifo_status_i,
+		input [9:0] rng_fifo_status_i,
 		input rng_fifo_status_valid_i,
         output fastdac_reg_en_o,
         // output slv_reg_wren,

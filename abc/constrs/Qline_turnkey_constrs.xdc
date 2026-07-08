@@ -230,7 +230,7 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/cl
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rst_80_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rst_200_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg6_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/ltc_sync_rst_r_reg[0]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/rng_rst_r_reg[0]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/rng_rst_r_reg[0]/D}]
 # set_false_path -from $mmcm_ddr_clkout -to [get_clocks clk_10]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clockchip_sync_r_reg[0]/D}]
 
@@ -310,6 +310,10 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/ins
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg6_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_amp_dac2_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg7_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_dpram_max_addr_rng_dac1_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg8_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/division_sp_r_reg[*]/D}]
+
+# set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/angles_rng_inst/rng_rst_r_reg[0]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rng_rst_r_reg[0]/D}]
+
 ###SET CONSTRAINTS TTL
 ## 1-bit CDC
 set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg2_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_params_240_r_reg[0]/D}]
@@ -333,7 +337,7 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg2_reg[2]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/fine_delay_de_inst/ttl_trigger_enstep_slv2_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_rng_mode_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_rng_mode_240_r_reg/D]
-
+# set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_rng_fifos_0/inst/u_rangedec_top_wrapper/rng_rst_r_reg[0]/D}]
 # set_false_path -from [get_pins Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rd_en_4_reg/C] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
 # set_false_path -from [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/dpram_seq_rng_16x4_inst/RAM_reg_bram_0/CLKARDCLK] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
 # set_false_path -from [get_clocks refclk] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
@@ -358,17 +362,23 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 ########################################################################
 ## AI suggestion : 
 ########################################################################
-set_false_path -to [get_pins {Qline_turnkey_top_i/decoy/decoy_rng_fifos_0/inst/u_rangedec_top_wrapper/rst80_meta_reg[*]/D}]
 set_false_path -from [get_clocks refclk] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
-set_false_path -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rng_fifo_status_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rd_en_4_reg/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
-
+set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/reg_en_80_r_reg[0]/D}]
+## rng_reset (refclk) -> s_axis_aclk reset synchronizer in angles_top_wrapper
+## (async assert / sync deassert). Waive recovery/removal on the async preset.
 set_multicycle_path 2 -setup \
   -through [get_nets {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/rng_data[*] Qline_turnkey_top_i/ddr4/ddr_data_0/inst/rng_a_data[*]}] \
   -to [get_cells {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack_reg[*]}]
 set_multicycle_path 1 -hold \
   -through [get_nets {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/rng_data[*] Qline_turnkey_top_i/ddr4/ddr_data_0/inst/rng_a_data[*]}] \
   -to [get_cells {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/data_pack_reg[*]}]
+
+# decoy-side flag synchronizers
+set_false_path -to [get_pins -hier -filter {NAME =~ *decoy_rng_fifos_0*/u_sync_de_*/sync_ff_reg[0]/D}]
+# jesd-side flag synchronizers
+set_false_path -to [get_pins -hier -filter {NAME =~ *jesd_transport*/u_sync_*/sync_ff_reg[0]/D}]
+
 ########################################################################
 
 ## CONSTRAINING FOR FPGA FLASH CONFIGURATION

@@ -74,25 +74,32 @@ module rangedec_top_wrapper #(
     input  wire         clk200,
     input  wire         uneven_rd_en,
     output wire [1:0]    uneven_dout,          // 2 biased bits @clk200
-    output wire         uneven_empty
+    output wire         uneven_empty,         // uneven FIFO empty     (read-side, clk200)
+    output wire         uneven_almost_full    // uneven FIFO almost_full (write-side, clk80)
 );
 
     // ---------------------------------------------------------------------
     // reset synchronization into the clk80 domain
     // ---------------------------------------------------------------------
-    // 'rst' is synchronous to clk200 and drives the FIFOs' async-reset inputs,
-    // which the IP re-synchronizes internally -- safe there. But controller and
-    // basis_rangedec sample it as a *synchronous* reset in clk80, where its
-    // deassertion is asynchronous -> metastability / non-atomic release. Bring
-    // it cleanly into clk80: a 2-FF metastability filter feeds reset_register
-    // (async assert, clk80-synchronous deassert), matching decoy.v's pattern.
-    (* ASYNC_REG = "TRUE" *) reg [2:0] rst80_meta;
-    always @(posedge clk80) rst80_meta <= {rst80_meta[1:0], rst};
+    // 'rst' comes from the clk200 domain and drives the FIFOs' async-reset
+    // inputs directly (the IP re-synchronizes internally). The controller and
+    // basis_rangedec use it as a *synchronous* reset in clk80, so it must be
+    // resynchronized here. reset_register IS that clk80 reset synchronizer: it
+    // takes 'rst' as an asynchronous reset (immediate ASSERT) and releases it
+    // synchronously to clk80 through its internal 2-FF ASYNC_REG shift -> atomic,
+    // metastability-filtered deassert. No separate meta filter stage is needed.
+    // NOTE: constrain recovery/removal on u_rst_clk80's reset flops (see XDC).
+
+    (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
+    initial begin rng_rst_r <= 0; end
+    always @(posedge clk80) begin
+        rng_rst_r <= {rng_rst_r[1:0], rst};
+    end
 
     wire rst_clk80;   // synchronous active-high reset, clk80 domain
     reset_register #(.RST_ACTIVE_LEVEL("HIGH")) u_rst_clk80 (
         .clk_i  (clk80),
-        .rst_i  (rst80_meta[1]),
+        .rst_i  (rng_rst_r[1]),
         .clk_o  (/* unused */),
         .rstn_o (/* unused */),
         .rst_o  (rst_clk80)
@@ -187,11 +194,12 @@ module rangedec_top_wrapper #(
     wire uneven_full;
     wire uneven_wr_rst_busy;
 
-    // Only push real symbols, never while full or during reset recovery.
+    // Only push real symbols, never while (almost) full or during reset recovery.
     // NOTE(2): producer (80 Mb/s) and consumer (2b @ rd_en) are nominally rate-
-    // matched; rely on over-production + this ~full mask to drop surplus bits so
-    // the read side never underflows (stale output). See parked discussion.
-    wire uneven_wr_en = rdec_valid & ~uneven_full & ~uneven_wr_rst_busy;
+    // matched; rely on over-production + this ~almost_full mask to drop surplus
+    // bits early so the read side never underflows (stale output). 'full' is kept
+    // as a hard backstop. See parked discussion.
+    wire uneven_wr_en = rdec_valid & ~uneven_almost_full & ~uneven_full & ~uneven_wr_rst_busy;
 
     fifo_uneven_1x2_wrapper u_fifo_uneven (
         .rst         (rst),
@@ -200,6 +208,7 @@ module rangedec_top_wrapper #(
         .din         (rdec_bit),
         .wr_en       (uneven_wr_en),
         .full        (uneven_full),
+        .almost_full (uneven_almost_full),
         // read side: clk200 (uneven/biased consumer domain)
         .rd_clk      (clk200),
         .rd_en       (uneven_rd_en),
@@ -221,17 +230,17 @@ module rangedec_top_wrapper #(
     // decoder handshake, and the downstream (uneven) output. NOTE: uneven_dout
     // and uneven_empty live in the clk200 read domain; they are sampled here
     // asynchronously (debug-only), so treat those two probes as CDC-unsafe.
-    ila_rdec u_ila_rdec (
-        .clk    (clk80),
-        .probe0 (ctrl_fifo_rd_en), // 1b  upstream FIFO read enable
-        .probe1 (up_dout),         // 16b upstream FIFO data
-        .probe2 (ctrl_rnd_in),        // 1b  upstream FIFO empty
-        .probe3 (rdec_take),       // 4b  range-decoder 'take'
-        .probe4 (rdec_bit),        // 1b  decoded basis bit
-        .probe5 (rdec_valid),      // 1b  basis bit valid
-        .probe6 (uneven_dout),     // 2b  uneven output (clk200, async sample)
-        .probe7 (uneven_wr_en)     // 1b  uneven FIFO empty (clk200, async sample)
-    );
+    // ila_rdec u_ila_rdec (
+    //     .clk    (clk80),
+    //     .probe0 (ctrl_fifo_rd_en), // 1b  upstream FIFO read enable
+    //     .probe1 (up_dout),         // 16b upstream FIFO data
+    //     .probe2 (ctrl_rnd_in),        // 1b  upstream FIFO empty
+    //     .probe3 (rdec_take),       // 4b  range-decoder 'take'
+    //     .probe4 (rdec_bit),        // 1b  decoded basis bit
+    //     .probe5 (rdec_valid),      // 1b  basis bit valid
+    //     .probe6 (uneven_dout),     // 2b  uneven output (clk200, async sample)
+    //     .probe7 (uneven_wr_en)     // 1b  uneven FIFO empty (clk200, async sample)
+    // );
 
 endmodule
 

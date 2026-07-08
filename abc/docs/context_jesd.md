@@ -14,3 +14,9 @@ I have module angles_top_wrapper.v is supposed to replace logic written from lin
 - Consider correct clock domains
 - Make sure rng_dout4 is captured with rd_en_4 under 200MHz clock domain
 - Name signals to match with others parts of code in jesd_transport.v
+
+### Improve
+- Improve module angles_top_wrapper.v and submodules
+- Fifo_up_true_wrapper : got rd_en signal from external port which called rd_en_16. this rd_en_16 is tick 10MHz in clk200 domain, rising edge the same with rd_en_4
+- Improve bit_unpacker : expected output is 2 bits lasts for 5 cycles of clk200. check pair[1:0] on simulation waveform. The "pair" should not be reset to 0 or change at random cycle. This is to make sure when combine 2 paths to 1 path with 4 bits of data, it's not glitch and combine data with zero or with previous value.
+- Adapt testbench 

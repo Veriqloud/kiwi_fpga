@@ -9,9 +9,15 @@
 //   - uneven path: IN_W = 2 (fifo_uneven word  -> 1 pair)
 //
 // Read timing matches the FIFO Generator Standard FIFO: 'fifo_dout' is valid one
-// clk cycle AFTER 'fifo_rd_en' is asserted on a non-empty FIFO. A read is
-// launched only when the local buffer is drained (pairs == 0), so there is a
-// 2-cycle refill bubble per word; both paths still beat the 40 MHz nibble rate.
+// clk cycle AFTER 'fifo_rd_en' is asserted on a non-empty FIFO.
+//
+// PREFETCH: the next FIFO word is fetched into a 1-word lookahead buffer (pbuf)
+// while the current word (sbuf) is still being emitted. When the LAST pair of
+// sbuf is taken, sbuf is reloaded from pbuf on the SAME cycle, so 'pairs' never
+// returns to 0 and 'pair' changes ONLY on an accepted 'pair_take'. Consequently
+// 'pair' stays valid and stable between takes (no refill bubble), even on the
+// uneven path where every take consumes a whole word. This matters for the
+// recombine: the {E,U,E,U} nibble is then never assembled from a stale/zero pair.
 //
 // 'rst' is synchronous active-high in this clk domain.
 // ============================================================================
@@ -27,11 +33,12 @@
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
 // Description: Standard-FIFO reader that unpacks IN_W-bit words into 2-bit pairs
-//              with a valid/take handshake (even and uneven recombine paths).
+//              with a valid/take handshake and a 1-word prefetch so the pair
+//              output holds stable between takes (even and uneven recombine paths).
 //
 // Dependencies: none
 // Revision:
-// Revision 0.01 - File Created
+// Revision 0.02 - Add 1-word prefetch: pair holds stable, no drain-to-0 bubble
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
@@ -57,32 +64,60 @@ module bit_unpacker #(
     localparam integer NPAIR = IN_W/2;            // pairs per FIFO word
     localparam integer CW    = $clog2(NPAIR+1);   // pair-counter width
 
-    reg [IN_W-1:0] sbuf;     // shift buffer, emits LSB pair first
-    reg [CW-1:0]   pairs;    // valid pairs remaining in sbuf
-    reg            rd_pend;  // read launched, dout arrives next cycle
+    reg [IN_W-1:0] sbuf;     // current word, emits LSB pair first
+    reg [CW-1:0]   pairs;    // valid pairs remaining in sbuf (0 => sbuf empty)
+    reg [IN_W-1:0] pbuf;     // 1-word lookahead (prefetched next word)
+    reg            pfull;    // pbuf holds a valid word
+    reg            rd_pend;  // read launched last cycle, dout valid this cycle
 
-    assign pair_valid = (pairs != 0);
     assign pair       = sbuf[1:0];
-    assign fifo_rd_en = ~rd_pend & (pairs == 0) & ~fifo_empty;
+    assign pair_valid = (pairs != 0);
+
+    // Keep the lookahead slot full: read whenever it is empty, no read is already
+    // in flight, and the FIFO has data. (pfull=1 blocks further reads, so at most
+    // one word is prefetched.)
+    assign fifo_rd_en = ~rd_pend & ~pfull & ~fifo_empty;
+
+    wire take = pair_take & pair_valid;
 
     always @(posedge clk) begin
         if (rst) begin
             sbuf    <= {IN_W{1'b0}};
             pairs   <= {CW{1'b0}};
+            pbuf    <= {IN_W{1'b0}};
+            pfull   <= 1'b0;
             rd_pend <= 1'b0;
         end else begin
+            // (1) complete a pending read into the lookahead slot
             if (rd_pend) begin
-                // capture the word requested last cycle
-                sbuf    <= fifo_dout;
-                pairs   <= NPAIR[CW-1:0];
+                pbuf    <= fifo_dout;
+                pfull   <= 1'b1;
                 rd_pend <= 1'b0;
-            end else if (pair_take & pair_valid) begin
-                // hand off the LSB pair, shift the next one down
-                sbuf  <= sbuf >> 2;
-                pairs <= pairs - 1'b1;
             end
 
-            // launch a refill read when drained (pairs==0 => take is inactive)
+            // (2) emit / reload the current word
+            if (take) begin
+                if (pairs > 1) begin
+                    // more pairs in sbuf: shift the next one down
+                    sbuf  <= sbuf >> 2;
+                    pairs <= pairs - 1'b1;
+                end else if (pfull) begin
+                    // last pair taken: jump straight to the prefetched word
+                    sbuf  <= pbuf;
+                    pairs <= NPAIR[CW-1:0];
+                    pfull <= 1'b0;
+                end else begin
+                    // lookahead not ready (source starved): drop to empty
+                    pairs <= {CW{1'b0}};
+                end
+            end else if (pairs == 0 && pfull) begin
+                // prime the (empty) current word from the lookahead
+                sbuf  <= pbuf;
+                pairs <= NPAIR[CW-1:0];
+                pfull <= 1'b0;
+            end
+
+            // (3) issue the next prefetch read
             if (fifo_rd_en) rd_pend <= 1'b1;
         end
     end

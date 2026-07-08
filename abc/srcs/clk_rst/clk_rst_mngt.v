@@ -85,13 +85,13 @@ module clk_rst_mngt #(
      
     // - rstn_axil_o : reset LOW for AXIL interface with XDMA
     // - rstn_ddr_axi_o : reset LOW for AXI interface of DDR4 MIG
-    output        rstn_axil_o,
-    output        rstn_ddr_axi_o,
+    output wire   rstn_axil_o,
+    output wire   rstn_ddr_axi_o,
     
     //output single-ended clock from differential pairs       
     output        fastdac_refclk_o,
     output        fastdac_coreclk_o,
-    output        fastdac_corerst_o,
+    output wire   fastdac_corerst_o,
     output        fastdac_sysref_o,
     output        fastdac_syncout_o,
     output		clk10_o,
@@ -99,14 +99,14 @@ module clk_rst_mngt #(
     //output SYNC signal for clockchip LTC6951
     output reg	sync_ltc_o, 
     //output reset signals for other modules
-    output        tdc_rst_o,
-    output        lrst_o,
+    output wire   tdc_rst_o,
+    output wire   lrst_o,
     output wire   ttl_rst,
     output wire   decoy_rst,
-    output        gc_rst_o,
-    output        ddr_data_rstn_o,
-    output        ltc_rst_o,
-    output        rng_rst_o
+    output wire   gc_rst_o,
+    output wire   ddr_data_rstn_o,
+    output wire   ltc_rst_o,
+    output wire   rng_rst
 );
 
 clk_rst_axil_mngt # ( 
@@ -230,13 +230,12 @@ always @(posedge clk10_o) begin
     ltc_sync_rst_r <= {ltc_sync_rst_r[1:0],ltc_sync_rst};
 end
 wire ltc_rst_o;
-wire ltc_rstn_o;
-wire clk10_o_o;
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_clk10_inst (    
     .clk_i(clk10_o),
     .rst_i(ltc_sync_rst_r[1]),
-    .clk_o(clk10_o_o),
-    .rstn_o(ltc_rstn_o),
+    // .rst_i(ltc_sync_rst),
+    .clk_o(/*unused*/),
+    .rstn_o(/*unused*/),
     .rst_o(ltc_rst_o));
 
 //Generate resets for submodules
@@ -245,7 +244,7 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_clk10_inst (
 (* ASYNC_REG = "TRUE" *) reg [2:0] gc_rst_r;
 (* ASYNC_REG = "TRUE" *) reg [2:0] lrst_i_r;
 (* ASYNC_REG = "TRUE" *) reg [2:0] ddr_data_rst_r;
-(* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
+// (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
 
 initial begin
     fpga_turnkey_fastdac_rst_r <= 0;
@@ -253,7 +252,7 @@ initial begin
     gc_rst_r <= 0;
     lrst_i_r <= 0;
     ddr_data_rst_r <= 1;
-    rng_rst_r <= 0;
+    // rng_rst_r <= 0;
 end
 always @(posedge fastdac_coreclk_o) begin
     fpga_turnkey_fastdac_rst_r <= {fpga_turnkey_fastdac_rst_r[1:0],fpga_turnkey_fastdac_rst};
@@ -261,62 +260,58 @@ always @(posedge fastdac_coreclk_o) begin
     gc_rst_r <= {gc_rst_r[1:0],gc_rst};
     lrst_i_r <= {lrst_i_r[1:0],lrst_i};
     ddr_data_rst_r <= {ddr_data_rst_r[1:0], ddr_data_rst};
-    rng_rst_r <= {rng_rst_r[1:0], rng_rst};
+    // rng_rst_r <= {rng_rst_r[1:0], rng_rst};
 end
 
 
-wire fastdac_coreclk;
-wire fastdac_corerstn_o;
+// wire fastdac_coreclk;
+// wire fastdac_corerstn_o;
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) tx_core_reset_inst (
     .clk_i(fastdac_coreclk_o),
     .rst_i(fpga_turnkey_fastdac_rst_r[1]),
-    .clk_o(fastdac_coreclk),
-    .rstn_o(fastdac_corerstn_o),
+    // .rst_i(fpga_turnkey_fastdac_rst),
+    .clk_o(/*unused*/),
+    .rstn_o(/*unused*/),
     .rst_o(fastdac_corerst_o));
 
-wire tdc_rstn_o;
-wire tdc_rst_o;
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) tdc_reset_inst (
     .clk_i(fastdac_coreclk_o),
     .rst_i(tdc_rst_r[1]),
-    .clk_o(fastdac_coreclk),
-    .rstn_o(tdc_rstn_o),
+    // .rst_i(tdc_rst),
+    .clk_o(/*unused*/),
+    .rstn_o(/*unused*/),
     .rst_o(tdc_rst_o));
 
-wire lclk_o;
-wire lrstn_o;
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) lrstn_inst (
     .clk_i(lclk_i),
     .rst_i(lrst_i_r[1]),
-    .clk_o(lclk_o),
-    .rstn_o(lrstn_o),
+    // .rst_i(lrst_i),
+    .clk_o(/*unused*/),
+    .rstn_o(/*unused*/),
     .rst_o(lrst_o));
 
-wire gc_rstn_o;
-wire gc_rst_o;
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) gc_reset_inst (
     .clk_i(fastdac_coreclk_o),
     .rst_i(gc_rst_r[1]),
-    .clk_o(fastdac_coreclk),
-    .rstn_o(gc_rstn_o),
+    // .rst_i(gc_rst),
+    .clk_o(/*unused*/),
+    .rstn_o(/*unused*/),
     .rst_o(gc_rst_o));
 
-wire ddr_data_rst_o;
-wire ddr_data_rstn_o;
 reset_register #(.RST_ACTIVE_LEVEL("LOW")) ddr_data_resetn_inst (
     .clk_i(fastdac_coreclk_o),
     .rstn_i(ddr_data_rst_r[1]),
-    .clk_o(fastdac_coreclk),
+    // .rstn_i(ddr_data_rst),
+    .clk_o(/*unused*/),
     .rstn_o(ddr_data_rstn_o));
 
-wire rng_rst_o;
-wire rng_rstn_o;
-reset_register #(.RST_ACTIVE_LEVEL("HIGH")) rng_reset_inst (
-    .clk_i(fastdac_coreclk_o),
-    .rst_i(rng_rst_r[1]),
-    .clk_o(fastdac_coreclk),
-    .rstn_o(rng_rstn_o),
-    .rst_o(rng_rst_o)); 
+// reset_register #(.RST_ACTIVE_LEVEL("HIGH")) rng_reset_inst (
+//     .clk_i(fastdac_coreclk_o),
+//     // .rst_i(rng_rst_r[1]),
+//     .rst_i(rng_rst),
+//     .clk_o(/*unused*/),
+//     .rstn_o(/*unused*/),
+//     .rst_o(rng_rst_o)); 
 
 //Generate SYNC signal for clockchip LTC6951
 reg sync_ltc_o;

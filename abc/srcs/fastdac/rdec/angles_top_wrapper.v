@@ -51,11 +51,12 @@
 //              true-RNG stream (XDMA H2C, 250 MHz) into the even
 //              (fifo_up_true_wrapper) and uneven/basis (rangedec_top_wrapper)
 //              paths by weighted backpressure, then recombines via bit_unpacker
-//              + nibble_assembler into fifo2 (fifo_4x4_wrapper) -> dout[3:0]
-//              {E,U,E,U} @ 40 MHz.
+//              and captures one {E,U,E,U} nibble per rd_en_4 tick into dout[3:0]
+//              @ 40 MHz (no output FIFO).
 //
 // Dependencies: fifo_up_true_wrapper.v, rangedec_top_wrapper.v, bit_unpacker.v,
-//               nibble_assembler.v, fifo_4x4_wrapper.v
+//               reset_register.v
+//               (nibble_assembler.v / fifo_4x4_wrapper.v + fifo_4x4 IP no longer used)
 //               (-> fifo_up_wrapper.v, controller.v, basis_rangedec.v,
 //                   fifo_uneven_1x2_wrapper.v)
 // Revision:
@@ -69,6 +70,7 @@ module angles_top_wrapper #(
     parameter        PREC = 15
 )(
     input  wire         rst,                  // async active-high (to FIFOs)
+    input  wire         rst_clk200,
 
     // ---- entropy producer: AXI4-Stream slave (XDMA H2C, 250 MHz) ----
     input  wire         s_axis_aclk,
@@ -86,26 +88,42 @@ module angles_top_wrapper #(
     // ---- output / consumer domain (200 MHz) ----
     input  wire         clk200,
 
-    // mixed-distribution RNG output: 4 bits {E,U,E,U} @ 40 MHz (fifo2 read side)
+    // mixed-distribution RNG output: 4 bits {E,U,E,U} @ 40 MHz (registered on rd_en_4)
     input  wire         rd_en_4,              // 40 MHz read strobe (200/5)
-    output wire [3:0]   dout,                 // {even,uneven,even,uneven}
-    output wire         dout_empty,
+    output wire [3:0]   dout,                 // {even,uneven,even,uneven}, valid 2 cyc after rd_en_4
+    output wire         dout_empty,           // asserted when a branch is not ready this tick
 
     // even/true 128->16 entropy-FIFO status (mirrors the legacy fifo_128x16 flags)
     output wire         even_almost_full,
-    output wire         even_empty
+    output wire         even_empty,
+
+    // uneven 128->16 entropy-FIFO status 
+    output wire         up_almost_full,   // write-side (clk80)
+    output wire         up_empty,          // read-side  (clk200)
+
+    // uneven/basis output-FIFO (fifo_1x2) status
+    output wire         uneven_almost_full,   // write-side (clk80)
+    output wire         uneven_empty          // read-side  (clk200)
 );
 
     // ---------------------------------------------------------------------
-    // clk200-synchronized reset (async assert, sync deassert) for the
-    // recombine logic and fifo2 synchronous reset.
-    // ---------------------------------------------------------------------
-    reg [1:0] rst200_sync;
-    always @(posedge clk200 or posedge rst) begin
-        if (rst) rst200_sync <= 2'b11;
-        else     rst200_sync <= {rst200_sync[0], 1'b0};
+    // reset_register (HIGH) IS this synchronizer: async ASSERT, clk-synchronous
+    // DEASSERT via its internal 2-FF ASYNC_REG shift. rst_o is active-high,
+    // matching the previous rst_saxi (1 during reset). Same logic, same name.
+    (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
+    initial begin rng_rst_r <= 0; end
+    always @(posedge s_axis_aclk) begin
+        rng_rst_r <= {rng_rst_r[1:0], rst};
     end
-    wire rst200 = rst200_sync[1];
+
+    wire rst_saxi;   // active-high reset, s_axis_aclk domain
+    reset_register #(.RST_ACTIVE_LEVEL("HIGH")) u_rst_saxi (
+        .clk_i  (s_axis_aclk),
+        .rst_i  (rng_rst_r[1]),
+        .clk_o  (/* unused */),
+        .rstn_o (/* unused */),
+        .rst_o  (rst_saxi)
+    );
 
     // ---------------------------------------------------------------------
     // branch fill flags (read back from each branch's write side)
@@ -133,7 +151,7 @@ module angles_top_wrapper #(
     // ---------------------------------------------------------------------
     reg [1:0] rr;
     always @(posedge s_axis_aclk) begin
-        if (rst)            rr <= 2'd0;
+        if (rst_saxi)       rr <= 2'd0;
         else if (word_go)   rr <= (rr == 2'd2) ? 2'd0 : (rr + 2'd1);
     end
 
@@ -145,10 +163,12 @@ module angles_top_wrapper #(
     wire route_up   = up_can & (prefer_up | ~tr_can);
     wire route_true = tr_can & ~route_up;
 
-    // 'full' is a hard backstop: never assert a write into a full FIFO, even if
-    // almost_full arbitration above ever let a beat slip through.
-    wire up_wr_en = word_go & route_up   & ~up_full;
-    wire tr_wr_en = word_go & route_true & ~tr_full;
+    // Gate writes on almost_full (leave write headroom); 'full' stays as a hard
+    // backstop. route_* already implies ~almost_full via up_can/tr_can, so the
+    // ~almost_full term is belt-and-suspenders -- matches the uneven-FIFO write
+    // gate in rangedec_top_wrapper and makes the intent explicit at the write.
+    wire up_wr_en = word_go & route_up   & ~up_almost_full & ~up_full;
+    wire tr_wr_en = word_go & route_true & ~tr_almost_full & ~tr_full;
 
     // ---------------------------------------------------------------------
     // uneven / basis path: full biased datapath (own fifo_up inside)
@@ -163,6 +183,7 @@ module angles_top_wrapper #(
         .ent_wr_en   (up_wr_en),
         .ent_full    (up_full),
         .ent_almost_full (up_almost_full),
+        .up_empty    (up_empty),
         // processing clock
         .clk80       (clk80),
         .rdec_p0_i   (rdec_p0_i),   // runtime P0, clk80-synced upstream
@@ -170,7 +191,8 @@ module angles_top_wrapper #(
         .clk200       (clk200),
         .uneven_rd_en (uv_rd_en),
         .uneven_dout  (uv_dout),
-        .uneven_empty (uv_empty)
+        .uneven_empty (uv_empty),
+        .uneven_almost_full (uv_almost_full)
     );
 
     // ---------------------------------------------------------------------
@@ -202,9 +224,14 @@ module angles_top_wrapper #(
     assign even_almost_full = tr_almost_full;
     assign even_empty       = tr_empty;
 
+    // expose the uneven/basis output-FIFO (fifo_1x2) status: read-side empty
+    // (feeds the uneven unpacker below); write-side almost_full is driven
+    // directly from u_basis above.
+    assign uneven_empty     = uv_empty;
+    assign uneven_almost_full = uv_almost_full;
     // =====================================================================
-    // RECOMBINE (clk200): unpack each path to 2-bit pairs, assemble {E,U,E,U}
-    // nibbles, buffer in fifo2 (fifo_4x4), drain at 40 MHz on rd_en_4.
+    // RECOMBINE (clk200): unpack each path to 2-bit pairs and capture one
+    // {E,U,E,U} nibble per rd_en_4 tick directly (no fifo2 buffer).
     // =====================================================================
 
     // even path: fifo_up_true (16b word) -> 8 pairs
@@ -217,7 +244,7 @@ module angles_top_wrapper #(
 
     bit_unpacker #(.IN_W(16)) u_even_unpack (
         .clk        (clk200),
-        .rst        (rst200),
+        .rst        (rst_clk200),
         .fifo_dout  (tr_dout),
         .fifo_empty (tr_empty),
         .fifo_rd_en (tr_rd_en),
@@ -229,6 +256,7 @@ module angles_top_wrapper #(
     // uneven path: fifo_uneven (2b word) -> 1 pair
     wire [1:0]  uv_dout;
     wire        uv_empty;
+    wire        uv_almost_full;
     wire        uv_rd_en;
     wire [1:0]  uneven_pair;
     wire        uneven_valid;
@@ -236,7 +264,7 @@ module angles_top_wrapper #(
 
     bit_unpacker #(.IN_W(2)) u_uneven_unpack (
         .clk        (clk200),
-        .rst        (rst200),
+        .rst        (rst_clk200),
         .fifo_dout  (uv_dout),
         .fifo_empty (uv_empty),
         .fifo_rd_en (uv_rd_en),
@@ -245,36 +273,42 @@ module angles_top_wrapper #(
         .pair_take  (uneven_take)
     );
 
-    // assemble one {E,U,E,U} nibble when both pairs are ready and fifo2 has room
-    wire [3:0] nibble;
-    wire       nibble_wr_en;
-    wire       fifo2_full;
+    // ---------------------------------------------------------------------
+    // NIBBLE CAPTURE (clk200) -- no fifo2. Both unpackers hold their current
+    // pair until taken. On each rd_en_4 tick, if both branches are ready, we
+    // advance both unpackers by one pair and register the assembled {E,U,E,U}
+    // nibble. Each bit_unpacker prefetches its next word, so its pair stays
+    // valid continuously between takes -> both_ready holds and no underflow
+    // once primed.
+    //
+    // LATENCY: the replaced fifo_16x4 was a Standard FIFO with embedded output
+    // registers (C_PRELOAD_LATENCY = 2), i.e. dout appeared 2 clk200 cycles
+    // after the rd_en_4 edge. We reproduce that exactly with a 2-stage register
+    // (capture -> pipeline) so the consumer's rd_en_4 -> rd_en_4_shift[0]
+    // sampling in jesd_transport needs no change. dout is registered (not
+    // combinational) and holds stable across the whole 40 MHz period.
+    // ---------------------------------------------------------------------
+    wire       both_ready = even_valid & uneven_valid;
+    wire [3:0] nibble     = {even_pair[1], uneven_pair[1], even_pair[0], uneven_pair[0]};
+    wire       pop        = rd_en_4 & both_ready;   // consume one pair from each branch
 
-    nibble_assembler u_assemble (
-        .even_pair    (even_pair),
-        .even_valid   (even_valid),
-        .even_take    (even_take),
-        .uneven_pair  (uneven_pair),
-        .uneven_valid (uneven_valid),
-        .uneven_take  (uneven_take),
-        .nibble       (nibble),
-        .nibble_wr_en (nibble_wr_en),
-        .fifo2_full   (fifo2_full)
-    );
+    assign even_take   = pop;
+    assign uneven_take = pop;
 
-    // fifo2: common-clock 4->4, drained at 40 MHz by rd_en_4
-    fifo_4x4_wrapper u_fifo2 (
-        .clk         (clk200),
-        .srst        (rst200),
-        .din         (nibble),
-        .wr_en       (nibble_wr_en),
-        .rd_en       (rd_en_4),
-        .dout        (dout),
-        .full        (fifo2_full),
-        .empty       (dout_empty),
-        .wr_rst_busy (/* unused */),
-        .rd_rst_busy (/* unused */)
-    );
+    reg [3:0] dout_r0;   // stage 1: captured on pop      (1 cycle after rd_en_4)
+    reg [3:0] dout_r;    // stage 2: pipeline to match fifo_16x4 (2 cycles after rd_en_4)
+    always @(posedge clk200) begin
+        if (rst_clk200) begin
+            dout_r0 <= 4'b0;
+            dout_r  <= 4'b0;
+        end else begin
+            if (pop) dout_r0 <= nibble;             // hold until next tick (stable 5 cycles)
+            dout_r <= dout_r0;                       // second stage = embedded-register latency
+        end
+    end
+
+    assign dout       = dout_r;
+    assign dout_empty = ~both_ready;                // a read on this tick would underflow
 
 endmodule
 
