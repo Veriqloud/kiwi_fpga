@@ -23,7 +23,7 @@
         "Reset_Pin": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Enable_Reset_Synchronization": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Reset_Type": [ { "value": "Asynchronous_Reset", "resolve_type": "user", "enabled": false, "usage": "all" } ],
-        "Full_Flags_Reset_Value": [ { "value": "1", "resolve_type": "user", "usage": "all" } ],
+        "Full_Flags_Reset_Value": [ { "value": "1", "value_src": "user", "resolve_type": "user", "usage": "all" } ],
         "Use_Dout_Reset": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Dout_Reset_Value": [ { "value": "0", "resolve_type": "user", "usage": "all" } ],
         "dynamic_power_saving": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
@@ -172,7 +172,7 @@
         "Master_interface_Clock_enable_memory_mapped": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Slave_interface_Clock_enable_memory_mapped": [ { "value": "false", "resolve_type": "user", "format": "bool", "enabled": false, "usage": "all" } ],
         "Output_Register_Type": [ { "value": "Embedded_Reg", "resolve_type": "user", "usage": "all" } ],
-        "Enable_Safety_Circuit": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
+        "Enable_Safety_Circuit": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "Enable_ECC_Type": [ { "value": "Hard_ECC", "resolve_type": "user", "enabled": false, "usage": "all" } ],
         "C_SELECT_XPM": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ]
       },

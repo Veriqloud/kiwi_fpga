@@ -312,7 +312,7 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/ins
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg8_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/division_sp_r_reg[*]/D}]
 
 # set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/angles_rng_inst/rng_rst_r_reg[0]/D}]
-# set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rng_rst_r_reg[0]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rng_rst_r_reg[0]/D}]
 
 ###SET CONSTRAINTS TTL
 ## 1-bit CDC
@@ -378,6 +378,10 @@ set_multicycle_path 1 -hold \
 set_false_path -to [get_pins -hier -filter {NAME =~ *decoy_rng_fifos_0*/u_sync_de_*/sync_ff_reg[0]/D}]
 # jesd-side flag synchronizers
 set_false_path -to [get_pins -hier -filter {NAME =~ *jesd_transport*/u_sync_*/sync_ff_reg[0]/D}]
+
+# Waive ILA signals
+set_false_path -from [get_cells Qline_turnkey_top_i/decoy/decoy_0/inst/dpram_seq_rng_16x4_inst/RAM_reg_bram_0] \
+-to   [get_cells -hierarchical -filter {NAME =~ Qline_turnkey_top_i/decoy/ila_0/*}]
 
 ########################################################################
 

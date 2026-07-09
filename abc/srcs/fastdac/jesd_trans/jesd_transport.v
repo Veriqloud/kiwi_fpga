@@ -243,7 +243,11 @@ end
 // synced load-enable (same pattern as the tx_core_clk handshake above). Write
 // P0 (slv_reg10) first, then pulse reg_en (slv_reg3[0]) for it to take effect.
 (* ASYNC_REG = "TRUE" *) reg [2:0] reg_en_80_r;
-reg [15:0] rdec_p0_r;
+// DONT_TOUCH: CDC landing register. Must stay in fabric so the XDC false path
+// (-to rdec_p0_r_reg[*]/D) keeps matching; without it synthesis absorbs this
+// register into the DSP48 B input register of u_rdec/bound and the exception
+// silently matches nothing (WNS -5.1ns mmcm_clkout1 -> clk_out2).
+(* DONT_TOUCH = "TRUE" *) reg [15:0] rdec_p0_r;
 initial begin
     reg_en_80_r = 0;
     rdec_p0_r   = 0;
@@ -433,7 +437,7 @@ angles_top_wrapper #(
 
 (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
 initial begin rng_rst_r <= 0; end
-always @(posedge clk80) begin
+always @(posedge tx_core_clk) begin
     rng_rst_r <= {rng_rst_r[1:0], rng_reset};
 end
 wire rng_rst_clk200;
@@ -465,32 +469,39 @@ wire uv_almost_full_16_sync;
 wire uv_empty_16_sync;
 wire uv_almost_full_2_sync;
 
-cdc_sync_single #(.STAGES(2)) u_sync_af16 (
-    .clk_i (tx_core_clk), .d_i (almost_full_16),    .q_o (almost_full_16_sync));
-cdc_sync_single #(.STAGES(2)) u_sync_uv_af16 (
-    .clk_i (tx_core_clk), .d_i (uv_almost_full_16), .q_o (uv_almost_full_16_sync));
-cdc_sync_single #(.STAGES(2)) u_sync_uv_e16 (
-    .clk_i (tx_core_clk), .d_i (uv_empty_16),       .q_o (uv_empty_16_sync));
-cdc_sync_single #(.STAGES(2)) u_sync_uv_af2 (
-    .clk_i (tx_core_clk), .d_i (uv_almost_full_2),  .q_o (uv_almost_full_2_sync));
-
-assign rng_flags = {almost_full_16_sync, empty_16, uv_almost_full_16_sync,
-                    uv_empty_16_sync, uv_almost_full_2_sync, uv_empty_2};
-initial begin
-    command_rng_status_r <= 0;
-    rng_fifo_status <= 0;
-end
+//usecase for timing analysis on reset
 always @(posedge tx_core_clk) begin
-    if (rng_rst_clk200) begin
-        rng_fifo_status <= 0;
-    end else begin
-        command_rng_status_r <= {command_rng_status_r[1:0],command_rng_fifo_status_int};
-        if (command_rng_status_r[2] == 0 && command_rng_status_r[0] == 1) begin
-            rng_fifo_status <= {rng_flags,de_rng_flags};
-        end else begin
-            rng_fifo_status <= rng_fifo_status;
-        end   
-    end
+    rng_fifo_status <= 10'd1;
+end
+
+//Monitoring flags from different fifos 
+
+// cdc_sync_single #(.STAGES(2)) u_sync_af16 (
+//     .clk_i (tx_core_clk), .d_i (almost_full_16),    .q_o (almost_full_16_sync));
+// cdc_sync_single #(.STAGES(2)) u_sync_uv_af16 (
+//     .clk_i (tx_core_clk), .d_i (uv_almost_full_16), .q_o (uv_almost_full_16_sync));
+// cdc_sync_single #(.STAGES(2)) u_sync_uv_e16 (
+//     .clk_i (tx_core_clk), .d_i (uv_empty_16),       .q_o (uv_empty_16_sync));
+// cdc_sync_single #(.STAGES(2)) u_sync_uv_af2 (
+//     .clk_i (tx_core_clk), .d_i (uv_almost_full_2),  .q_o (uv_almost_full_2_sync));
+
+// assign rng_flags = {almost_full_16_sync, empty_16, uv_almost_full_16_sync,
+//                     uv_empty_16_sync, uv_almost_full_2_sync, uv_empty_2};
+// initial begin
+//     command_rng_status_r <= 0;
+//     rng_fifo_status <= 0;
+// end
+// always @(posedge tx_core_clk) begin
+//     if (rng_rst_clk200) begin
+//         rng_fifo_status <= 0;
+//     end else begin
+//         command_rng_status_r <= {command_rng_status_r[1:0],command_rng_fifo_status_int};
+//         if (command_rng_status_r[2] == 0 && command_rng_status_r[0] == 1) begin
+//             rng_fifo_status <= {rng_flags,de_rng_flags};
+//         end else begin
+//             rng_fifo_status <= rng_fifo_status;
+//         end   
+//     end
 end
 
 //Port ram data_write from axil and data_read is 4 samples for DACs    
