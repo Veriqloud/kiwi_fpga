@@ -29,7 +29,8 @@ module decoy_rng_fifos(
 
     input           clk200,
     input           clk80,
-    input           rng_reset,
+    input           rst_clk80,
+    input           rst_clk250,
     input [15:0]    rdec_p0_i,
     input           rd_en_16_de,
     input           rd_en_4,
@@ -111,7 +112,8 @@ end
 rangedec_top_wrapper #(
     .PREC (15)
 ) u_rangedec_top_wrapper (
-    .rst         (rng_reset),
+    .rst_clk80    (rst_clk80),
+    .rst_clk250   (rst_clk250),
     .wr_clk      (s_axis_clk),
     .ent_din     (s_axis_tdata),
     .ent_wr_en   (s_axis_tvalid && s_axis_tready),

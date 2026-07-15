@@ -97,7 +97,9 @@ module jesd_transport #(
     input                                         tx_core_clk,
     input                                         clk80,          // 80 MHz basis-processing clock (range decoder)
     input                                         tx_core_reset,
-    input                                         rng_reset,
+    input                                         rng_rst_clk200,
+    input                                         rng_rst_clk80,
+    input                                         rng_rst_clk250,
     output  reg [127 : 0]                         tx_tdata,
     input   wire                                  tx_tready,
     input                                         pps_i
@@ -407,8 +409,10 @@ assign dout4_test = rng_dout4;
 angles_top_wrapper #(
     .PREC (15)
 ) angles_rng_inst (
-    .rst           (rng_reset),
+    // per-domain resets, pre-synchronized in clk_rst_mngt
     .rst_clk200    (rng_rst_clk200),
+    .rst_clk80     (rng_rst_clk80),
+    .rst_clk250    (rng_rst_clk250),
     // entropy producer: AXI4-Stream slave (s_axis_clk); wrapper drives tready
     .s_axis_aclk   (s_axis_clk),
     .s_axis_tdata  (s_axis_tdata),
@@ -435,18 +439,18 @@ angles_top_wrapper #(
 
 //Sync rng_reset to tx_core_clk domain
 
-(* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
-initial begin rng_rst_r <= 0; end
-always @(posedge tx_core_clk) begin
-    rng_rst_r <= {rng_rst_r[1:0], rng_reset};
-end
-wire rng_rst_clk200;
-reset_register #(.RST_ACTIVE_LEVEL("HIGH")) rng_reset_inst (
-    .clk_i(tx_core_clk),
-    .rst_i(rng_rst_r[1]),
-    .clk_o(/*unused*/),
-    .rstn_o(/*unused*/),
-    .rst_o(rng_rst_clk200)); 
+// (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
+// initial begin rng_rst_r <= 0; end
+// always @(posedge tx_core_clk) begin
+//     rng_rst_r <= {rng_rst_r[1:0], rng_reset};
+// end
+// wire rng_rst_clk200;
+// reset_register #(.RST_ACTIVE_LEVEL("HIGH")) rng_reset_inst (
+//     .clk_i(tx_core_clk),
+//     .rst_i(rng_rst_r[1]),
+//     .clk_o(/*unused*/),
+//     .rstn_o(/*unused*/),
+//     .rst_o(rng_rst_clk200)); 
 
 // tready_flag is a status/debug output that historically mirrored s_axis_tready
 // (old: assign s_axis_tready = tready_flag). The wrapper now drives s_axis_tready
@@ -502,7 +506,7 @@ end
 //             rng_fifo_status <= rng_fifo_status;
 //         end   
 //     end
-end
+// end
 
 //Port ram data_write from axil and data_read is 4 samples for DACs    
 reg [7:0] fastdac_dpram_seq_addr_dac0_r;

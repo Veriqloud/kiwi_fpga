@@ -17,10 +17,11 @@
 //            side and uneven FIFO WRITE side ALL run here (one shared clock).
 //   clk200 : uneven/biased consumer domain -- uneven FIFO READ side.
 //
-// 'rst' (active-high, synchronous to clk200) feeds the FIFOs' async-reset
-// inputs directly. For the clk80 logic (controller, basis_rangedec, rng_ready)
-// it is re-synchronized into clk80 via reset_register (rst_clk80) so reset
-// removal is atomic in that domain -- see the reset synchronization block.
+// Resets arrive PRE-SYNCHRONIZED per domain (one synchronizer per domain in
+// clk_rst_mngt): rst_clk80 drives the clk80 logic (controller, basis_rangedec,
+// rng_ready) and the uneven FIFO's rst pin (write side = clk80); rst_clk250 is
+// synchronous to wr_clk and drives the entropy FIFO's rst pin (write side).
+// Do NOT re-synchronize them locally -- that recreates the CDC-11 fan-out.
 //
 // See the in-line NOTEs for the two open design points discussed separately:
 //   (1) startup priming of basis_rangedec before the controller buffer fills,
@@ -55,7 +56,9 @@
 module rangedec_top_wrapper #(
     parameter        PREC = 15
 )(
-    input  wire         rst,                  // async active-high (to FIFOs)
+    // input  wire         rst,                  // async active-high (to FIFOs)
+    input  wire         rst_clk80,            // synchronous to clk80
+    input  wire         rst_clk250,           // synchronous to clk250
 
     // ---- entropy write interface (producer domain) ----
     input  wire         wr_clk,
@@ -79,31 +82,26 @@ module rangedec_top_wrapper #(
 );
 
     // ---------------------------------------------------------------------
-    // reset synchronization into the clk80 domain
+    // resets: pre-synchronized per domain in clk_rst_mngt -- no local sync.
+    // rst_clk80 is used directly as the synchronous clk80 reset below;
+    // rst_clk250 feeds the entropy FIFO's rst pin (write side = wr_clk).
+    // The old local synchronizer is kept below for reference only.
     // ---------------------------------------------------------------------
-    // 'rst' comes from the clk200 domain and drives the FIFOs' async-reset
-    // inputs directly (the IP re-synchronizes internally). The controller and
-    // basis_rangedec use it as a *synchronous* reset in clk80, so it must be
-    // resynchronized here. reset_register IS that clk80 reset synchronizer: it
-    // takes 'rst' as an asynchronous reset (immediate ASSERT) and releases it
-    // synchronously to clk80 through its internal 2-FF ASYNC_REG shift -> atomic,
-    // metastability-filtered deassert. No separate meta filter stage is needed.
-    // NOTE: constrain recovery/removal on u_rst_clk80's reset flops (see XDC).
 
-    (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
-    initial begin rng_rst_r <= 0; end
-    always @(posedge clk80) begin
-        rng_rst_r <= {rng_rst_r[1:0], rst};
-    end
+    // (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
+    // initial begin rng_rst_r <= 0; end
+    // always @(posedge clk80) begin
+    //     rng_rst_r <= {rng_rst_r[1:0], rst};
+    // end
 
-    wire rst_clk80;   // synchronous active-high reset, clk80 domain
-    reset_register #(.RST_ACTIVE_LEVEL("HIGH")) u_rst_clk80 (
-        .clk_i  (clk80),
-        .rst_i  (rng_rst_r[1]),
-        .clk_o  (/* unused */),
-        .rstn_o (/* unused */),
-        .rst_o  (rst_clk80)
-    );
+    // wire rst_clk80;   // synchronous active-high reset, clk80 domain
+    // reset_register #(.RST_ACTIVE_LEVEL("HIGH")) u_rst_clk80 (
+    //     .clk_i  (clk80),
+    //     .rst_i  (rng_rst_r[1]),
+    //     .clk_o  (/* unused */),
+    //     .rstn_o (/* unused */),
+    //     .rst_o  (rst_clk80)
+    // );
 
     // ---------------------------------------------------------------------
     // P0 (Bernoulli threshold)
@@ -116,7 +114,7 @@ module rangedec_top_wrapper #(
     wire        ctrl_fifo_rd_en;
 
     fifo_up_wrapper u_fifo_up (
-        .rst           (rst),
+        .rst           (rst_clk250),
         // write side: entropy producer domain
         .wr_clk        (wr_clk),
         .din           (ent_din),
@@ -202,7 +200,7 @@ module rangedec_top_wrapper #(
     wire uneven_wr_en = rdec_valid & ~uneven_almost_full & ~uneven_full & ~uneven_wr_rst_busy;
 
     fifo_uneven_1x2_wrapper u_fifo_uneven (
-        .rst         (rst),
+        .rst         (rst_clk80),
         // write side: clk80
         .wr_clk      (clk80),
         .din         (rdec_bit),

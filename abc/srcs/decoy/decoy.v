@@ -361,7 +361,7 @@ always @(posedge clk240) begin
             TRIGGER: begin
                 counter <= counter + 1;
                 if (counter == 6) begin counter <= 1; end
-                if (counter == 6 || counter == 1 || counter == 2) begin temp_signal2 <= 0; temp_signal1 <= 1; end
+                if (counter == 3 || counter == 4 || counter == 2) begin temp_signal2 <= 0; temp_signal1 <= 1; end
                 else begin temp_signal2 <= 1; temp_signal1 <= 0; end               
             end
             default: state_temp <= IDLE;
@@ -371,11 +371,12 @@ end
 
 //Generate nrg_a in clk200 domain to save to ddr
 wire [1:0] rng_a;
+// assign rng_a = rng_value[1:0];
 assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
 // assign rng_a = decoy_rng_mode_r?dpram_rng_dout[1:0]:rng_value[1:0];
 
 //Generate decoy signal
-(* ASYNC_REG = "TRUE" *) reg [2:0] rd_en_4_r;
+(* ASYNC_REG = "TRUE" *) reg [4:0] rd_en_4_r;
 reg [1:0] rng_a_r;
 reg [1:0] rng_a_r_test;
 initial begin
@@ -392,8 +393,8 @@ always @(posedge clk240) begin
         rng_a_r_test <= 0;
         decoy_signal <= 0;
     end else begin
-        rd_en_4_r <= {rd_en_4_r[1:0], rd_en_4}; //using rd_en_4 is old version
-        if (rd_en_4_r[2] == 0 && rd_en_4_r[1] == 1) begin
+        rd_en_4_r <= {rd_en_4_r[3:0], rd_en_4}; //using rd_en_4 is old version
+        if (rd_en_4_r[4] == 0 && rd_en_4_r[3] == 1) begin
             rng_a_r <= rng_a;    
         end
 

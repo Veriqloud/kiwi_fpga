@@ -589,7 +589,7 @@ always @(posedge clk200_i, posedge gc_rst) begin
 end
 
 //Get the click count when requested. Only after starting TDC
-reg [2:0] command_count_r;
+(* ASYNC_REG = "TRUE" *) reg [2:0] command_count_r;
 reg [31:0] w_counter;
 reg [31:0] sr_count_to;
 reg [31:0] sr_count_c0;

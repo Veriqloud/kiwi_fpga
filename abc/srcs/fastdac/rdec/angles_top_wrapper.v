@@ -34,7 +34,8 @@
 // no meaning for a raw entropy stream.
 //
 // Clock domains: s_axis_aclk = 250 MHz (producer) / clk80 (basis processing) /
-// clk200 (output). 'rst' is asynchronous, active high.
+// clk200 (output). Resets are active-high and arrive PRE-SYNCHRONIZED per
+// domain from clk_rst_mngt (rst_clk250 / rst_clk80 / rst_clk200).
 // ============================================================================
 `timescale 1ns/1ps
 //////////////////////////////////////////////////////////////////////////////////
@@ -69,8 +70,9 @@
 module angles_top_wrapper #(
     parameter        PREC = 15
 )(
-    input  wire         rst,                  // async active-high (to FIFOs)
     input  wire         rst_clk200,
+    input  wire         rst_clk80,
+    input  wire         rst_clk250,
 
     // ---- entropy producer: AXI4-Stream slave (XDMA H2C, 250 MHz) ----
     input  wire         s_axis_aclk,
@@ -107,23 +109,23 @@ module angles_top_wrapper #(
 );
 
     // ---------------------------------------------------------------------
-    // reset_register (HIGH) IS this synchronizer: async ASSERT, clk-synchronous
-    // DEASSERT via its internal 2-FF ASYNC_REG shift. rst_o is active-high,
-    // matching the previous rst_saxi (1 during reset). Same logic, same name.
-    (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
-    initial begin rng_rst_r <= 0; end
-    always @(posedge s_axis_aclk) begin
-        rng_rst_r <= {rng_rst_r[1:0], rst};
-    end
+    // resets: rst_clk250 / rst_clk80 / rst_clk200 arrive pre-synchronized per
+    // domain from clk_rst_mngt and are used directly (no local sync). The old
+    // local synchronizer is kept below for reference only.
+    // (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
+    // initial begin rng_rst_r <= 0; end
+    // always @(posedge s_axis_aclk) begin
+    //     rng_rst_r <= {rng_rst_r[1:0], rst};
+    // end
 
-    wire rst_saxi;   // active-high reset, s_axis_aclk domain
-    reset_register #(.RST_ACTIVE_LEVEL("HIGH")) u_rst_saxi (
-        .clk_i  (s_axis_aclk),
-        .rst_i  (rng_rst_r[1]),
-        .clk_o  (/* unused */),
-        .rstn_o (/* unused */),
-        .rst_o  (rst_saxi)
-    );
+    // wire rst_saxi;   // active-high reset, s_axis_aclk domain
+    // reset_register #(.RST_ACTIVE_LEVEL("HIGH")) u_rst_saxi (
+    //     .clk_i  (s_axis_aclk),
+    //     .rst_i  (rng_rst_r[1]),
+    //     .clk_o  (/* unused */),
+    //     .rstn_o (/* unused */),
+    //     .rst_o  (rst_saxi)
+    // );
 
     // ---------------------------------------------------------------------
     // branch fill flags (read back from each branch's write side)
@@ -151,7 +153,7 @@ module angles_top_wrapper #(
     // ---------------------------------------------------------------------
     reg [1:0] rr;
     always @(posedge s_axis_aclk) begin
-        if (rst_saxi)       rr <= 2'd0;
+        if (rst_clk250)       rr <= 2'd0;
         else if (word_go)   rr <= (rr == 2'd2) ? 2'd0 : (rr + 2'd1);
     end
 
@@ -176,7 +178,8 @@ module angles_top_wrapper #(
     rangedec_top_wrapper #(
         .PREC (PREC)
     ) u_basis (
-        .rst         (rst),
+        .rst_clk80    (rst_clk80),
+        .rst_clk250   (rst_clk250),
         // entropy write side (s_axis_aclk): fed by the arbiter
         .wr_clk      (s_axis_aclk),
         .ent_din     (s_axis_tdata),
@@ -199,7 +202,7 @@ module angles_top_wrapper #(
     // even / true path: 128->16 async FIFO, read @clk200 -> even-bit unpacker
     // ---------------------------------------------------------------------
     fifo_up_true_wrapper u_true (
-        .rst           (rst),
+        .rst           (rst_clk250),
         // write side (s_axis_aclk): fed by the arbiter
         .wr_clk        (s_axis_aclk),
         .din           (s_axis_tdata),

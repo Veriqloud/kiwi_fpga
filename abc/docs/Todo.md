@@ -25,3 +25,13 @@
 
 - Write tests function again
 - Compare 2 bitstream
+
+## Todo
+- Check again the decoy
+- make sure timing and fucntion of decoy correct
+
+## Wrap up 15 Jul
+- Modify decoy.v , shift 2 more sync step for rd_en_4_r, from 2 to 4. 
+- Modify temp_sig1/2 high state corresponding to case of rng_a_r
+- Adding constraint set_max_delay -datapath only for rd_en_4_r and rng_a_r
+- Timing summary clean, cdc report lefts unknown paths for rd_en_4_r, unsafe paths for decoy ila, async reset to fifo_1x2, fifo_128x16, known path for jesd. They are known and can be ignored

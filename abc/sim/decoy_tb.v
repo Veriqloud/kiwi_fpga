@@ -76,7 +76,7 @@ module decoy_tb #(
     //rng temp from fastdac
     reg [3:0]    rng_value; 
     reg          rd_en_4;
-    reg          rng_value_valid;
+    // reg          rng_value_valid;
     //output pulse
     wire          decoy_signal_p;
     wire          decoy_signal_n;
@@ -117,7 +117,7 @@ module decoy_tb #(
         .decoy_rst(decoy_rst),
         .rng_value(rng_value), 
         .rd_en_4(rd_en_4), 
-        .rng_value_valid(rng_value_valid),
+        // .rng_value_valid(rng_value_valid),
         .decoy_signal(decoy_signal_p)
     );
 
@@ -147,14 +147,14 @@ module decoy_tb #(
         end
     end
 
-    initial begin
-        rng_value_valid = 0;
-        #225 rng_value_valid = 0;
-        forever begin
-            #20 rng_value_valid = 1;
-            #5 rng_value_valid = 0;
-        end
-    end
+    // initial begin
+    //     rng_value_valid = 0;
+    //     #225 rng_value_valid = 0;
+    //     forever begin
+    //         #20 rng_value_valid = 1;
+    //         #5 rng_value_valid = 0;
+    //     end
+    // end
     initial begin
         rng_value = 1;
         #220 rng_value = 1;
@@ -192,4 +192,6 @@ module decoy_tb #(
             #5 clk200 = ~clk200; // Generate clock with 4.166ns period (240MHz)
         end
     end
+
+        
 endmodule
