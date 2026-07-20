@@ -55,4 +55,6 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 update_compile_order -fileset sources_1
 update_ip_catalog -rebuild -scan_changes
 report_ip_status -name ip_status
+upgrade_ip [get_ips]
+generate_target all [get_ips]
 update_compile_order -fileset sources_1
