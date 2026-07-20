@@ -92,6 +92,8 @@ module jesd_transport #(
     input [31:0]    gate_pos3,
     input [3:0]     q_gc_time_valid_mod16,
     input [3:0]     de_rng_flags,
+    input           de_err_ctrl_underrun,   // decoy-path E1 sticky, NATIVE clk80
+                                            // (from decoy_rng_fifos; synced by rng_monitor)
 
     // Ports of AXI-s master(alpha argument)
     input                                         tx_core_clk,
@@ -129,16 +131,24 @@ wire               fastdac_fb_mode_i;
 wire [15:0]        fastdac_up_offset_i;
 wire [31:0]        division_sp_i;
 wire [3:0]         fastdac_zero_pos_i;
-    
-fastdac_axil_mngt # ( 
+
+// RNG error monitor <-> AXIL register 0x2C (declared here: used by both
+// fastdac_axil_mngt_inst below and u_rng_monitor further down)
+wire [3:0]         rng_err_clr;      // W1C write strobe from reg 0x2C
+wire [3:0]         rng_err_raw;      // synced upstream level (clears on datapath reset)
+wire [3:0]         rng_err_sticky;   // W1C sticky since last clear
+
+fastdac_axil_mngt # (
     .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
     .C_S_AXI_ADDR_WIDTH(C_s_axil_ADDR_WIDTH)
 ) fastdac_axil_mngt_inst (
     .fastdac_en_jesd_o(fastdac_en_jesd_int),
     .fastdac_reg_en_o(reg_en_o),
-    .command_rng_fifo_status_o(command_rng_fifo_status_int),
-    .rng_fifo_status_i(rng_fifo_status),
-    .rng_fifo_status_valid_i(rng_fifo_status_valid),
+    .rng_err_clr_o(rng_err_clr),
+    .rng_err_i({rng_err_raw,rng_err_sticky}),
+    // .command_rng_fifo_status_o(command_rng_fifo_status_int),
+    // .rng_fifo_status_i(rng_fifo_status),
+    // .rng_fifo_status_valid_i(rng_fifo_status_valid),
     .fastdac_dpram_max_addr_seq_dac0_o(fastdac_dpram_max_addr_seq_dac0_int),
     .fastdac_dpram_max_addr_seq_dac1_o(fastdac_dpram_max_addr_seq_dac1_int),
     .fastdac_dpram_max_addr_rng_dac1_o(fastdac_dpram_max_addr_rng_dac1_int),
@@ -406,6 +416,13 @@ wire uv_empty_2;      // uneven/basis-path FIFO empty      (feeds rng_fifo_statu
 wire [3:0] rng_dout4;
 assign dout4_test = rng_dout4;
 
+// sticky error flags out of the RNG datapath (docs/monitoring.md §2)
+// (bit 3 of the monitor is the decoy path's E1, de_err_ctrl_underrun input
+//  port above -- the E4 entropy-stall watchdog was removed 2026-07-17)
+wire rng_err_ctrl_underrun;    // E1, clk80 domain      (decoder ran on missing entropy)
+wire rng_err_uneven_gate;      // E2, tx_core_clk domain (fifo_1x2 read-while-empty never-event)
+wire rng_err_endpoint_ovread;  // E3, tx_core_clk domain (rd_en_4 on a not-ready tick)
+
 angles_top_wrapper #(
     .PREC (15)
 ) angles_rng_inst (
@@ -434,29 +451,40 @@ angles_top_wrapper #(
     .up_almost_full   (uv_almost_full_16),
     .up_empty         (uv_empty_16),
     .uneven_almost_full (uv_almost_full_2),
-    .uneven_empty       (uv_empty_2)
+    .uneven_empty       (uv_empty_2),
+    // sticky error flags (quasi-static 1b; collected by u_rng_monitor below)
+    .err_ctrl_underrun   (rng_err_ctrl_underrun),
+    .err_uneven_gate     (rng_err_uneven_gate),
+    .err_endpoint_ovread (rng_err_endpoint_ovread)
 );
 
-//Sync rng_reset to tx_core_clk domain
+// ---- RNG error monitor (s_axil_aclk domain) --------------------------------
+// rng_monitor syncs the four sticky error flags (each latched in its native
+// domain) into the AXIL register domain and adds a W1C sticky layer. Wired to
+// fastdac_axil_mngt register 0x2C (slot 4'hB):
+//   read  0x2C -> {rng_err_raw[3:0], rng_err_sticky[3:0]} in bits [7:0]
+//   write 0x2C -> W1C: wdata[3:0] pulses rng_err_clr for the matching bits
+// bit map (raw and sticky alike): [0] E1 angles ctrl underrun (clk80),
+//   [1] E2 uneven gate (tx_core_clk), [2] E3 endpoint over-read (tx_core_clk),
+//   [3] E1 of the DECOY path, de_err_ctrl_underrun (clk80) -- replaced the
+//       removed E4 entropy-stall watchdog 2026-07-17.
+// (wires declared above fastdac_axil_mngt_inst).
 
-// (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
-// initial begin rng_rst_r <= 0; end
-// always @(posedge tx_core_clk) begin
-//     rng_rst_r <= {rng_rst_r[1:0], rng_reset};
-// end
-// wire rng_rst_clk200;
-// reset_register #(.RST_ACTIVE_LEVEL("HIGH")) rng_reset_inst (
-//     .clk_i(tx_core_clk),
-//     .rst_i(rng_rst_r[1]),
-//     .clk_o(/*unused*/),
-//     .rstn_o(/*unused*/),
-//     .rst_o(rng_rst_clk200)); 
+rng_monitor #(
+    .N_ERR  (4),
+    .STAGES (2)
+) u_rng_monitor (
+    .clk_i        (s_axil_aclk),
+    .rst_i        (~s_axil_aresetn),
+    // {decoy E1 ctrl underrun, E3 endpoint over-read, E2 gate violation, E1 ctrl underrun}
+    .err_i        ({de_err_ctrl_underrun, rng_err_endpoint_ovread,
+                    rng_err_uneven_gate, rng_err_ctrl_underrun}),
+    .err_clr_i    (rng_err_clr),
+    .err_raw_o    (rng_err_raw),
+    .err_sticky_o (rng_err_sticky)
+);
 
-// tready_flag is a status/debug output that historically mirrored s_axis_tready
-// (old: assign s_axis_tready = tready_flag). The wrapper now drives s_axis_tready
-// directly, so mirror it back out to keep the port's meaning.
-// assign tready_flag = s_axis_tready;
-
+/*
 reg [2:0] command_rng_status_r;
 reg [9:0] rng_fifo_status;
 wire rng_fifo_status_valid;
@@ -507,6 +535,7 @@ end
 //         end   
 //     end
 // end
+*/
 
 //Port ram data_write from axil and data_read is 4 samples for DACs    
 reg [7:0] fastdac_dpram_seq_addr_dac0_r;

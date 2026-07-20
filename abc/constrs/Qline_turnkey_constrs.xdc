@@ -300,6 +300,7 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/ins
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg5_reg[2]/C}] -to [get_pins Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fb_mode_r_reg/D]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg5_reg[3]/C}] -to [get_pins Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/insert_zero_mode_r_reg/D]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg5_reg[4]/C}] -to [get_pins Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/dac0_mode_r_reg/D]
+set_false_path -from [get_pins Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/angles_rng_inst/u_basis/err_ctrl_underrun_r_reg/C] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/u_rng_monitor/g_sync[0].u_sync/sync_ff_reg[0]/D}]
 
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg6_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_amp_dac2_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_axil_mngt_inst/slv_reg7_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/fastdac_dpram_max_addr_rng_dac1_r_reg[*]/D}]
@@ -328,6 +329,7 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg2_reg[2]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/fine_delay_de_inst/ttl_trigger_enstep_slv2_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_rng_mode_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_rng_mode_240_r_reg/D]
+set_false_path -from [get_pins Qline_turnkey_top_i/decoy/decoy_rng_fifos_0/inst/u_rangedec_top_wrapper/err_ctrl_underrun_r_reg/C] -to [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/u_rng_monitor/g_sync[3].u_sync/sync_ff_reg[0]/D}]
 
 ## multi-bit CDC
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/tune_step_r_reg[*]/D}]

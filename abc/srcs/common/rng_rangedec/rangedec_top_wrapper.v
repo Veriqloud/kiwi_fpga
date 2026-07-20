@@ -78,7 +78,12 @@ module rangedec_top_wrapper #(
     input  wire         uneven_rd_en,
     output wire [1:0]    uneven_dout,          // 2 biased bits @clk200
     output wire         uneven_empty,         // uneven FIFO empty     (read-side, clk200)
-    output wire         uneven_almost_full    // uneven FIFO almost_full (write-side, clk80)
+    output wire         uneven_almost_full,   // uneven FIFO almost_full (write-side, clk80)
+
+    // ---- sticky error flag (docs/monitoring.md §2.1) ----
+    output wire         err_ctrl_underrun     // E1: decoder consumed bits the controller
+                                              //     did not hold; sticky, clk80 domain.
+                                              //     Quasi-static: 2-FF sync at the consumer.
 );
 
     // ---------------------------------------------------------------------
@@ -220,6 +225,26 @@ module rangedec_top_wrapper #(
     // NOTE(1) [resolved above]: the rng_ready gate holds basis_rangedec in reset
     // (and zeroes the controller's 'take') until the controller has prefetched
     // PRIME_BITS real bits, so the decoder never primes on power-on zero-fill.
+
+    // ---------------------------------------------------------------------
+    // E1 -- sticky controller-underrun flag (docs/monitoring.md §2.1).
+    // The exact corruption event is the controller's take-clamp: the decoder
+    // consumed 'take' bits when only ctrl_level were valid (controller.v:88).
+    // Strictly stronger than (ctrl_level == 0): a same-cycle refill word can
+    // step bits_level from <take straight to 16, hiding the zero, while the
+    // decode still ran on zero-fill. rng_ready is sticky, so nothing upstream
+    // stops the decoder -- this flag is the only record that the biased
+    // output turned statistically wrong. Cleared by rst_clk80 only (for a
+    // W1C register bit, OR a clk80-synchronized clear into the reset term).
+    // ---------------------------------------------------------------------
+    reg err_ctrl_underrun_r;
+    always @(posedge clk80) begin
+        if (rst_clk80)
+            err_ctrl_underrun_r <= 1'b0;
+        else if (rng_ready && ({3'b000, take_to_ctrl} > ctrl_level))
+            err_ctrl_underrun_r <= 1'b1;
+    end
+    assign err_ctrl_underrun = err_ctrl_underrun_r;
 
     // ---------------------------------------------------------------------
     // debug: ILA on the clk80 datapath (ila_rdec)

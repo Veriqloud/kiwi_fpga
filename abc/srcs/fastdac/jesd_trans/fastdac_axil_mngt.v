@@ -38,9 +38,11 @@
         // Control data output
         // Control register
         output fastdac_en_jesd_o,
-        output command_rng_fifo_status_o,
-		input [9:0] rng_fifo_status_i,
-		input rng_fifo_status_valid_i,
+        // output command_rng_fifo_status_o,
+		// input [9:0] rng_fifo_status_i,
+		// input rng_fifo_status_valid_i,
+		output [3:0] rng_err_clr_o,
+		input [7:0] rng_err_i,
         output fastdac_reg_en_o,
         // output slv_reg_wren,
         output [7:0] fastdac_dpram_max_addr_seq_dac0_o,
@@ -198,7 +200,7 @@
 	// 
 	// Registers connections to output signal
 	assign fastdac_en_jesd_o = slv_reg0[0];
-	assign command_rng_fifo_status_o = slv_reg0[1];
+	// assign command_rng_fifo_status_o = slv_reg0[1];
 	// assign fastdac_dpram_max_addr_seq_dac0_o = slv_reg1[6:0];
 	// assign fastdac_dpram_max_addr_seq_dac1_o = slv_reg1[22:16];
 	// assign fastdac_dpram_max_addr_pos_dac0_o = slv_reg2[7:0];
@@ -542,31 +544,31 @@
 	    end 
 	end
 	
-	(* ASYNC_REG = "TRUE" *) reg [2:0] rng_fifo_status_valid_r;
-	initial begin
-		rng_fifo_status_valid_r <= 0;
-		slv_reg9 <= 0;
-	end     
+	// (* ASYNC_REG = "TRUE" *) reg [2:0] rng_fifo_status_valid_r;
+	// initial begin
+	// 	rng_fifo_status_valid_r <= 0;
+	// 	slv_reg9 <= 0;
+	// end     
 
-	always @(posedge S_AXI_ACLK) begin
-		if (S_AXI_ARESETN == 1'b0) begin
-			slv_reg9 <= 0;
-			rng_fifo_status_valid_r <= 0;
-		end else begin
-			rng_fifo_status_valid_r <= {rng_fifo_status_valid_r[1:0],rng_fifo_status_valid_i};
-			if (rng_fifo_status_valid_r[2] == 0 && rng_fifo_status_valid_r[1] == 1) begin
-				slv_reg9 <= rng_fifo_status_i;
-			end
-		end
-	end
+	// always @(posedge S_AXI_ACLK) begin
+	// 	if (S_AXI_ARESETN == 1'b0) begin
+	// 		slv_reg9 <= 0;
+	// 		rng_fifo_status_valid_r <= 0;
+	// 	end else begin
+	// 		rng_fifo_status_valid_r <= {rng_fifo_status_valid_r[1:0],rng_fifo_status_valid_i};
+	// 		if (rng_fifo_status_valid_r[2] == 0 && rng_fifo_status_valid_r[1] == 1) begin
+	// 			slv_reg9 <= rng_fifo_status_i;
+	// 		end
+	// 	end
+	// end
 
-	ila_ddr_axil ila_fastdac_axil (
-		.clk(S_AXI_ACLK), // input wire clk
-		.probe0(slv_reg9), // input wire [8:0]  probe0  
-		.probe1(rng_fifo_status_valid_r), // input wire [2:0]  probe1 
-		.probe2(rng_fifo_status_valid_i), // input wire [0:0]  probe2 
-		.probe3(rng_fifo_status_i) // input wire [8:0]  probe3
-	);
+	// ila_ddr_axil ila_fastdac_axil (
+	// 	.clk(S_AXI_ACLK), // input wire clk
+	// 	.probe0(), // input wire [8:0]  probe0  
+	// 	.probe1(), // input wire [2:0]  probe1 
+	// 	.probe2(), // input wire [0:0]  probe2 
+	// 	.probe3() // input wire [8:0]  probe3
+	// );
 
 	// Implement axi_arvalid generation
 	// axi_rvalid is asserted for one S_AXI_ACLK clock cycle when both 
@@ -618,6 +620,8 @@
 	        4'h8   : reg_data_out <= slv_reg8;
 	        4'h9   : reg_data_out <= slv_reg9;
 	        4'hA   : reg_data_out <= slv_reg10;
+	        // RNG error register: [7:4] = raw view, [3:0] = W1C sticky
+	        4'hB   : reg_data_out <= {{(C_S_AXI_DATA_WIDTH-8){1'b0}}, rng_err_i};
 	        default : reg_data_out <= slv_reg16;
 	      endcase
 	end
@@ -642,6 +646,32 @@
 	end    
 
 	// Add user logic here
+
+	// ---------------------------------------------------------------------
+	// RNG error register, slot 4'hB (byte offset 0x2C).
+	// Read : bits [7:4] = rng_err raw view   ("fired since datapath reset")
+	//        bits [3:0] = rng_err W1C sticky ("fired since last clear")
+	//        (rng_err_i = {rng_err_raw, rng_err_sticky}, packed by the top;
+	//         bit order within each nibble: {E4 stall, E3 ovread, E2 gate,
+	//         E1 ctrl underrun} -- docs/monitoring.md §6)
+	// Write: W1C -- each WDATA bit [3:0] written 1 emits a one-cycle pulse on
+	//        rng_err_clr_o, clearing the matching sticky bit in rng_monitor
+	//        (set dominates clear there, so a coincident event is not lost).
+	//        No slv_reg storage: the flag state lives in rng_monitor.
+	// ---------------------------------------------------------------------
+	reg [3:0] rng_err_clr_r;
+	always @( posedge S_AXI_ACLK )
+	begin
+	  if ( S_AXI_ARESETN == 1'b0 )
+	    rng_err_clr_r <= 4'b0000;
+	  else if ( slv_reg_wren && (axi_awaddr < 4096)
+	            && (axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 4'hB)
+	            && S_AXI_WSTRB[0] )
+	    rng_err_clr_r <= S_AXI_WDATA[3:0];
+	  else
+	    rng_err_clr_r <= 4'b0000;
+	end
+	assign rng_err_clr_o = rng_err_clr_r;
 
 	// User logic ends
 

@@ -68,7 +68,7 @@
 `default_nettype none
 
 module angles_top_wrapper #(
-    parameter        PREC = 15
+    parameter         PREC        = 15
 )(
     input  wire         rst_clk200,
     input  wire         rst_clk80,
@@ -105,7 +105,14 @@ module angles_top_wrapper #(
 
     // uneven/basis output-FIFO (fifo_1x2) status
     output wire         uneven_almost_full,   // write-side (clk80)
-    output wire         uneven_empty          // read-side  (clk200)
+    output wire         uneven_empty,         // read-side  (clk200)
+
+    // sticky error flags (docs/monitoring.md §2). Each is 1 bit and quasi-
+    // static in its native domain: cross with a plain 2-FF synchronizer
+    // (ASYNC_REG) at the consumer; cleared only by that domain's reset.
+    output wire         err_ctrl_underrun,    // E1 (clk80) : decoder ran on missing entropy
+    output wire         err_uneven_gate,      // E2 (clk200): fifo_1x2 read-while-empty (never-event)
+    output wire         err_endpoint_ovread   // E3 (clk200): rd_en_4 on a not-ready tick
 );
 
     // ---------------------------------------------------------------------
@@ -132,7 +139,7 @@ module angles_top_wrapper #(
     // ---------------------------------------------------------------------
     wire up_full;          // basis path entropy FIFO full        (rangedec ent_full)
     wire tr_full;          // even  path entropy FIFO full        (fifo_up_true full)
-    wire up_almost_full;   // basis path entropy FIFO almost_full (rangedec ent_almost_full)
+    // up_almost_full is an output port above (driven by rangedec ent_almost_full)
     wire tr_almost_full;   // even  path entropy FIFO almost_full (fifo_up_true almost_full)
 
     // A branch accepts new beats only while it is NOT almost-full, leaving write
@@ -173,6 +180,17 @@ module angles_top_wrapper #(
     wire tr_wr_en = word_go & route_true & ~tr_almost_full & ~tr_full;
 
     // ---------------------------------------------------------------------
+    // branch <-> unpacker signals (declared here: used by the instances below)
+    // ---------------------------------------------------------------------
+    wire [15:0] tr_dout;         // even path: fifo_up_true read data (clk200)
+    wire        tr_empty;
+    wire        tr_rd_en;
+    wire [1:0]  uv_dout;         // uneven path: fifo_1x2 read data (clk200)
+    wire        uv_empty;
+    wire        uv_almost_full;
+    wire        uv_rd_en;
+
+    // ---------------------------------------------------------------------
     // uneven / basis path: full biased datapath (own fifo_up inside)
     // ---------------------------------------------------------------------
     rangedec_top_wrapper #(
@@ -195,7 +213,9 @@ module angles_top_wrapper #(
         .uneven_rd_en (uv_rd_en),
         .uneven_dout  (uv_dout),
         .uneven_empty (uv_empty),
-        .uneven_almost_full (uv_almost_full)
+        .uneven_almost_full (uv_almost_full),
+        // E1 sticky, latched inside in clk80 (take-clamp event)
+        .err_ctrl_underrun (err_ctrl_underrun)
     );
 
     // ---------------------------------------------------------------------
@@ -238,9 +258,6 @@ module angles_top_wrapper #(
     // =====================================================================
 
     // even path: fifo_up_true (16b word) -> 8 pairs
-    wire [15:0] tr_dout;
-    wire        tr_empty;
-    wire        tr_rd_en;
     wire [1:0]  even_pair;
     wire        even_valid;
     wire        even_take;
@@ -257,10 +274,6 @@ module angles_top_wrapper #(
     );
 
     // uneven path: fifo_uneven (2b word) -> 1 pair
-    wire [1:0]  uv_dout;
-    wire        uv_empty;
-    wire        uv_almost_full;
-    wire        uv_rd_en;
     wire [1:0]  uneven_pair;
     wire        uneven_valid;
     wire        uneven_take;
@@ -312,6 +325,35 @@ module angles_top_wrapper #(
 
     assign dout       = dout_r;
     assign dout_empty = ~both_ready;                // a read on this tick would underflow
+
+    // ---------------------------------------------------------------------
+    // E2/E3 -- sticky output-side error flags (docs/monitoring.md §2.2, §2.3).
+    // E2 is a never-event: the bit_unpacker gate (fifo_rd_en = ~rd_pend &
+    //     ~pfull & ~fifo_empty) makes a read-while-empty impossible; if this
+    //     latches, the fifo_1x2 read contract broke (CDC fault or an edit
+    //     upstream). Also the fabric equivalent of the IP Underflow_Flag.
+    // E3 latches when the endpoint pops on a tick with a branch not ready --
+    //     dout then holds the PREVIOUS nibble (silent repeat downstream).
+    //     Self-contained: rd_en_4 & ~both_ready, nothing else. NOTE: the
+    //     endpoint (jesd_transport) free-runs rd_en_4 from the first PPS
+    //     edge and ignores dout_empty, so entropy streaming must be up and
+    //     the pipe primed BEFORE rd_en_4 starts ticking -- otherwise E3
+    //     latches at bring-up and every dead tick after it is masked.
+    // Cleared by rst_clk200 only.
+    // ---------------------------------------------------------------------
+    reg err_uneven_gate_r;
+    reg err_endpoint_ovread_r;
+    always @(posedge clk200) begin
+        if (rst_clk200) begin
+            err_uneven_gate_r     <= 1'b0;
+            err_endpoint_ovread_r <= 1'b0;
+        end else begin
+            if (uv_rd_en & uv_empty)   err_uneven_gate_r     <= 1'b1;
+            if (rd_en_4 & ~both_ready) err_endpoint_ovread_r <= 1'b1;
+        end
+    end
+    assign err_uneven_gate     = err_uneven_gate_r;
+    assign err_endpoint_ovread = err_endpoint_ovread_r;
 
 endmodule
 

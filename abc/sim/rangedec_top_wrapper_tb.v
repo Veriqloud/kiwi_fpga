@@ -58,11 +58,14 @@ module rangedec_top_wrapper_tb;
     wire         uneven_rd_en;
     wire [1:0]   uneven_dout;
     wire         uneven_empty;
+    wire         err_ctrl_underrun;   // E1 sticky (clk80), docs/monitoring.md §2.1
 
     rangedec_top_wrapper #(
         .PREC (PREC)
     ) dut (
-        .rst         (rst),
+        // single tb reset drives both per-domain reset ports
+        .rst_clk80   (rst),
+        .rst_clk250  (rst),
         .wr_clk      (wr_clk),
         .ent_din     (ent_din),
         .ent_wr_en   (ent_wr_en),
@@ -74,7 +77,8 @@ module rangedec_top_wrapper_tb;
         .clk200      (clk200),
         .uneven_rd_en (uneven_rd_en),
         .uneven_dout  (uneven_dout),
-        .uneven_empty (uneven_empty)
+        .uneven_empty (uneven_empty),
+        .err_ctrl_underrun (err_ctrl_underrun)
     );
 
     // ----- reset (released on a clk80 edge) -----

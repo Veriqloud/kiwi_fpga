@@ -60,10 +60,18 @@ module angles_top_wrapper_tb;
     wire [3:0]   dout;
     wire         dout_empty;
 
+    // sticky error flags (docs/monitoring.md §2)
+    wire         err_ctrl_underrun;    // E1 (clk80)
+    wire         err_uneven_gate;      // E2 (clk200)
+    wire         err_endpoint_ovread;  // E3 (clk200)
+
     angles_top_wrapper #(
         .PREC (PREC)
     ) dut (
-        .rst           (rst),
+        // single tb reset drives all three per-domain reset ports
+        .rst_clk200    (rst),
+        .rst_clk80     (rst),
+        .rst_clk250    (rst),
         .s_axis_aclk   (s_axis_aclk),
         .s_axis_tdata  (s_axis_tdata),
         .s_axis_tvalid (s_axis_tvalid),
@@ -75,7 +83,10 @@ module angles_top_wrapper_tb;
         .clk200        (clk200),
         .rd_en_4       (rd_en_4),
         .dout          (dout),
-        .dout_empty    (dout_empty)
+        .dout_empty    (dout_empty),
+        .err_ctrl_underrun   (err_ctrl_underrun),
+        .err_uneven_gate     (err_uneven_gate),
+        .err_endpoint_ovread (err_endpoint_ovread)
     );
 
     // ----- reset (released on a clk80 edge) -----

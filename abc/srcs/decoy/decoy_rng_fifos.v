@@ -35,7 +35,8 @@ module decoy_rng_fifos(
     input           rd_en_16_de,
     input           rd_en_4,
     output [1:0]    de_rng_dout2,
-    output [3:0]    de_rng_flags
+    output [3:0]    de_rng_flags,
+    output          de_err_ctrl_underrun   // E1 sticky, NATIVE clk80 (CDC in rng_monitor)
 );
 
 wire [15:0] dout16;
@@ -60,10 +61,10 @@ cdc_sync_single #(.STAGES(2)) u_sync_de_e16 (
 cdc_sync_single #(.STAGES(2)) u_sync_de_af2 (
     .clk_i (clk200), .d_i (de_almost_full_2),  .q_o (de_almost_full_2_sync));
 
-wire [3:0] de_rng_flags;
+// de_rng_flags is an output port above (ANSI decl); assign it directly
 assign de_rng_flags = {de_almost_full_16_sync, de_empty_16_sync, de_almost_full_2_sync, de_empty_2};
-assign s_axis_tready = tready_flag;
 reg tready_flag;
+assign s_axis_tready = tready_flag;
 initial begin
     tready_flag <= 1;
 end
@@ -109,6 +110,12 @@ end
 //  .rd_rst_busy()  // output wire rd_rst_busy
 //);
 
+// E1 sticky error flag (docs/monitoring.md §2.1): decoder consumed bits the
+// controller did not hold -- biased output statistically wrong since it fired.
+// Latched in clk80 inside the wrapper and exported RAW on the port above:
+// quasi-static 1-bit, so the consumer (rng_monitor in jesd_transport) does the
+// 2-FF sync into its own register domain. No local CDC here.
+
 rangedec_top_wrapper #(
     .PREC (15)
 ) u_rangedec_top_wrapper (
@@ -121,13 +128,14 @@ rangedec_top_wrapper #(
     .ent_almost_full(de_almost_full_16),
     .up_empty    (de_empty_16),
 
-    .clk80       (clk80),  
-    .rdec_p0_i   (rdec_p0_i),   
+    .clk80       (clk80),
+    .rdec_p0_i   (rdec_p0_i),
     .clk200      (clk200),
     .uneven_rd_en(rd_en_4),
     .uneven_dout (de_rng_dout2),
     .uneven_empty(de_empty_2),
-    .uneven_almost_full(de_almost_full_2)
+    .uneven_almost_full(de_almost_full_2),
+    .err_ctrl_underrun (de_err_ctrl_underrun)
 );
 
 endmodule
