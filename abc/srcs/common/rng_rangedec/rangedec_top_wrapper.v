@@ -34,7 +34,7 @@
 // Engineer: Hop DINH
 //
 // Create Date: 06/29/2026
-// Design Name: rng_test
+// Design Name: Qline_turnkey
 // Module Name: rangedec_top_wrapper
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310

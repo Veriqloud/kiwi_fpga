@@ -27,7 +27,7 @@
 // Engineer: Hop DINH
 //
 // Create Date: 06/30/2026
-// Design Name: rng_test
+// Design Name: Qline_turnkey
 // Module Name: bit_unpacker
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310

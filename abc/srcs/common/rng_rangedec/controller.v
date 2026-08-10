@@ -4,7 +4,7 @@
 // Engineer: Hop DINH
 //
 // Create Date: 06/29/2026
-// Design Name: rng_test
+// Design Name: Qline_turnkey
 // Module Name: controller
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310

@@ -4,7 +4,7 @@
 // Engineer: Hop DINH
 //
 // Create Date: 06/30/2026
-// Design Name: rng_test
+// Design Name: Qline_turnkey
 // Module Name: fifo_up_true_wrapper
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310

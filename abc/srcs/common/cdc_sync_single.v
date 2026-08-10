@@ -27,7 +27,7 @@
 // Engineer: Hop DINH
 //
 // Create Date: 07/08/2026
-// Design Name: rng_test
+// Design Name: Qline_turnkey
 // Module Name: cdc_sync_single
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310

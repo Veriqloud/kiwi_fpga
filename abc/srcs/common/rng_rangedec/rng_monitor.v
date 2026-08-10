@@ -41,7 +41,7 @@
 // Engineer: Hop DINH
 //
 // Create Date: 07/16/2026
-// Design Name: rng_test
+// Design Name: Qline_turnkey
 // Module Name: rng_monitor
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310
