@@ -1,22 +1,24 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company: Veriqloud
+// Engineer: Hop DINH, Fabrice Faveneau
+//
 // Create Date: 06/30/2023 10:28:44 AM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: reset_register
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Reset synchronizer: asynchronous assert, synchronous de-assert.
+//              Takes an unsynchronized reset and releases it cleanly in the
+//              clk_i domain through a 2-FF chain. Drives both polarities
+//              (rstn_o active-low, rst_o active-high) plus a clk_i passthrough.
+//
+// Dependencies: none
+//
 // Revision 0.01 - File Created
+// Revision 0.02 - Header completed
 // Additional Comments:
-// 
 //////////////////////////////////////////////////////////////////////////////////
 
 

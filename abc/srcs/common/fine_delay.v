@@ -9,36 +9,57 @@
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
-// Description: Cascade ODELAY3 for delay upto ~12ns, resolution in ps 
-// 
-// Dependencies: 
-// 
-// Revision:
+// Description: Cascade ODELAY3 for delay upto ~12ns, resolution in ps
+//              Chain is ODELAYE3(MASTER) -> IDELAYE3(SLAVE_MIDDLE) ->
+//              ODELAYE3(SLAVE_END). Each stage owns its own tap-step engine
+//              (master / slv1 / slv2), driven by an AXIL trigger and a tap count
+//              taken from the ttl_params_* registers. The delayed pulse leaves
+//              through an OBUFDS as an LVDS pair.
+//
+// Dependencies: Xilinx ODELAYE3 / IDELAYE3 / OBUFDS primitives (UltraScale+).
+//               Requires an IDELAYCTRL in the same I/O bank, clocked at
+//               REFCLK_FREQUENCY, for the tap delay lines to be calibrated.
+//
 // Revision 0.01 - File Created
+// Revision 0.02 - Header completed, port comments added
 // Additional Comments:
-// 
+// Tap stepping is rate-limited by counter_fine: one CE pulse every 16 clk80
+// cycles, so a tune window of N cycles moves the line by about N/16 taps.
 //////////////////////////////////////////////////////////////////////////////////
 
 
 module fine_delay #(
     parameter DELAY_FORMAT = "COUNT", // recommend COUNT & VAR_ MODE, TIME and FIXED mode
     parameter DELAY_TYPE = "VARIABLE",
-    parameter DELAY_VALUE = 50,  //need to be between 45-65 taps for IDELAY3 calibrates correctly/BISC process 
-    parameter REFCLK_FREQUENCY = 300, // 
-    parameter UPDATE_MODE = "ASYNC"
+    parameter DELAY_VALUE = 50,  //need to be between 45-65 taps for IDELAY3 calibrates correctly/BISC process
+    parameter REFCLK_FREQUENCY = 300, // IDELAYCTRL reference clock, MHz (200.0-800.0)
+    parameter UPDATE_MODE = "ASYNC"   // when tap updates take effect (ASYNC, MANUAL, SYNC)
 )(
-    input   clk80,
-    input   ttl_rst80_o,
-    input   pulse_delay_tune,
-    output  pulse_p,
-    output  pulse_n,
+    input   clk80,              // 80 MHz control clock: tune engines and all delay primitives
+    input   ttl_rst80_o,        // active-high reset, clk80 domain (input despite the _o suffix)
+    input   pulse_delay_tune,   // pulse to be delayed, drives the master ODELAYE3 ODATAIN
+    output  pulse_p,            // delayed pulse, LVDS positive leg (OBUFDS)
+    output  pulse_n,            // delayed pulse, LVDS negative leg (OBUFDS)
 
     //AXIL registers
+    // Master stage (ODELAYE3 MASTER) control word:
+    //   [0]     increase_en - 1 = increment taps, 0 = decrement
+    //   [14:1]  resolution  - tune window length in clk80 cycles (~/16 = tap steps)
+    //   [31:15] unused
     input [31:0]    ttl_params_80,
+    // Slave stages control word, two fields packed into one register:
+    //   [0]     increase_en_slv1 - direction for the IDELAYE3 SLAVE_MIDDLE stage
+    //   [14:1]  resolution_slv1  - tune window for the IDELAYE3 SLAVE_MIDDLE stage
+    //   [15]    unused
+    //   [16]    increase_en_slv2 - direction for the ODELAYE3 SLAVE_END stage
+    //   [30:17] resolution_slv2  - tune window for the ODELAYE3 SLAVE_END stage
+    //   [31]    unused
     input [31:0]    ttl_params_slv,
-    input           ttl_trigger_enstep_o,
-    input           ttl_trigger_enstep_slv1_o,
-    input           ttl_trigger_enstep_slv2_o
+    // Tune triggers, asynchronous to clk80 (sourced from the AXIL clock domain).
+    // Each opens its stage's tune window; see the counter_long block below.
+    input           ttl_trigger_enstep_o,       // master ODELAYE3
+    input           ttl_trigger_enstep_slv1_o,  // IDELAYE3 SLAVE_MIDDLE
+    input           ttl_trigger_enstep_slv2_o   // ODELAYE3 SLAVE_END
 );
 
 //ODELAY3 Master
@@ -68,9 +89,9 @@ always @(posedge clk80) begin
     ttl_trigger_enstep_slv1_r <= {ttl_trigger_enstep_slv1_r[1:0],ttl_trigger_enstep_slv1_o};
     ttl_trigger_enstep_slv2_r <= {ttl_trigger_enstep_slv2_r[1:0],ttl_trigger_enstep_slv2_o};
 end
-assign en_step = ttl_trigger_enstep_r[0];
-assign en_step_slv1 = ttl_trigger_enstep_slv1_r[0];
-assign en_step_slv2 = ttl_trigger_enstep_slv2_r[0];
+assign en_step = ttl_trigger_enstep_r[2];
+assign en_step_slv1 = ttl_trigger_enstep_slv1_r[2];
+assign en_step_slv2 = ttl_trigger_enstep_slv2_r[2];
 
 reg stop, stop_slv1, stop_slv2;
 reg en_vtc, en_vtc_slv1, en_vtc_slv2;

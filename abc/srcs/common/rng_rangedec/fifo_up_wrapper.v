@@ -15,7 +15,7 @@
 //              controller read domain.
 //
 // Dependencies: ip/fifo_128x16/fifo_128x16.xci
-// Revision:
+// Revision: 0.02 - No change
 // Revision 0.01 - File Created
 // Additional Comments:
 //
@@ -23,7 +23,8 @@
 `default_nettype none
 
 module fifo_up_wrapper (
-    input  wire         rst,       // async, active high
+    // ---- async, active high ----
+    input  wire         rst,      
 
     // ---- write side (entropy producer domain) ----
     input  wire         wr_clk,

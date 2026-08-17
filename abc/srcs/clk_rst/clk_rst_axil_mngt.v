@@ -1,5 +1,40 @@
-
 `timescale 1 ns / 1 ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Veriqloud
+// Engineer: Hop DINH, Fabrice Faveneau
+//
+// Create Date: 
+// Design Name: Qline_turnkey
+// Module Name: clk_rst_axil_mngt
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: AXI4-Lite slave of the clk_rst hierarchy. Maps the slave
+//              registers to the per-domain reset lines and to the LTC6951
+//              clockchip SYNC control.
+//
+// Dependencies:
+//- none (leaf module; instantiated by clk_rst_mngt.v)
+//
+// Revision: 0.02
+// Revision 0.01 - File Created
+// Additional Comments:
+// Register map (C_S_AXI_DATA_WIDTH = 32 -> ADDR_LSB = 2, decode on
+// axi_awaddr[4:2]; C_S_AXI_ADDR_WIDTH is driven to 10 by clk_rst_mngt.v):
+//   0x00  slv_reg0 [0] clockchip_sync_o
+//                  [1] fpga_turnkey_fastdac_rst_o
+//   0x04  slv_reg1 [0] tdc_rst_o
+//                  [1] lrst_o
+//   0x08  slv_reg2 [0] gc_rst_o
+//   0x0C  slv_reg3 [0] ttl_rst_o
+//   0x10  slv_reg4 [0] ddr_data_rst_o
+//   0x14  slv_reg5 [0] decoy_rst_o
+//   0x18  slv_reg6 [0] ltc_sync_rst_o
+//   0x1C  slv_reg7 [0] rng_rst_o
+// All unlisted bits are writable but unused. Reads outside 0x00-0x1C return
+// slv_reg16, which is never written or reset.
+//
+//////////////////////////////////////////////////////////////////////////////////
 
 	module clk_rst_axil_mngt #
 	(
@@ -18,8 +53,6 @@
         // Control data output
         output wire gc_rst_o,
 		output wire clockchip_sync_o,
-	//	output wire fpga_turnkey_fastdac_sync_o,
-	//	output wire fpga_turnkey_fastdac_sel_o,
 		output wire ttl_rst_o,
 		output wire decoy_rst_o,
 		output wire tdc_rst_o,
@@ -131,7 +164,6 @@
 	reg [C_S_AXI_DATA_WIDTH-1:0]	 reg_data_out;
 	integer	 byte_index;
 	reg	 aw_en;
-	// 
 	// Registers connections to output signal
 	assign clockchip_sync_o = slv_reg0[0];
 	assign fpga_turnkey_fastdac_rst_o= slv_reg0[1];
@@ -144,10 +176,8 @@
 	assign ltc_sync_rst_o = slv_reg6[0];
 	assign rng_rst_o = slv_reg7[0];
 
-//	assign fpga_turnkey_fastdac_sel_o = slv_reg0[1];
-//	assign fpga_turnkey_fastdac_sync_o = slv_reg1[0];
+	
 	// I/O Connections assignments
-
 	assign S_AXI_AWREADY	= axi_awready;
 	assign S_AXI_WREADY	= axi_wready;
 	assign S_AXI_BRESP	= axi_bresp;

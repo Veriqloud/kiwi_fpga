@@ -1,26 +1,3 @@
-// ============================================================================
-// cdc_sync_single.v
-//
-// Single-bit clock-domain-crossing synchronizer (N-FF, default 2-FF).
-//
-// Captures one asynchronous 1-bit signal 'd_i' into the destination clock
-// 'clk_i' domain through STAGES back-to-back flip-flops, giving the first
-// flop time to resolve metastability before the value is used. Output 'q_o'
-// is the last (settled) stage.
-//
-//   d_i --|>FF0|--|>FF1|-- ... --|>FF(STAGES-1)|--> q_o   (all @ clk_i)
-//          async   settling            settled
-//
-// Use for LEVEL or independent single-bit flags (status/enable/reset-request).
-// NOT for multi-bit buses that must stay mutually coherent (use a gray-coded
-// FIFO / handshake / bus synchronizer instead) -- instantiate one of these per
-// INDEPENDENT bit only.
-//
-// The ASYNC_REG attribute keeps the chain packed and marks it for the tools so
-// placement maximises metastability MTBF. Constrain the crossing with e.g.
-//   set_false_path  -to [get_pins .../u_sync/sync_ff_reg[0]/D]
-// (or set_max_delay -datapath_only), targeting the FIRST stage.
-// ============================================================================
 `timescale 1ns/1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: Veriqloud
@@ -35,7 +12,7 @@
 // Description: Reusable single-bit N-FF (default 2-FF) CDC synchronizer.
 //
 // Dependencies: none
-// Revision:
+// Revision: 0.02
 // Revision 0.01 - File Created
 // Additional Comments:
 //

@@ -32,7 +32,6 @@ module decoy_rng_fifos(
     input           rst_clk80,
     input           rst_clk250,
     input [15:0]    rdec_p0_i,
-    input           rd_en_16_de,
     input           rd_en_4,
     output [1:0]    de_rng_dout2,
     output [3:0]    de_rng_flags,
@@ -76,39 +75,7 @@ always @(posedge s_axis_clk) begin
     end
 
 end
-//fifo_decoy_rng_128x16 fifo_decoy_rng_16_inst (
-//    .rst(rng_reset),                  // input wire rst
-//    .wr_clk(s_axis_clk),            // input wire wr_clk
-//    .rd_clk(clk200),            // input wire rd_clk
-//    .din(s_axis_tdata),                  // input wire [127 : 0] din
-//    .wr_en(s_axis_tvalid && s_axis_tready),              // input wire wr_en
-//    .rd_en(rd_en_16_de),              // input wire rd_en
-//    .dout(dout16),                // output wire [15 : 0] dout
-//    .full(),                // output wire full
-//    .almost_full(de_almost_full_16),       // output wire almost_full
-//    .empty(de_empty),              // output wire empty
-//    .wr_rst_busy(),  // output wire wr_rst_busy
-//    .rd_rst_busy()  // output wire rd_rst_busy
-//);
 
-//wire wr_ack;
-//wire valid;
-
-//fifo_decoy_rng_16x2 fifo_decoy_rng_2_inst (
-//  .rst(rng_reset),                  // input wire rst
-//  .wr_clk(clk200),            // input wire wr_clk
-//  .rd_clk(clk200),            // input wire rd_clk
-//  .din(dout16),                  // input wire [15 : 0] din
-//  .wr_en(rd_en_16_de),              // input wire wr_en
-//  .rd_en(rd_en_4),              // input wire rd_en
-//  .dout(de_rng_dout2),                // output wire [1 : 0] dout
-//  .full(),                // output wire full
-//  .wr_ack(wr_ack),            // output wire wr_ack
-//  .empty(),              // output wire empty
-//  .valid(valid),              // output wire valid
-//  .wr_rst_busy(),  // output wire wr_rst_busy
-//  .rd_rst_busy()  // output wire rd_rst_busy
-//);
 
 // E1 sticky error flag (docs/monitoring.md §2.1): decoder consumed bits the
 // controller did not hold -- biased output statistically wrong since it fired.

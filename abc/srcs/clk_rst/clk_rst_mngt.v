@@ -14,11 +14,16 @@
 //- Generate resets in each clock domain
 //- Generate SYNC signal for clockchip LTC6951
 // 
-// Dependencies: 
-//- fpga_turnkey_reg_mngt.v
-//- reset_register.v
+// Dependencies:
+//- clk_rst_axil_mngt.v  (x1)  AXI4-Lite slave, source of all software resets
+//- reset_register.v     (x11) per-domain reset assert/release stage
+//- Xilinx primitives:
+//--- IBUFDS_GTE4 (x1) fastdac refclk -> GT QPLL reference
+//--- BUFG_GT     (x1) fastdac core clock (200MHz)
+//--- IBUFDS      (x4) sysref, syncout, ext_clk10, ext_clk100
+//--- BUFGCE      (x2) clk10_o, clk100_o
 // 
-// Revision:
+// Revision: 0.02
 // Revision 0.01 - File Created
 // Additional Comments:
 // 
@@ -83,7 +88,7 @@ module clk_rst_mngt #(
     input         fastdac_sysref_n,
     input         fastdac_syncout_p,
     input         fastdac_syncout_n,
-    input 		ext_clk10_p,
+    input         ext_clk10_p,
     input         ext_clk10_n,
     input         ext_clk100_p,
     input         ext_clk100_n,
@@ -99,10 +104,10 @@ module clk_rst_mngt #(
     output wire   fastdac_corerst_o,
     output        fastdac_sysref_o,
     output        fastdac_syncout_o,
-    output		clk10_o,
-    output		clk100_o,
+    output        clk10_o,
+    output        clk100_o,
     //output SYNC signal for clockchip LTC6951
-    output reg    sync_ltc_o, 
+    output        sync_ltc_o, 
     //output reset signals for other modules
     output wire   tdc_rst_o,
     output wire   lrst_o,
@@ -115,6 +120,15 @@ module clk_rst_mngt #(
     output wire   rng_rst_clk80_o,
     output wire   rng_rst_clk250_o
 );
+
+wire gc_rst;
+wire clockchip_sync;
+wire tdc_rst;
+wire lrst_i;
+wire fpga_turnkey_fastdac_rst;
+wire ddr_data_rst;
+wire ltc_sync_rst;
+wire rng_rst;
 
 clk_rst_axil_mngt # ( 
     .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
@@ -184,22 +198,19 @@ IBUFDS syncout_ibuf (
     .I(fastdac_syncout_p));
 
 //Generate reset for axil
-wire clk_axil_o;
 reset_register #(.RST_ACTIVE_LEVEL("LOW")) reset_reg_axil_inst (
     .clk_i(s_axil_aclk),
     .rstn_i(sys_reset_n),
-    .clk_o(clk_axil_o),
+    .clk_o(/*unused*/),
     .rstn_o(rstn_axil_o));
     
 //Genrate reset for DDR MIG AXI
-wire rst_ddr_axi_o;
-wire clk_ddr_axi_o;
 reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_ddr_axi_inst (
     .clk_i(clk_ddr_axi_i),
     .rst_i(rst_ddr_axi_i),
-    .clk_o(clk_ddr_axi_o),
+    .clk_o(/*unused*/),
     .rstn_o(rstn_ddr_axi_o),
-    .rst_o(rst_ddr_axi_o));
+    .rst_o(/*unused*/));
 
 //Buffers for clock 10MHz and 100MHz
 wire clk10_int;
@@ -259,7 +270,7 @@ initial begin
     tdc_rst_r <= 0;
     gc_rst_r <= 0;
     lrst_i_r <= 0;
-    ddr_data_rst_r <= 1;
+    ddr_data_rst_r <= 0;
     rng_rst_clk200_r <= 0;
     rng_rst_clk80_r <= 0;
     rng_rst_clk250_r <= 0;
