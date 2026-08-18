@@ -15,7 +15,9 @@
 //- ttl_reg_mngt.v
 //- fine_delay.v
 // 
-// Revision:
+// Revision 0.02 - Fix CDC edge-detect in ttl_params_240_r/80_r (compare [2] to
+//                 fully-synchronized [1], not under-synchronized [0]); document
+//                 delay_val (<=7) and duty_val (<=2) range constraints
 // Revision 0.01 - File Created
 // Additional Comments:
 // 
@@ -117,7 +119,7 @@ initial begin
 end
 always @(posedge clk240) begin
     ttl_params_240_r <= {ttl_params_240_r[1:0],ttl_params_en_o};
-    if ((ttl_params_240_r[2] == 0) && (ttl_params_240_r[0] == 1)) begin
+    if ((ttl_params_240_r[2] == 0) && (ttl_params_240_r[1] == 1)) begin
         ttl_params_240 <= ttl_params_o;
     end
 end
@@ -132,7 +134,7 @@ initial begin
 end
 always @(posedge clk80) begin
     ttl_params_80_r <= {ttl_params_80_r[1:0],ttl_params_en_o};
-    if ((ttl_params_80_r[2] == 0) && (ttl_params_80_r[0] == 1)) begin
+    if ((ttl_params_80_r[2] == 0) && (ttl_params_80_r[1] == 1)) begin
         ttl_params_80 <= ttl_params_o;
         ttl_params_slv <= ttl_params_slv_o;
     end
@@ -174,6 +176,10 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk240_inst (
     .rst_o(ttl_rst240_o));
 
 //Generate PPS trigger signal
+// Note: pps_i is sampled with a single flop, unlike the ASYNC_REG chains used
+// above for ttl_params_*/ttl_rst*. No timing relationship to clk240 is
+// declared in the XDC for this pin, so it is effectively asynchronous here
+// regardless of the source clock relationship. Open item for later review.
 reg pps_trigger;
 reg pps_r;
 always @(posedge clk240) begin
@@ -193,8 +199,10 @@ reg [4:0] counter;
 reg [7:0] bits;
 reg pulse;
 
-wire [3:0] delay_val;
-wire [3:0] duty_val;
+wire [3:0] delay_val; // bits[delay_val]: bits is only [7:0], so software must keep
+                       // delay_val <= 7 (values 8-15 would index out of range)
+wire [3:0] duty_val; // software keeps duty_val <= 2: the "counter == 2" reset below
+                      // only closes the cycle correctly for that range
 assign duty_val = ttl_params_240[22:19];
 assign delay_val = ttl_params_240[18:15];
 
