@@ -1,3 +1,23 @@
+`timescale 1ns/1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Veriqloud
+// Engineer: Hop DINH
+//
+// Create Date: 07/16/2026
+// Design Name: Qline_turnkey
+// Module Name: rng_monitor
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: CDC + W1C sticky register layer for the RNG datapath error
+//              flags; register-domain side interfaces to fastdac_axil_mngt.
+//
+// Dependencies: cdc_sync_single.v
+// Revision: 0.02 - Add some comments for AI review
+// Revision 0.01 - File Created
+// Additional Comments:
+//
+//////////////////////////////////////////////////////////////////////////////////
 // ============================================================================
 // rng_monitor.v
 //
@@ -34,27 +54,25 @@
 // err_raw_o) into a read register; drive err_clr_i from the write strobe of
 // the same address ANDed with wdata (classic W1C). Both sides are then in
 // s_axil_aclk -- no further CDC in the register block.
+//
+// rst_i vs. the datapath resets -- NOT the same signal (checked against
+// clk_rst_mngt.v / jesd_transport.v 2026-08-18): rst_i = ~s_axil_aresetn,
+// sourced from sys_reset_n and asserted only at boot. The datapath-domain
+// resets that actually clear err_i upstream (rng_rst_clk80/200/250) come
+// from a separate, software-writable register bit (rng_rst) and can pulse
+// at any time thereafter, independent of rst_i.
+// INVARIANT this relies on: rst_i must not re-assert while the datapath is
+// live. err_raw_o has no reset (by design, line ~44 above) and err_raw_d is
+// zeroed unconditionally by rst_i below; if rst_i ever pulsed again after an
+// err_i bit had already latched (err_raw_o=1), the edge detector would see
+// a false 0->1 transition on err_raw_d catching up and spuriously re-set
+// err_sticky_o for an event that isn't new. Safe today only because rst_i is
+// boot-only, i.e. always fires before any err_i could possibly be set.
+// If that ever changes (e.g. a driver-level "soft reset without power
+// cycle"), revisit: either reset err_raw_d to err_raw_o's value instead of
+// 0, or gate err_set for one cycle after rst_i deasserts.
 // ============================================================================
-`timescale 1ns/1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: Veriqloud
-// Engineer: Hop DINH
-//
-// Create Date: 07/16/2026
-// Design Name: Qline_turnkey
-// Module Name: rng_monitor
-// Project Name: kiwiKD
-// Target Devices: Opalkelly XEM8310
-// Tool Versions: Vivado 2024.2
-// Description: CDC + W1C sticky register layer for the RNG datapath error
-//              flags; register-domain side interfaces to fastdac_axil_mngt.
-//
-// Dependencies: cdc_sync_single.v
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//
-//////////////////////////////////////////////////////////////////////////////////
+
 `default_nettype none
 
 module rng_monitor #(
@@ -92,6 +110,9 @@ module rng_monitor #(
 
     always @(posedge clk_i) begin
         if (rst_i) begin
+            // relies on rst_i being boot-only (see header) -- zeroing
+            // err_raw_d here while err_raw_o is un-reset is only safe
+            // because nothing upstream can have latched yet.
             err_raw_d    <= {N_ERR{1'b0}};
             err_sticky_o <= {N_ERR{1'b0}};
         end else begin

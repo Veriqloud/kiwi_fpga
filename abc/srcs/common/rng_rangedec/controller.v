@@ -14,12 +14,11 @@
 //              to basis_rangedec, consuming `take` bits per cycle.
 //
 // Dependencies: fifo_up_wrapper.v, basis_rangedec.v
-// Revision:
+// Revision: 0.02 - No change
 // Revision 0.01 - File Created
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
-`default_nettype none
 
 // controller.v
 // Provides rnd_in[7:0] to `basis_rangedec` and drives FIFO read requests.
@@ -45,6 +44,8 @@
 // (32-1)+16 = 47 < 64; the 64-bit buffer therefore never overflows. Reads are
 // pipelined (one request and one insert per cycle), so at most one read is
 // ever outstanding because next_avail already counts the word arriving now.
+
+`default_nettype none
 
 module controller (
     input  wire        clk,

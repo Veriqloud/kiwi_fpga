@@ -1,3 +1,26 @@
+`timescale 1ns/1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Veriqloud
+// Engineer: Hop DINH
+//
+// Create Date: 06/29/2026
+// Design Name: Qline_turnkey
+// Module Name: basis_rangedec
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Bernoulli(p) biased-bit generator. A binary range decoder used as
+//              a sampler over a uniform bit stream; emits one biased symbol per
+//              clock once primed, consuming on average H(p) uniform bits/symbol.
+//
+// Dependencies: none
+// Revision: 0.02 - No change
+// Revision 0.01 - File Created
+// Additional Comments:
+//
+//////////////////////////////////////////////////////////////////////////////////
+
+
 // ============================================================================
 // basis_rangedec.v
 //
@@ -23,27 +46,7 @@
 //   (range>>PREC) floor.  Measure it with the C model and record that value.
 //   Make P0 a register-map field if you want p runtime-tunable.
 // ============================================================================
-`timescale 1ns/1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: Veriqloud
-// Engineer: Hop DINH
-//
-// Create Date: 06/29/2026
-// Design Name: Qline_turnkey
-// Module Name: basis_rangedec
-// Project Name: kiwiKD
-// Target Devices: Opalkelly XEM8310
-// Tool Versions: Vivado 2024.2
-// Description: Bernoulli(p) biased-bit generator. A binary range decoder used as
-//              a sampler over a uniform bit stream; emits one biased symbol per
-//              clock once primed, consuming on average H(p) uniform bits/symbol.
-//
-// Dependencies: none
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//
-//////////////////////////////////////////////////////////////////////////////////
+
 `default_nettype none
 
 module basis_rangedec #(

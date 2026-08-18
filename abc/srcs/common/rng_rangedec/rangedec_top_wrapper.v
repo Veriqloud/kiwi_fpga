@@ -1,3 +1,26 @@
+`timescale 1ns/1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Veriqloud
+// Engineer: Hop DINH
+//
+// Create Date: 06/29/2026
+// Design Name: Qline_turnkey
+// Module Name: rangedec_top_wrapper
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Top-level biased-RNG datapath. Chains the entropy FIFO
+//              (fifo_up_wrapper) -> controller -> basis_rangedec -> uneven FIFO
+//              (fifo_uneven_1x2_wrapper) across the wr_clk / clk80 / clk200
+//              domains.
+//
+// Dependencies: fifo_up_wrapper.v, controller.v, basis_rangedec.v,
+//               fifo_uneven_1x2_wrapper.v, reset_register.v
+// Revision: 0.02 - No change
+// Revision 0.01 - File Created
+// Additional Comments:
+//
+//////////////////////////////////////////////////////////////////////////////////
 // ============================================================================
 // rangedec_top_wrapper.v
 //
@@ -28,29 +51,7 @@
 //   (2) write/read rate balance on the uneven FIFO (over-produce + drop on full
 //       so it never underflows).
 // ============================================================================
-`timescale 1ns/1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: Veriqloud
-// Engineer: Hop DINH
-//
-// Create Date: 06/29/2026
-// Design Name: Qline_turnkey
-// Module Name: rangedec_top_wrapper
-// Project Name: kiwiKD
-// Target Devices: Opalkelly XEM8310
-// Tool Versions: Vivado 2024.2
-// Description: Top-level biased-RNG datapath. Chains the entropy FIFO
-//              (fifo_up_wrapper) -> controller -> basis_rangedec -> uneven FIFO
-//              (fifo_uneven_1x2_wrapper) across the wr_clk / clk80 / clk200
-//              domains.
-//
-// Dependencies: fifo_up_wrapper.v, controller.v, basis_rangedec.v,
-//               fifo_uneven_1x2_wrapper.v, reset_register.v
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//
-//////////////////////////////////////////////////////////////////////////////////
+
 `default_nettype none
 
 module rangedec_top_wrapper #(
@@ -85,28 +86,6 @@ module rangedec_top_wrapper #(
                                               //     did not hold; sticky, clk80 domain.
                                               //     Quasi-static: 2-FF sync at the consumer.
 );
-
-    // ---------------------------------------------------------------------
-    // resets: pre-synchronized per domain in clk_rst_mngt -- no local sync.
-    // rst_clk80 is used directly as the synchronous clk80 reset below;
-    // rst_clk250 feeds the entropy FIFO's rst pin (write side = wr_clk).
-    // The old local synchronizer is kept below for reference only.
-    // ---------------------------------------------------------------------
-
-    // (* ASYNC_REG = "TRUE" *) reg [2:0] rng_rst_r;
-    // initial begin rng_rst_r <= 0; end
-    // always @(posedge clk80) begin
-    //     rng_rst_r <= {rng_rst_r[1:0], rst};
-    // end
-
-    // wire rst_clk80;   // synchronous active-high reset, clk80 domain
-    // reset_register #(.RST_ACTIVE_LEVEL("HIGH")) u_rst_clk80 (
-    //     .clk_i  (clk80),
-    //     .rst_i  (rng_rst_r[1]),
-    //     .clk_o  (/* unused */),
-    //     .rstn_o (/* unused */),
-    //     .rst_o  (rst_clk80)
-    // );
 
     // ---------------------------------------------------------------------
     // P0 (Bernoulli threshold)
