@@ -16,8 +16,10 @@
 //
 // Dependencies: fifo_up_wrapper.v, controller.v, basis_rangedec.v,
 //               fifo_uneven_1x2_wrapper.v, reset_register.v
-// Revision: 0.02 - No change
 // Revision 0.01 - File Created
+// Revision 0.02 - No change
+// Revision 0.03 - Exposed entropy FIFO's wr_rst_busy as ent_wr_rst_busy so
+//   the AXI-Stream slave upstream can gate tready on it
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
@@ -67,6 +69,7 @@ module rangedec_top_wrapper #(
     input  wire         ent_wr_en,
     output wire         ent_full,
     output wire         ent_almost_full,
+    output wire         ent_wr_rst_busy,      // gates s_axis_tready upstream during FIFO reset recovery
     output wire         up_empty,
 
     // ---- processing clock (80 MHz domain) ----
@@ -110,8 +113,8 @@ module rangedec_top_wrapper #(
         .rd_en         (ctrl_fifo_rd_en),
         .dout          (up_dout),
         .empty         (up_empty),
-        // status (unused)
-        .wr_rst_busy   (/* unused */),
+        // status
+        .wr_rst_busy   (ent_wr_rst_busy),
         .rd_rst_busy   (/* unused */)
     );
 

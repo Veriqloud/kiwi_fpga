@@ -11,12 +11,14 @@
 // Tool Versions: Vivado 2024.2
 // Description: Generate pulse to bias Amplitude Modulator
 // 
-// Dependencies: 
-// - fine_delay.v
-// Revision:
+// Dependencies: fine_delay.v
+// Revision: 0.02
 // Revision 0.01 - File Created
+// Revision 0.02 - Reset clk200-domain regs on rst_200_o; state_rng default
+//   recovers to IDLE_SR; removed dead rng_a_r_test debug signal; gave
+//   counter/rd_en_4_r explicit port widths
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -72,12 +74,11 @@ module decoy#(
     output reg  [15:0]   rdec_p0_r,   
 
     //debug signal
-    output          counter,
+    output [2:0]    counter,
     output          temp_signal2,
     output          temp_signal1,
-    output          rd_en_4_r,
+    output [4:0]    rd_en_4_r,
     output [1:0]    rng_a_r,
-    output [1:0]    rng_a_r_test,
     output [1:0]    rng_a,
     output          decoy_signal,
     output [3:0]    dpram_rng_dout, 
@@ -207,11 +208,17 @@ initial begin
     decoy_rng_mode_r = 0;
 end
 always @(posedge clk200) begin
-    reg_enable_200_r <= {reg_enable_200_r[1:0], reg_enable_o};
+    if(rst_200_o) begin
+        reg_enable_200_r <= 0;
+        decoy_dpram_max_addr_rng_r <= 0;
+        decoy_rng_mode_r <= 0;
+    end else begin
+        reg_enable_200_r <= {reg_enable_200_r[1:0], reg_enable_o};
         if (reg_enable_200_r[2] == 0 && reg_enable_200_r[1] == 1) begin
             decoy_dpram_max_addr_rng_r <= decoy_dpram_max_addr_rng_int;
             decoy_rng_mode_r <= decoy_rng_mode_o;
-        end  
+        end
+    end  
 end
     
 //Genererate RNG value
@@ -276,7 +283,7 @@ always @(posedge clk200) begin
                     state_rng <= SR1;
                 end
             end
-            default: ;
+            default: state_rng <= IDLE_SR;
         endcase
     end
 end  
@@ -378,11 +385,9 @@ assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
 //Generate decoy signal
 (* ASYNC_REG = "TRUE" *) reg [4:0] rd_en_4_r;
 reg [1:0] rng_a_r;
-reg [1:0] rng_a_r_test;
 initial begin
     rd_en_4_r = 0;
     rng_a_r = 0;
-    rng_a_r_test = 0;
 end
 
 reg decoy_signal;
@@ -390,7 +395,6 @@ always @(posedge clk240) begin
     if (rst_240_o) begin
         rd_en_4_r <= 0;
         rng_a_r <= 0;
-        rng_a_r_test <= 0;
         decoy_signal <= 0;
     end else begin
         rd_en_4_r <= {rd_en_4_r[3:0], rd_en_4}; //using rd_en_4 is old version

@@ -1,22 +1,23 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company: Veriqloud
+// Engineer: Hop DINH
+//
 // Create Date: 03/31/2025 02:25:57 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: decoy_axil_mngt
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: AXI4-Lite register bank for decoy control (slv_reg0-7), with
+//   a write/readback interface to the decoy-RNG sequence generator at
+//   axi_awaddr/axi_araddr >= 1024.
+//
+// Dependencies: none
 // Revision 0.01 - File Created
+// Revision 0.02 - Added AXI readback of decoy-RNG writes (axi_araddr >= 1024)
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -259,7 +260,7 @@ module decoy_axil_mngt#
     // Slave register write enable is asserted when valid address and data are available
     // and the slave is ready to accept the write address and write data.
     assign slv_reg_wren = axi_wready && S_AXI_WVALID && axi_awready && S_AXI_AWVALID;
-    reg access_ok;
+    // reg access_ok;
     always @( posedge S_AXI_ACLK )
     begin
       if ( S_AXI_ARESETN == 1'b0 )
@@ -272,7 +273,7 @@ module decoy_axil_mngt#
           slv_reg5 <= 0;
           slv_reg6 <= 0;
           slv_reg7 <= 0;
-          access_ok <= 0;
+          // access_ok <= 0;
           decoy_rng_wen_int <= 0;
         end 
       else begin
@@ -313,28 +314,28 @@ module decoy_axil_mngt#
                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                   // Respective byte enables are asserted as per write strobes 
-                  // Slave register 3
+                  // Slave register 4
                   slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
                 4'h5:
                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                   // Respective byte enables are asserted as per write strobes 
-                  // Slave register 3
+                  // Slave register 5
                   slv_reg5[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
                 4'h6:
                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                   // Respective byte enables are asserted as per write strobes 
-                  // Slave register 3
+                  // Slave register 6
                   slv_reg6[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
                 4'h7:
                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                   // Respective byte enables are asserted as per write strobes 
-                  // Slave register 3
+                  // Slave register 7
                   slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
                 default : begin
@@ -350,7 +351,7 @@ module decoy_axil_mngt#
               endcase
             end
           end else begin
-            access_ok <= 1;
+            // access_ok <= 1;
             decoy_rng_wen_int <= 1;
             decoy_rng_addr_int <= axi_awaddr[4:2];
             for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
@@ -464,17 +465,22 @@ module decoy_axil_mngt#
     always @(*)
     begin
           // Address decoding for reading registers
-          case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-            4'h0   : reg_data_out <= slv_reg0;
-            4'h1   : reg_data_out <= slv_reg1;
-            4'h2   : reg_data_out <= slv_reg2;
-            4'h3   : reg_data_out <= slv_reg3;
-            4'h4   : reg_data_out <= slv_reg4;
-            4'h5   : reg_data_out <= slv_reg5;
-            4'h6   : reg_data_out <= slv_reg6;
-            4'h7   : reg_data_out <= slv_reg7;
-            default : reg_data_out <= slv_reg16;
-          endcase
+          if (axi_araddr < 1024) begin
+            case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
+              4'h0   : reg_data_out <= slv_reg0;
+              4'h1   : reg_data_out <= slv_reg1;
+              4'h2   : reg_data_out <= slv_reg2;
+              4'h3   : reg_data_out <= slv_reg3;
+              4'h4   : reg_data_out <= slv_reg4;
+              4'h5   : reg_data_out <= slv_reg5;
+              4'h6   : reg_data_out <= slv_reg6;
+              4'h7   : reg_data_out <= slv_reg7;
+              default : reg_data_out <= slv_reg16;
+            endcase
+          end else begin
+            // Shadow readback of the last decoy-RNG write (axi_awaddr >= 1024)
+            reg_data_out <= decoy_rng_din_int;
+          end
     end
 
     // Output register or memory read data

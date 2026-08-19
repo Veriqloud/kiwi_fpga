@@ -1,28 +1,35 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company: Veriqloud
+// Engineer: Hop DINH
+//
 // Create Date: 04/02/2025 02:56:19 PM
 // Design Name: Qline_turnkey
 // Module Name: decoy_rng_fifos
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
+// Description: AXI-Stream slave feeding 128-bit entropy words into
+//   rangedec_top_wrapper (entropy FIFO -> biased-RNG decoder -> uneven FIFO),
+//   exposing the 2-bit biased output and status flags to the decoy datapath.
+//
+// Dependencies: rangedec_top_wrapper.v, cdc_sync_single.v
+//
 // Revision 0.01 - File Created
+// Revision 0.02 - Gate s_axis_tready on entropy FIFO's wr_rst_busy (via
+//   rangedec_top_wrapper's new ent_wr_rst_busy port) so writes are held off
+//   during post-reset FIFO recovery
+// Revision 0.03 - Also gate s_axis_tready on the entropy FIFO's hard ent_full
+//   flag, as a backstop in case almost_full's margin doesn't cover the
+//   tready_flag register's 1-cycle reaction latency
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
 module decoy_rng_fifos(
     input               s_axis_clk,
-    input               s_axis_tresetn,
+    // input               s_axis_tresetn,
     input  wire [127:0] s_axis_tdata,
     input  wire         s_axis_tvalid,
     output wire         s_axis_tready,
@@ -38,11 +45,12 @@ module decoy_rng_fifos(
     output          de_err_ctrl_underrun   // E1 sticky, NATIVE clk80 (CDC in rng_monitor)
 );
 
-wire [15:0] dout16;
 wire de_almost_full_16;
+wire de_full_16;
 wire de_empty_16;
 wire de_almost_full_2;
 wire de_empty_2;
+wire ent_wr_rst_busy;
 
 // ---- CDC: sync the cross-domain flags into clk200 (the consumer/tx_core_clk
 // domain in which de_rng_flags is sampled). de_almost_full_16 is in s_axis_clk
@@ -68,7 +76,7 @@ initial begin
     tready_flag <= 1;
 end
 always @(posedge s_axis_clk) begin
-    if (de_almost_full_16) begin
+    if (de_almost_full_16 || de_full_16 || ent_wr_rst_busy) begin
         tready_flag <= 0;
     end else begin
         tready_flag <= 1;
@@ -91,8 +99,9 @@ rangedec_top_wrapper #(
     .wr_clk      (s_axis_clk),
     .ent_din     (s_axis_tdata),
     .ent_wr_en   (s_axis_tvalid && s_axis_tready),
-    .ent_full    (),
+    .ent_full    (de_full_16),
     .ent_almost_full(de_almost_full_16),
+    .ent_wr_rst_busy(ent_wr_rst_busy),
     .up_empty    (de_empty_16),
 
     .clk80       (clk80),
