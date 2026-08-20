@@ -16,8 +16,9 @@
 // Dependencies:
 //- none (leaf module; instantiated by clk_rst_mngt.v)
 //
-// Revision: 0.02
+// Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Add some comments for AI review
 // Additional Comments:
 // Register map (C_S_AXI_DATA_WIDTH = 32 -> ADDR_LSB = 2, decode on
 // axi_awaddr[4:2]; C_S_AXI_ADDR_WIDTH is driven to 10 by clk_rst_mngt.v):

@@ -1,12 +1,73 @@
-//Description : 
-// - Capture digital data from TDc chip
-// - Output time data of click + gc to XDMA AXIS
-// - Process data on OS
-module tdc_core (    
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Veriqloud
+// Engineer: Hop DINH
+//
+// Create Date:
+// Design Name: Qline_turnkey
+// Module Name: tdc_core
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Capture digital data from the TDC chip, timestamp it against the
+//   global counter and stream click time + gc to the XDMA AXI-Stream for
+//   processing on the OS.
+//
+// Dependencies: none
+//
+// Revision:
+// Revision 0.01 - File Created
+// Revision 0.02 - Add comments for AI review
+//               - Remove dead signals fifo_rst, gc_click, total_count_valid and
+//                 the unused m_axis_*_gc set, plus the legacy commented-out
+//                 burst state machine
+//               - Widen tvalid_r to [3:0] so it matches the 4-bit concatenation
+//                 it is loaded with
+//               - gc_rst is now a synchronous reset, consistent with the
+//                 command-count block below
+//               - Add w_counter to the reset list
+// Additional Comments:
+//   CLOCK DOMAINS - three, all crossed with 3-flop ASYNC_REG chains:
+//     lclk_i   TDC LVDS capture. The S0_0..S5 state machine shifts frame_i /
+//              sdi_i into index_stop and produces tdc_tdata + tdc_tvalid.
+//     clk200_i Global counter, timestamp conversion, gate decode and the
+//              AXI-Stream output. tdc_tvalid crosses in via tvalid_r.
+//     AXI-Lite The sr_* control inputs. They are captured on the rising edge
+//              of sr_reg_enable_tdc (into the lclk_i domain) and
+//              sr_reg_enable200 (into the clk200_i domain), so software must
+//              write the value first, then pulse the matching enable bit.
+//
+//   m_axis_tdata PACKING - 82 of the 128 bits are used, [127:82] read as 0:
+//     [31:0]  tdata200       TDC timestamp, raw count plus shift_tdc_time_r
+//     [79:32] gc_time_valid  global counter value at the click
+//     [81:80] {click result, q_pos} , depends on the active command:
+//               command_r == 3'b001 (no gate)   -> always 2'b11
+//               command_r == 3'b010 (with gate) -> quadrant code
+//                   2'b00 gate0 window, dq <  625
+//                   2'b01 gate0 window, dq >= 625
+//                   2'b10 gate1 window, dq <  625
+//                   2'b11 gate1 window, dq >= 625
+//
+//   FOR FUTURE CONSIDERATION
+//	 - m_axis_tlast and m_axis_tuser are constant, consider implement BURST write
+//	   to AXIS fifo, drive them properly
+//   - m_axis_tready is never read. Should gate somewhere to avoid sending data 
+//	   when the fifo is full. Consider BURST write !
+//     potential source of backpressure. The FIFO is 512 words deep, so it is
+//   - tdc_tvalid is decoded combinationally from state and then crosses into
+//     clk200_i. See the note further down: combinational logic should not sit
+//     directly in front of a CDC synchroniser, a decode glitch can be sampled
+//     as a phantom event. Registering tdc_tvalid in the lclk_i domain first
+//     would close it.
+//   - pps_i edge detection only 1 step sync, need 2 steps ?
+//
+//////////////////////////////////////////////////////////////////////////////////
+
+module tdc_core (
     input           lclk_i,
     input 			lrst_i,
     input           linterrupt_i,
-    // Control register
+    // ---- Control register ----
     input           sr_enable,
     input           sr_command_enable,
     input [2:0]		sr_command_i,
@@ -19,27 +80,27 @@ module tdc_core (
     input [15:0]	sr_shift_gc_back_i,
     input 			sr_reg_enable_tdc,
     input 			sr_reg_enable200,
-    // Stop A
+    // ---- Stop A inputs ----
     input           frame_i,
     input           sdi_i,
-    // AXI-Stream to fifo
+    // ---- AXI-Stream interface to fifo ----
     input 			m_axis_clk,
     output [127:0]	m_axis_tdata,
     output 			m_axis_tvalid,
     output [3:0]	m_axis_tuser,
     input 			m_axis_tready,
     output			fifo_calib_rst,
-    //Debug
+    // ---- Debug ports----
     output wire [31:0] 	debug_tdc_data,
     output wire 		debug_tdc_valid,
     output wire [127:0] debug_m_axis_data,
     output wire 		debug_m_axis_valid,
-    //Signals for global counter
+    // ---- Signals for global counter ----
     input           clk200_i,
     input           rd_en_4,
     input           gc_rst,
     input           pps_i,
-    //Debug
+    // ---- Debug ports ----
     output          tvalid200,
     output [31:0]   tdata200,
     output [1:0]    click_result,
@@ -50,21 +111,21 @@ module tdc_core (
     output [3:0]    tvalid200_r,
     output [3:0]    time_ref_gc,
     output [5:0]    index_shift_gc,
-	//Ouput ports to jesd_transport module
+	// ---- Output ports to jesd_transport module ----
 	output [3:0]    q_gc_time_valid_mod16,
-    //Output ports to ddr_data module
+    // ---- Output ports to ddr_data module ----
     output wire [15:0] tdata200_mod,
     output wire [31:0] gate_pos0,
     output wire [31:0] gate_pos1,
     output wire [31:0] gate_pos2,
     output wire [31:0] gate_pos3,
-    //Output ports
-    output [31:0]   sr_total_count_o,//Counts output continuously
+    // ---- Output ports to axil status registers ----
+    output [31:0]   sr_total_count_o,		//Counts output continuously
     output [31:0]   sr_click0_count_o,
     output [31:0]   sr_click1_count_o,
     output [31:0]   total_count,
     output          sr_data_count_valid_o,
-	output [31:0]  sr_count_to,//Counts output only after requested
+	output [31:0]  sr_count_to,				//Counts output only after requested
 	output [31:0]  sr_count_c0,
 	output [31:0]  sr_count_c1,
 	output         sr_command_count_valid_o
@@ -123,13 +184,6 @@ reg [3:0]       m_axis_tuser;
 reg             m_axis_tvalid;
 reg             m_axis_tlast;
 wire            m_axis_tready;
-
-//AXI-Stream to fifo_gc
-reg [63:0]      m_axis_tdata_gc;
-reg [3:0]       m_axis_tuser_gc;
-reg             m_axis_tvalid_gc;
-reg             m_axis_tlast_gc;
-wire            m_axis_tready_gc;
     
 // Resynchro
 reg [2:0]  linterrupt_r;
@@ -151,7 +205,6 @@ assign q_gc_time_valid_mod16 = {m_axis_tdata[34:32],m_axis_tdata[80]};
     
 
 // State machine
-reg fifo_rst;
 // Declare states
 reg [2:0]	state;
 parameter S0_0 = 6,S0 = 0, S1 = 1, S2 = 2, S3 = 3, S4 = 4, S5 = 5;
@@ -164,10 +217,7 @@ always @ (state) begin
    tdc_tvalid           <= 1'b0;
    shift_rcv_sdi_en        <= 1'b0;
    shift_rcv_sdi_ld        <= 1'b0;
-   fifo_rst                <= 1'b0;
     case (state)
-        S0_0:
-          fifo_rst                <= 1'b1;
         S1: 
           shift_rcv_sdi_ld        <= 1'b1;
         S2:
@@ -284,7 +334,7 @@ always @(posedge lclk_i or posedge lrst_i) begin
 end
 
 //Change to domain lclk_i to clk200_i
-(* ASYNC_REG = "TRUE" *) reg [2:0] tvalid_r;
+(* ASYNC_REG = "TRUE" *) reg [3:0] tvalid_r;
 reg tvalid200;
 reg [31:0] tdata200;
 reg [6:0] rd_en_4_r;
@@ -313,7 +363,6 @@ end
 reg [47:0] gc; 
 reg [47:0] gc_time_valid;
 reg [1:0] click_result;
-wire [47:0] gc_click;
 wire [31:0] gate_pos0,gate_pos1,gate_pos2,gate_pos3;
 assign gate_pos0 = gate0_r[23:0];
 assign gate_pos1 = gate_pos0 + gate0_r[31:24];
@@ -350,11 +399,13 @@ always @(*) begin
 		time_ref_gc = 4'd9;
 end
 wire [47:0] gc_div64;
-assign gc_div64 = ((gc-12)>>6)<<6; //12 gcs is delay time from click to tvalid200
-// reg [47:0] gc_time_valid;
-// assign gc_time_valid = gc_div64 + index_shift_gc + time_ref_gc;
-//State machine
+assign gc_div64 = ((gc-12)>>6)<<6; 	//12 gcs is delay time from click to tvalid200. We read gc at tvalid200, so need to minus 12 gcs. 
+									//Then divide by 64, and multiply by 64 to get the gc value at the last 64 gcs boundary.
+									//This is for the case, click arrive at the end of 64 gcs, and tvalid200 arrive at the next 64 gcs boundary. 
+									//We want to get the gc value at the last 64 gcs boundary, not the next one.
 
+
+//State machine
 reg [2:0] state_gc;
 parameter IDLE = 0, WAIT_START = 1, DETECT_PPS = 2, START = 3;
 
@@ -377,7 +428,6 @@ end
 //Axil registers
 reg [31:0] sr_total_count_o;
 reg [31:0] total_count;
-reg total_count_valid;
 reg [31:0] sr_click0_count_o;
 reg [31:0] click0_count;
 reg [31:0] sr_click1_count_o;
@@ -402,7 +452,7 @@ assign tvalid200_en = (tvalid200_r[3] == 0 && tvalid200_r[2] == 1)?1:0; //detect
 assign tvalid200_g0_en = ((tvalid200_r[3] == 0 && tvalid200_r[2] == 1) && (tdata200_mod >= gate_pos0 && tdata200_mod < gate_pos1))?1:0;
 assign tvalid200_g1_en = ((tvalid200_r[3] == 0 && tvalid200_r[2] == 1) && (tdata200_mod >= gate_pos2 && tdata200_mod < gate_pos3))?1:0;
 
-always @(posedge clk200_i, posedge gc_rst) begin
+always @(posedge clk200_i) begin
 	if (gc_rst) begin
 		start_gc_r <= 0;
 		command_enable_r <= 0;
@@ -417,14 +467,11 @@ always @(posedge clk200_i, posedge gc_rst) begin
 		m_axis_tvalid <= 0;
 		m_axis_tdata <= 0;
 		fifo_calib_rst <= 0;
-		// m_axis_tdata_gc <= 0;
-		// m_axis_tvalid_gc <= 0;
 		// fifo_gc_rst <= 0;
 		sr_data_count_valid_o <= 0;
 		counter_mon_en <= 0;
 		sr_total_count_o <= 0;
 		total_count <= 0;
-		total_count_valid <= 0;
 
 		sr_click0_count_o <= 0;
 		click0_count <= 0;
@@ -448,7 +495,6 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				counter_mon_en <= 0;
 				sr_total_count_o <= 0;
 				total_count <= 0;
-				total_count_valid <= 0;
 
 				sr_data_count_valid_o <= 0;
 				sr_click0_count_o <= 0;
@@ -459,8 +505,6 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				click_result <= 0;
 				m_axis_tvalid <= 0;
 				m_axis_tdata <= 0;
-				// m_axis_tvalid_gc <= 0;
-				// m_axis_tdata_gc <= 0;
 				state_gc <= WAIT_START;
 			end
 			WAIT_START: begin //Wait for the Start_gc commamd, put it to clk200 domain
@@ -506,7 +550,6 @@ always @(posedge clk200_i, posedge gc_rst) begin
 				end else begin
 					total_count <= 0;
 					sr_total_count_o <= total_count;
-					// total_count_valid <= 1;
 				end
 				if (count_en && tvalid200_g0_en) begin
 					click0_count <= click0_count + 1;
@@ -580,8 +623,6 @@ always @(posedge clk200_i, posedge gc_rst) begin
 					click_result <= click_result;
 					m_axis_tvalid <= 1'b0;
 					m_axis_tdata <= m_axis_tdata;
-					m_axis_tvalid_gc <= 1'b0;
-					m_axis_tdata_gc <= m_axis_tdata_gc;
 				end			
 			end
 		endcase
@@ -602,6 +643,7 @@ always @(posedge clk200_i) begin
 		sr_count_to <= 0;
 		sr_count_c0 <= 0;
 		sr_count_c1 <= 0;
+		w_counter <= 0;
 	end else begin
 		command_count_r <= {command_count_r[1:0],sr_command_count};
 		if (command_count_r[2] && command_count_r[1])begin
@@ -639,131 +681,4 @@ always @(posedge clk200_i) begin
 	end
 end
 
-//CDC
-//Stretch count_en
-
-
-// reg [2:0] count_en_r;
-// reg [31:0] slv_reg_total,slv_reg_0,slv_reg_1;
-// initial begin
-// 	count_en_r <= 0;
-// end
-// always @(posedge clk15) begin
-// 	if (!arstn) begin
-// 		count_en_r <= 0;
-// 		slv_reg_total <= 0;
-// 		slv_reg_0 <= 0;
-// 		slv_reg_1 <= 0;
-// 	end else begin
-// 		count_en_r <= {count_en_r[1:0],count_valid};
-// 		if (count_en_r[2] == 0 && count_en_r[1] == 1) begin
-// 			slv_reg_total <= total_count_o;
-// 			slv_reg_0 <= click0_count_o;
-// 			slv_reg_1 <= click1_count_o;
-// 		end else begin
-// 			slv_reg_total <= slv_reg_total;
-// 			slv_reg_0 <= slv_reg_0;
-// 			slv_reg_1 <= slv_reg_1;
-// 		end
-// 	end
-// end
-
-    // // Change cock field
-    // reg [2:0]           enable_r;
-	// always @ (posedge m_axis_tclk or negedge m_axis_trstn) begin
-	// 	if (!m_axis_trstn)
-    //         enable_r              <= 0;
-		    
-	// 	else
-	// 	    enable_r              <= {enable_r[1:0],enable};
-	// end
-    
-    // // Output depends only on the m_axis_state
-    // // Handle master axi stream output
-	// always @ (m_axis_state) begin
-    //     m_axis_tready_r                     <= 1'b0;
-    //     m_axis_tvalid                       <= 1'b0;
-    //     m_axis_tlast                        <= 1'b0;
-	// 	case (m_axis_state)
-		      
-	// 	    S2:begin
-		      
-	// 	      m_axis_tvalid                 <= 1'b1;
-	// 	      m_axis_tready_r               <= 1'b1;
-	// 	      end
-		      
-	// 	    S3: begin
-	// 	      m_axis_tlast                  <= 1'b1;
-	// 	      m_axis_tvalid                 <= 1'b1;
-	// 	      m_axis_tready_r               <= 1'b1;
-	// 	      end
-	// 	    S4: begin
-	// 	      m_axis_tlast                  <= 1'b1;
-	// 	      m_axis_tvalid                 <= 1'b1;
-	// 	      m_axis_tready_r               <= 1'b1;
-	// 	      end
-	// 	    default:;              				
-	//    endcase
-	//  end
-	  
-	// // Handle master axi stream output
-	// always @ (posedge m_axis_tclk or negedge m_axis_trstn) begin
-		
-	// 	if (!m_axis_trstn)
-	// 	begin
-    //         m_axis_state            <= 0;
-    //         AS6501_BURST_SIZE_r     <= 0;
-		    
-	// 	end else begin    
-			
-			
-	// 		 case (m_axis_state)
-			
-	// 			S0: 
-    //                 if (enable_r[2]) begin
-    //                     AS6501_BURST_SIZE_r    <=  AS6501_BURST_SIZE_i-1;
-	// 				    m_axis_state <= S1;
-	// 				end
-					   		
-	// 			S1:
-	// 			    if (!enable_r[2])
-	// 			        m_axis_state                         <= S0;
-	// 			    else
-	// 				   if (rd_data_count > AS6501_BURST_SIZE_r)
-	// 				       if(AS6501_BURST_SIZE_i == 1)
-	// 				           if (rd_data_count > 1)
-    //                                m_axis_state               <= S5;
-	// 			                else
-	// 				               m_axis_state		          <= S1;
-	// 			           else 
-	// 					      m_axis_state               <= S2;
-	// 				   else
-	// 				       m_axis_state		              <= S1;
-			    	
-	// 			S2: begin
-	// 			    if (m_axis_tready)
-	// 			        if (AS6501_BURST_SIZE_r == 1)
-	// 			            m_axis_state                        <= S3;
-	// 			        else
-	// 			            begin
-	// 			                AS6501_BURST_SIZE_r             <= AS6501_BURST_SIZE_r-1;
-	// 			                m_axis_state                    <= S2;
-	// 			            end 
-	// 			        end
-				    
-	// 			S3:
-	// 			    if (m_axis_tready)
-	// 			        m_axis_state                         <= S0;
-				        
-	// 			S4:
-	// 			    if (m_axis_tready)
-	// 			        m_axis_state                         <= S0;
-				        
-	// 			S5:
-	// 			    m_axis_state                             <= S4;
-				 
-	// 			 default:;    
-	// 		 endcase
-    //     end
-    // end
 endmodule

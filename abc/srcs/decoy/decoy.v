@@ -15,8 +15,8 @@
 // Revision: 0.02
 // Revision 0.01 - File Created
 // Revision 0.02 - Reset clk200-domain regs on rst_200_o; state_rng default
-//   recovers to IDLE_SR; removed dead rng_a_r_test debug signal; gave
-//   counter/rd_en_4_r explicit port widths
+//                 recovers to IDLE_SR; removed dead rng_a_r_test debug signal; gave
+//                 counter/rd_en_4_r explicit port widths
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////

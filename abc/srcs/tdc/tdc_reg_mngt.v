@@ -1,3 +1,38 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: Veriqloud
+// Engineer: Hop DINH
+//
+// Create Date:
+// Design Name: Qline_turnkey
+// Module Name: tdc_reg_mngt
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Block-design wrapper around tdc_axil_mngt.
+//
+// Dependencies: tdc_axil_mngt.v
+//
+// Revision:
+// Revision 0.01 - File Created
+// Revision 0.02 - Add some comments for AI review
+// Additional Comments:
+//   PORT NAMING - the mr_* ports are named from the point of view of the
+//   module at the FAR end of the wire (tdc_core), not from this module's own
+//   direction. The suffix therefore reads the opposite way round to the one
+//   used inside tdc_axil_mngt.v:
+//
+//     mr_*_i is an OUTPUT here - it drives an input of tdc_core.
+//     mr_*_o is an INPUT here - it is driven by an output of tdc_core.
+//
+//   Ports with no suffix (mr_enable, mr_count_to, mr_reg_enable_tdc, ...)
+//   follow the same far-end rule, they simply keep the name tdc_core uses.
+//
+//   These names are baked into Qline_turnkey_top.bd and into the packaged IP
+//   (bd/mref/tdc_reg_mngt/component.xml), so renaming a port means
+//   re-packaging the module reference and re-validating the block design.
+//
+//////////////////////////////////////////////////////////////////////////////////
 
 module tdc_reg_mngt #(
     // Parameters of Axi Slave Bus Interface s_axil

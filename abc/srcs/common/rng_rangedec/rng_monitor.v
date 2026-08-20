@@ -13,8 +13,9 @@
 //              flags; register-domain side interfaces to fastdac_axil_mngt.
 //
 // Dependencies: cdc_sync_single.v
-// Revision: 0.02 - Add some comments for AI review
+// Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Add some comments for AI review
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////

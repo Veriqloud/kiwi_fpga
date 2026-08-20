@@ -14,8 +14,10 @@
 //              clock once primed, consuming on average H(p) uniform bits/symbol.
 //
 // Dependencies: none
-// Revision: 0.02 - No change
+// 
+// Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - No change
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////

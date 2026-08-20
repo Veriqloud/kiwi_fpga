@@ -14,14 +14,14 @@
 //   exposing the 2-bit biased output and status flags to the decoy datapath.
 //
 // Dependencies: rangedec_top_wrapper.v, cdc_sync_single.v
-//
+// Revision:
 // Revision 0.01 - File Created
 // Revision 0.02 - Gate s_axis_tready on entropy FIFO's wr_rst_busy (via
-//   rangedec_top_wrapper's new ent_wr_rst_busy port) so writes are held off
-//   during post-reset FIFO recovery
+//                 rangedec_top_wrapper's new ent_wr_rst_busy port) so writes are held off
+//                 during post-reset FIFO recovery
 // Revision 0.03 - Also gate s_axis_tready on the entropy FIFO's hard ent_full
-//   flag, as a backstop in case almost_full's margin doesn't cover the
-//   tready_flag register's 1-cycle reaction latency
+//                 flag, as a backstop in case almost_full's margin doesn't cover the
+//                 tready_flag register's 1-cycle reaction latency
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////

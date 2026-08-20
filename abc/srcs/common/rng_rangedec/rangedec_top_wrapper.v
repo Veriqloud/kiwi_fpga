@@ -16,10 +16,11 @@
 //
 // Dependencies: fifo_up_wrapper.v, controller.v, basis_rangedec.v,
 //               fifo_uneven_1x2_wrapper.v, reset_register.v
+// Revision:
 // Revision 0.01 - File Created
 // Revision 0.02 - No change
 // Revision 0.03 - Exposed entropy FIFO's wr_rst_busy as ent_wr_rst_busy so
-//   the AXI-Stream slave upstream can gate tready on it
+//                 the AXI-Stream slave upstream can gate tready on it
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////

@@ -15,8 +15,9 @@
 //              (biased) bit stream (200 MHz domain).
 //
 // Dependencies: ip/fifo_1x2/fifo_1x2.xci
-// Revision: 0.02 - No change
+// Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - No change
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////

@@ -14,8 +14,9 @@
 //              to basis_rangedec, consuming `take` bits per cycle.
 //
 // Dependencies: fifo_up_wrapper.v, basis_rangedec.v
-// Revision: 0.02 - No change
+// Revision;
 // Revision 0.01 - File Created
+// Revision 0.02 - No change
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////

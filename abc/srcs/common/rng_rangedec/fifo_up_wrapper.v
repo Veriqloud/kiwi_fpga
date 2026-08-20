@@ -15,8 +15,9 @@
 //              controller read domain.
 //
 // Dependencies: ip/fifo_128x16/fifo_128x16.xci
-// Revision: 0.02 - No change
+// Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - No change
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////

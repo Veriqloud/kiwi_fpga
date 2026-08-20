@@ -14,9 +14,35 @@
 //   axi_awaddr/axi_araddr >= 1024.
 //
 // Dependencies: none
+// Revision:
 // Revision 0.01 - File Created
 // Revision 0.02 - Added AXI readback of decoy-RNG writes (axi_araddr >= 1024)
 // Additional Comments:
+//   Register map (byte offset from the decoy AXI-Lite base, 0x16000 in
+//   kiwi_hw_control):
+//     0x00 slv_reg0 [0]    reg_enable_o     - latch the params into the design
+//     0x04 slv_reg1 [3:0]  tune_step_o
+//     0x08 slv_reg2 [0]    trigger_enstep_o
+//                   [1]    trigger_enstep_slv1_o
+//                   [2]    trigger_enstep_slv2_o
+//     0x0C slv_reg3 [0]    decoy_rng_mode_o - 0 = fake sequence, 1 = true RNG
+//     0x10 slv_reg4 [15:0] rdec_p0_o        - range-decoder p0
+//     0x14 slv_reg5 [31:0] decoy_params_80_o  - master fine delay
+//     0x18 slv_reg6 [31:0] decoy_params_slv_o - slave 1/2 fine delays
+//     0x1C slv_reg7 [5:0]  decoy_dpram_max_addr_rng_int
+//
+//   decoy-RNG sequence window, offset >= 1024 (0x400):
+//     write - decoy_rng_addr_int = A[4:2], decoy_rng_din_int = S_AXI_WDATA,
+//             decoy_rng_wen_int pulsed for one cycle. Only A[4:2] decodes, so
+//             the window holds 8 words at 0x400..0x41C and aliases every 32
+//             bytes above that.
+//     read  - returns decoy_rng_din_int, i.e. the LAST word written to the
+//             window, not the word addressed by the read. It is a shadow
+//             register for verifying the previous write, not a RAM readback.
+//
+//   Below 0x400 only A[4:2] decodes as well, so slv_reg0-7 alias every 32
+//   bytes (0x20 reads back as slv_reg0). The read case covers all 8 selector
+//   values, so its default arm - and slv_reg16 with it - is unreachable.
 //
 //////////////////////////////////////////////////////////////////////////////////
 

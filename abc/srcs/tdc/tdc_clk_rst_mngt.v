@@ -11,18 +11,21 @@
 // Tool Versions: Vivado 2024.2
 // Description: Generate reference clock, reset index, simulated stopa for tdc
 // 
-// Dependencies: 
+// Dependencies: none
 // 
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Add comments for AI review. No functional change.
 // Additional Comments:
-// 
+//   FOR FUTURE CONSIDERATION - pps_i need to be synchornized with 2-FF, but will cost some latency.
+//   For now we capture pps edge right at the next clock edge, which is acceptable for our application.
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
 module tdc_clk_rst_mngt #(
     parameter N_TDC_REFCLK = 8,
-    parameter TDC_DIV_HALF = 20,
+    parameter TDC_DIV_HALF = 20, //Fix for 5MHz tdc_refclk from 200MHz clk200_i 
     parameter N_COUNTER_APD = 800
 )
 (

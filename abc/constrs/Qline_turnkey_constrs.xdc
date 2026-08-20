@@ -271,10 +271,10 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/
 set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg2_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/start_gc_r_reg[0]/D}]
 
 
-set_false_path -from [get_pins Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/data_count_valid_o_reg/C] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/data_count_valid_r_reg[0]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/click0_count_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg15_reg[*]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/click1_count_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg14_reg[*]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/total_count_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg16_reg[*]/D}]
+# set_false_path -from [get_pins Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/sr_data_count_valid_o_reg/C] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/data_count_valid_r_reg[0]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/sr_click0_count_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg15_reg[*]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/sr_click1_count_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg14_reg[*]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/sr_total_count_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg16_reg[*]/D}]
 
 set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg3_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/clk_rst_buffer/tdc_clk_rst_mngt_0/inst/stopa_sim_limit_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg9_reg[2]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/clk_rst_buffer/tdc_clk_rst_mngt_0/inst/sim_enable_r_reg[*]/D}]

@@ -12,8 +12,9 @@
 // Description: Reusable single-bit N-FF (default 2-FF) CDC synchronizer.
 //
 // Dependencies: none
-// Revision: 0.02
+// Revision: 
 // Revision 0.01 - File Created
+// Revision 0.02 - no change
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
