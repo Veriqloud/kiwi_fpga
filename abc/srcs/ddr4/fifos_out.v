@@ -9,14 +9,21 @@
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
-// Description: Instantiate the axis fifos of global counter out and alpha
-// 
-// Dependencies: 
-// 
+// Description: Instantiate the axis fifos of global counter out and alpha.
+//   Both are independent-clock crossings from clk200 to the 250MHz master clock.
+//   gc: 64-bit, 512 deep. alpha: 128-bit, 2048 deep.
+//
+// Dependencies:
+// - ip/fifo_gc_out/fifo_gc_out.xci
+// - ip/fifo_alpha_out/fifo_alpha_out.xci
+//
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Header completed
 // Additional Comments:
-// 
+// - TODO reconfigure fifo_alpha_out.xci: C_SYNCHRONIZER_STAGE is 2 while
+//   fifo_gc_out.xci and the rest of the design use 3. Alpha is the wider and
+//   deeper crossing, so it should not carry the weaker synchroniser.
 //////////////////////////////////////////////////////////////////////////////////
 
 

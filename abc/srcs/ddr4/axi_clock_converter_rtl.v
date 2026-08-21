@@ -10,13 +10,31 @@
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
 // Description: Instantiate axi clock converter, replace axi interconnect
-// 
-// Dependencies: 
-// 
+//
+// Dependencies:
+// - ip/axi_clock_converter_0/axi_clock_converter_0.xci
+//
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Header completed: documented the IP configuration and added
+//                 the reset TODO below
 // Additional Comments:
-// 
+// - Config mirrored from axi_clock_converter_0.xci: AXI4, 256-bit data, 32-bit
+//   address, 1-bit ID and USER, READ_WRITE, asynchronous crossing
+//   (C_AXI_IS_ACLK_ASYNC=1) with 3 synchronizer stages.
+//   s_axi_aclk = clk200_i, m_axi_aclk = ddr4_0/c0_ddr4_ui_clk.
+//   Port widths here are literals - keep them in step with the .xci.
+//
+// - TODO reset topology: the two sides are reset from independent sources.
+//   s_axi_aresetn <- ddr_data_rstn (host retry, toggles at runtime)
+//   m_axi_aresetn <- c0_ddr4_aresetn (clk_rst_mngt rstn_ddr_axi_o, derived from
+//   the MIG UI reset). A retry resets only the S side while the M side stays
+//   active, which can leave the internal async FIFO pointers inconsistent and
+//   the DDR4 controller waiting on a WLAST that never arrives. PG059 requires
+//   both resets asserted together. Candidate fix: resync ddr_data_rstn into the
+//   UI clock domain in clk_rst_mngt.v and AND it into rstn_ddr_axi_o, then
+//   delay the S-side release so the M side leaves reset first.
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 

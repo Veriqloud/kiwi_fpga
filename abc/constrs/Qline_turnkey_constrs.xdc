@@ -255,7 +255,7 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/ins
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg4_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/dq_gc_start_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg5_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/dq_gc_start_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg8_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/threshold_r_reg[*]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg9_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/threshold_full_r_reg[*]/D}]
+# set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg9_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/threshold_full_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg10_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/fiber_delay_r_reg[*]/D}]
 ###SET CONSTRAINTS TDC
 set_false_path -from [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_reg_mngt_0/inst/tdc_axil_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/tdc/tdc_mngt/tdc_core_0/inst/enable_axi_r_reg[0]/D}]

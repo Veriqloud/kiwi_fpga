@@ -10,13 +10,18 @@
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
 // Description: Instantiate axi virtual fifo controller
-// 
-// Dependencies: 
-// 
+//
+// Dependencies:
+// - ip/axi_vfifo_ctrl_0/axi_vfifo_ctrl_0.xci
+//
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Commented out the monitoring logic (counter_read/write,
+//                 delta_count, delta_addr, mismatch_addr). It was added to
+//                 chase one specific DDR pointer bug, which is now fixed. Kept
+//                 in place rather than deleted in case the symptom returns.
 // Additional Comments:
-// 
+// The ports for monitoring logic are still present, but the logic is commented out.
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -99,27 +104,27 @@ module axi_virtual_controller_wrapper(
 
 );
 
-reg [47:0] counter_read;
-reg [47:0] counter_write;
-wire [47:0] delta_count;
-wire [31:0] delta_addr;
-wire [31:0] mismatch_addr;
-assign delta_count = counter_write - counter_read;
-assign delta_addr = (m_axi_awaddr > m_axi_araddr)?(m_axi_awaddr - m_axi_araddr):(m_axi_awaddr - 32'h80000000 + 32'h81ff7fe0 - m_axi_araddr);
-assign mismatch_addr = delta_count - delta_addr/32;
-always @(posedge aclk) begin
-    if (!aresetn) begin
-        counter_read <= 0;
-        counter_write <= 0;
-    end else begin
-        if ((m_axi_rready == 1'b1) && (m_axi_rvalid == 1'b1)) begin
-            counter_read <= counter_read + 1;
-        end else counter_read <= counter_read;
-        if ((m_axi_wvalid == 1'b1) && (m_axi_wready == 1'b1)) begin
-            counter_write <= counter_write + 1;
-        end else counter_write <= counter_write;
-    end
-end
+// reg [47:0] counter_read;
+// reg [47:0] counter_write;
+// wire [47:0] delta_count;
+// wire [31:0] delta_addr;
+// wire [31:0] mismatch_addr;
+// assign delta_count = counter_write - counter_read;
+// assign delta_addr = (m_axi_awaddr > m_axi_araddr)?(m_axi_awaddr - m_axi_araddr):(m_axi_awaddr - 32'h80000000 + 32'h81ff7fe0 - m_axi_araddr);
+// assign mismatch_addr = delta_count - delta_addr/32;
+// always @(posedge aclk) begin
+//     if (!aresetn) begin
+//         counter_read <= 0;
+//         counter_write <= 0;
+//     end else begin
+//         if ((m_axi_rready == 1'b1) && (m_axi_rvalid == 1'b1)) begin
+//             counter_read <= counter_read + 1;
+//         end else counter_read <= counter_read;
+//         if ((m_axi_wvalid == 1'b1) && (m_axi_wready == 1'b1)) begin
+//             counter_write <= counter_write + 1;
+//         end else counter_write <= counter_write;
+//     end
+// end
 
 
 axi_vfifo_ctrl_0 axi_virtual_controller_ddr4_inst (

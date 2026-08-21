@@ -9,14 +9,54 @@
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
-// Description: Manage AXIL interface, create registers for ddr_data module
-// 
-// Dependencies: 
-// 
+// Description: Manage AXIL interface, create registers for ddr_data module.
+//   slv_reg0-11 are control registers written by software. slv_reg12-16 are
+//   read-only status registers: slv_reg12 tracks pps_i, slv_reg13-16 latch the
+//   FIFO status and current DQ GC counters on the rising edge of the
+//   synchronised *_valid_i strobes.
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Widened the read decode case items from 4-bit to 5-bit so
+//                 they match the 5-bit selector axi_araddr[6:2]
+//               - Added the explicit 5'h10 read arm for slv_reg16; the DQ GC
+//                 MSB previously reached software only through the default arm
+//               - Read default now returns 0 instead of slv_reg16
+//               - Gated slv_reg_wren on the upper address bits so writes above
+//                 0x7F no longer alias onto the control registers
+//               - Added ASYNC_REG to the pps_i synchroniser, matching the other
+//                 three synchronisers in this module
+//               - Removed the redundant initial blocks (synchronous reset
+//                 already covers those registers)
+//               - Removed the dead commented-out write case for slv_reg12,
+//                 which is a read-only status register
+//               - Fixed the axi_araddr reset literal width
 // Additional Comments:
-// 
+//   Register map (byte offset from the ddr_data AXI-Lite base):
+//     0x00 slv_reg0  [0]     start_write_ddr_o
+//     0x04 slv_reg1  [0]     command_enable_o
+//     0x08 slv_reg2  [2:0]   command_o, [3] command_gc_o
+//     0x0C slv_reg3  [0]     reg_enable_o
+//     0x10 slv_reg4  [31:0]  dq_gc_start_lsb_o
+//     0x14 slv_reg5  [15:0]  dq_gc_start_msb_o
+//     0x18 slv_reg6  [0]     command_alpha_enable_o, [1] pair_delay_o,
+//                    [2]     de_pair_delay_o
+//     0x1C slv_reg7  [0]     command_gc_enable_o
+//     0x20 slv_reg8  [31:0]  threshold_o
+//     0x24 slv_reg9  reserved - writable and readable but drives nothing.
+//     0x28 slv_reg10 [15:0]  fiber_delay_o, [31:16] de_fiber_delay_o
+//     0x2C slv_reg11 [15:0]  ab_fiber_delay_o
+//     -- read-only status --
+//     0x30 slv_reg12 [0]     pps_i, resynchronised into S_AXI_ACLK
+//     0x34 slv_reg13 [10:0]  ddr_fifos_status_i   (from the 200M domain)
+//     0x38 slv_reg14 [2:0]   fifos_status_i       (from the 250M domain)
+//     0x3C slv_reg15 [31:0]  current_dq_gc_lsb_i
+//     0x40 slv_reg16 [16:0]  current_dq_gc_msb_i
+//   Every other offset reads 0. Writes above 0x7F are accepted with an OKAY
+//   response but discarded.
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -30,7 +70,7 @@ module ddr_data_axil_mngt #
         // Width of S_AXI data bus
         parameter integer C_S_AXI_DATA_WIDTH    = 32,
         // Width of S_AXI address bus
-        parameter integer C_S_AXI_ADDR_WIDTH    = 4
+        parameter integer C_S_AXI_ADDR_WIDTH    = 12
     )
     (
         // Users to add ports here
@@ -146,7 +186,7 @@ module ddr_data_axil_mngt #
     //----------------------------------------------
     //-- Signals for user logic register space example
     //------------------------------------------------
-    //-- Number of Slave Registers 4
+    //-- Slave Registers 
     reg [C_S_AXI_DATA_WIDTH-1:0]    slv_reg0;
     reg [C_S_AXI_DATA_WIDTH-1:0]    slv_reg1;
     reg [C_S_AXI_DATA_WIDTH-1:0]    slv_reg2;
@@ -287,7 +327,8 @@ module ddr_data_axil_mngt #
     // These registers are cleared when reset (active low) is applied.
     // Slave register write enable is asserted when valid address and data are available
     // and the slave is ready to accept the write address and write data.
-    assign slv_reg_wren = axi_wready && S_AXI_WVALID && axi_awready && S_AXI_AWVALID;
+    assign slv_reg_wren = axi_wready && S_AXI_WVALID && axi_awready && S_AXI_AWVALID
+                          && (axi_awaddr[C_S_AXI_ADDR_WIDTH-1 : ADDR_LSB+OPT_MEM_ADDR_BITS+1] == 0);
 
     always @( posedge S_AXI_ACLK )
     begin
@@ -301,102 +342,99 @@ module ddr_data_axil_mngt #
           slv_reg5 <= 0;
           slv_reg6 <= 0;
           slv_reg7 <= 0;
+          slv_reg8 <= 0;
+          slv_reg9 <= 0;
+          slv_reg10 <= 0;
+          slv_reg11 <= 0;
         end 
       else begin
         if (slv_reg_wren)
           begin
             case ( axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-              4'h0:
+              5'h0:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
                     // Slave register 0
                     slv_reg0[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end  
-              4'h1:
+              5'h1:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
                     // Slave register 1
                     slv_reg1[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end  
-              4'h2:
+              5'h2:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
                     // Slave register 2
                     slv_reg2[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end  
-              4'h3:
+              5'h3:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
                     // Slave register 3
                     slv_reg3[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end  
-              4'h4:
+              5'h4:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
                     // Slave register 4
                     slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end  
-              4'h5:
+              5'h5:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
                     // Slave register 5
                     slv_reg5[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end  
-              4'h6:
+              5'h6:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
                     // Slave register 6
                     slv_reg6[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end  
-              4'h7:
+              5'h7:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
                     // Slave register 7
                     slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
-              4'h8:
+              5'h8:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
-                    // Slave register 7
+                    // Slave register 8
                     slv_reg8[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
-              4'h9:
+              5'h9:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
-                    // Slave register 7
+                    // Slave register 9
                     slv_reg9[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
-              4'ha:
+              5'ha:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
-                    // Slave register 7
+                    // Slave register 10
                     slv_reg10[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
-              4'hb:
+              5'hb:
                 for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                     // Respective byte enables are asserted as per write strobes 
-                    // Slave register 7
+                    // Slave register 11
                     slv_reg11[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                   end
-              // 4'hc:
-              //   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
-              //     if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-              //       // Respective byte enables are asserted as per write strobes 
-              //       // Slave register 7
-              //       slv_reg12[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-              //     end
               default : begin
                           slv_reg0 <= slv_reg0;
                           slv_reg1 <= slv_reg1;
@@ -410,7 +448,6 @@ module ddr_data_axil_mngt #
                           slv_reg9 <= slv_reg9;
                           slv_reg10 <= slv_reg10;
                           slv_reg11 <= slv_reg11;
-                          // slv_reg12 <= slv_reg12;
                         end
             endcase
           end
@@ -462,8 +499,8 @@ module ddr_data_axil_mngt #
       if ( S_AXI_ARESETN == 1'b0 )
         begin
           axi_arready <= 1'b0;
-          axi_araddr  <= 32'b0;
-        end 
+          axi_araddr  <= 0;
+        end
       else
         begin    
           if (~axi_arready && S_AXI_ARVALID)
@@ -484,15 +521,6 @@ module ddr_data_axil_mngt #
     (* ASYNC_REG = "TRUE" *) reg [2:0] current_dq_gc_valid_r;
     (* ASYNC_REG = "TRUE" *) reg [2:0] status_200_valid_r;
     (* ASYNC_REG = "TRUE" *) reg [2:0] status_250_valid_r;
-    initial begin
-      current_dq_gc_valid_r <= 0;
-      status_200_valid_r <= 0;
-      status_250_valid_r <= 0;
-      slv_reg13 <= 0;
-      slv_reg14 <= 0;
-      slv_reg15 <= 0;
-      slv_reg16 <= 0;
-    end       
     always @(posedge S_AXI_ACLK) begin
       if(S_AXI_ARESETN == 1'b0) begin
         current_dq_gc_valid_r <= 0;
@@ -527,11 +555,7 @@ module ddr_data_axil_mngt #
 
 
     //Read pps for synchronisation
-    reg pps_sync1;
-    initial begin
-      pps_sync1 <= 0;
-      slv_reg12 <= 0;
-    end
+    (* ASYNC_REG = "TRUE" *) reg pps_sync1;
     always @(posedge S_AXI_ACLK) begin
       if(S_AXI_ARESETN == 1'b0) begin
         slv_reg12 <= 0;
@@ -582,23 +606,24 @@ module ddr_data_axil_mngt #
     begin
           // Address decoding for reading registers
           case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-            4'h0   : reg_data_out <= slv_reg0;
-            4'h1   : reg_data_out <= slv_reg1;
-            4'h2   : reg_data_out <= slv_reg2;
-            4'h3   : reg_data_out <= slv_reg3;
-            4'h4   : reg_data_out <= slv_reg4;
-            4'h5   : reg_data_out <= slv_reg5;
-            4'h6   : reg_data_out <= slv_reg6;
-            4'h7   : reg_data_out <= slv_reg7;
-            4'h8   : reg_data_out <= slv_reg8;
-            4'h9   : reg_data_out <= slv_reg9;
-            4'ha   : reg_data_out <= slv_reg10;
-            4'hb   : reg_data_out <= slv_reg11;
-            4'hc   : reg_data_out <= slv_reg12;
-            4'hd   : reg_data_out <= slv_reg13;
-            4'he   : reg_data_out <= slv_reg14;
-            4'hf   : reg_data_out <= slv_reg15;
-            default : reg_data_out <= slv_reg16;
+            5'h0   : reg_data_out <= slv_reg0;
+            5'h1   : reg_data_out <= slv_reg1;
+            5'h2   : reg_data_out <= slv_reg2;
+            5'h3   : reg_data_out <= slv_reg3;
+            5'h4   : reg_data_out <= slv_reg4;
+            5'h5   : reg_data_out <= slv_reg5;
+            5'h6   : reg_data_out <= slv_reg6;
+            5'h7   : reg_data_out <= slv_reg7;
+            5'h8   : reg_data_out <= slv_reg8;
+            5'h9   : reg_data_out <= slv_reg9;
+            5'ha   : reg_data_out <= slv_reg10;
+            5'hb   : reg_data_out <= slv_reg11;
+            5'hc   : reg_data_out <= slv_reg12;
+            5'hd   : reg_data_out <= slv_reg13;
+            5'he   : reg_data_out <= slv_reg14;
+            5'hf   : reg_data_out <= slv_reg15;
+            5'h10  : reg_data_out <= slv_reg16;
+            default : reg_data_out <= {C_S_AXI_DATA_WIDTH{1'b0}};
           endcase
     end
 

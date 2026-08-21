@@ -9,17 +9,50 @@
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2 
-// Description: 
+// Description:
 //- Package data to send to DDR Virtual Fifo
 //- Read data from DDR Virtual Fifo
-//- Send selected data to AXIS 
-// 
-// Dependencies: 
-// 
+//- Send selected data to AXIS
+//
+// Dependencies:
+// - ip/fifo_gc_in_64x64
+//
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Fixed the main always block: the reset branch was closed with
+//                 `end begin` instead of `end else begin`, so both state
+//                 machines ran on every clock including during reset and their
+//                 assignments overrode the reset values. The FSM could leave
+//                 WAIT_START and reach DETECT_PPS while ddr_data_rstn was still
+//                 asserted.
+//               - Added default arms to the state and state_alpha case
+//                 statements so unused encodings recover instead of holding
+//               - fifo_alpha_rst in the command 3'b100 branch used a blocking
+//                 assignment while the same register used non-blocking
+//                 elsewhere
+//               - Declared current_dq_gc_debug, which was an implicit net
+//               - Removed the unused s_gc_aresetn port. NOTE: build_bd.tcl
+//                 still lists ddr_data_0/s_gc_aresetn in the aresetn_1 net and
+//                 must be updated before the next BD regeneration.
+//               - Removed dead registers alpha, counter_valid, rd_en_gc,
+//                 rd_en_gc_test, count_wait_long, counter_wait, counter_tlast
+//                 and the unused fifo_gc prog/almost flags
 // Additional Comments:
-// 
+// - TODO pps_i is asynchronous but is used raw in the WAIT_START condition and
+//   sampled through a single flop before the DETECT_PPS edge detect, with no
+//   ASYNC_REG. A metastable sample shifts the START transition and misaligns
+//   dq_gc against the PPS epoch for the whole run. pps_r is already declared
+//   [2:0], so the intended 3-flop chain just needs wiring. To be handled
+//   together with the other modules that take pps_i.
+//
+// - TODO the alpha FSM leaves IDLE_AL only because the START branch of the
+//   state case assigns state_alpha every cycle, and IDLE_AL is the one arm of
+//   the state_alpha case that does not assign it back. Every other arm
+//   overrides that assignment, so it is dead except in IDLE_AL. Adding an
+//   apparently harmless `state_alpha <= IDLE_AL;` to that arm would deadlock
+//   the FSM. Move the release into the arm that owns it:
+//     IDLE_AL: if (state == START) state_alpha <= rd_gc_valid ? COUNTING_CM : WAIT;
+//   and drop the assignment from the START branch.
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -83,7 +116,7 @@ module ddr_data(
 
     //AXI-Stream slave ports for receiving dq_gc, click result from xdma
     input              s_axis_gc_clk,
-    input              s_gc_aresetn,
+    // input              s_gc_aresetn,
     input [63:0]       s_axis_tdata_gc,
     output wire        s_axis_tready_gc,
     input wire         s_axis_tvalid_gc,
@@ -125,7 +158,6 @@ module ddr_data(
 //Debug signals
 wire [31:0] threshold_wait;
 assign s_axis_tvalid_gc_debug = s_axis_tvalid_gc;
-assign current_dq_gc_debug = sr_current_dq_gc[3:0];
 assign dq_gc_start_r_debug = dq_gc_start_r[47:6];
 assign threshold_wait = threshold_r;
 //debug delta number of read out of ddr and global counter received
@@ -148,10 +180,7 @@ wire rd_en_fifo_gc;
 assign rd_en_fifo_gc = (counter_rd_en_gc == 1) ? 1:0;
 wire [63:0] tdata_gc;
 wire fifo_gc_empty;
-wire fifo_gc_prog_empty;
-wire fifo_gc_almost_empty;
 wire fifo_gc_full;
-wire fifo_gc_prog_full;
 wire rd_gc_valid;
 reg fifo_gc_in_rst;
 fifo_gc_in_64x64 fifo_gc_in_inst (
@@ -165,10 +194,10 @@ fifo_gc_in_64x64 fifo_gc_in_inst (
     .full(fifo_gc_full),                  // output wire full
     .almost_full(),    // output wire almost_full
     .empty(fifo_gc_empty),                // output wire empty
-    .almost_empty(fifo_gc_almost_empty),  // output wire almost_empty
+    .almost_empty(),  // output wire almost_empty
     .valid(rd_gc_valid),                // output wire valid
-    .prog_full(fifo_gc_prog_full),        // output wire prog_full
-    .prog_empty(fifo_gc_prog_empty),      // output wire prog_empty
+    .prog_full(),        // output wire prog_full
+    .prog_empty(),      // output wire prog_empty
     .wr_rst_busy(),    // output wire wr_rst_busy
     .rd_rst_busy()    // output wire rd_rst_busy
 );
@@ -234,22 +263,15 @@ end
 reg [47:0] dq_gc;
 reg [47:0] dq_gc_time;
 reg [47:0] read_count;
-reg [3:0] alpha;
 reg [1:0] alpha_q;
 reg decoy_q;
 reg [6:0] rd_en_4_r;
 reg [6:0] cycle_counter;
-reg [2:0] counter_valid;
 reg [255:0] data_pack;
 reg pack_done;
 reg read_done;
-reg rd_en_gc;
-reg rd_en_gc_test;
-reg [31:0] count_wait_long;
 reg [47:0] sr_current_dq_gc;
-reg [31:0] counter_wait;
 reg [31:0] counter_rd_en_gc;
-reg [3:0] counter_tlast;
 
 //wires
 wire [15:0] tdata200_mod_dq;
@@ -333,22 +355,15 @@ always @(posedge clk200_i) begin
         dq_gc <= 48'b0;
         dq_gc_time <= 48'b0;
         read_count <= 48'b0;
-        alpha <= 4'b0;
         alpha_q <= 2'b0;
         decoy_q <= 1'b0;
         rd_en_4_r <= 0;
         cycle_counter <= 7'b0;
-        counter_valid <= 3'b0;
         data_pack <= 256'b0;
         pack_done <= 0;
         read_done <= 0;
-        rd_en_gc <= 0;
-        rd_en_gc_test <= 0;
-        count_wait_long <= 0;
         sr_current_dq_gc <= 0;
-        counter_wait <= 0;
         counter_rd_en_gc <= 0;
-        counter_tlast <= 0;
 
         command_enable_r <= 0;
         command_gc_enable_r <= 0;
@@ -367,7 +382,7 @@ always @(posedge clk200_i) begin
 
         state <= IDLE;
         state_alpha <= IDLE_AL;
-    end begin
+    end else begin
         case (state)
             IDLE: begin
                 start_write_ddr_r <= 0;
@@ -380,13 +395,10 @@ always @(posedge clk200_i) begin
                 read_count <= 48'b0;
                 rd_en_4_r <= 0;
                 cycle_counter <= 7'b0;
-                counter_valid <= 3'b0;
                 data_pack <= 256'b0;
                 pack_done <= 0;
                 read_done <= 0;
-                rd_en_gc <= 0;
                 sr_current_dq_gc <= 0;
-                counter_wait <= 0;
                 counter_rd_en_gc <= 0;
 
                 m_axis_tdata <= 256'b0;
@@ -517,6 +529,7 @@ always @(posedge clk200_i) begin
                     state_alpha <= WAIT;
                 end
             end
+            default: state <= IDLE;
         endcase
 
         case (state_alpha)
@@ -678,6 +691,7 @@ always @(posedge clk200_i) begin
                 read_count <= read_count;
                 state_alpha <= WAIT;
             end
+            default: state_alpha <= IDLE_AL;
         endcase
 
     end
@@ -741,7 +755,7 @@ always @(posedge clk200_i) begin
                 m_axis_tvalid_alpha <= 1'b0;
             end
         end else if (command_r == 3'b100) begin //stop read_angle, reset fifo
-            fifo_alpha_rst = 1'b0;
+            fifo_alpha_rst <= 1'b0;
         end        
     end
 end
