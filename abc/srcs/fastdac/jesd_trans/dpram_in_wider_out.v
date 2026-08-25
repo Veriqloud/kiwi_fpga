@@ -1,27 +1,26 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau
 // 
 // Create Date: 07/13/2023 04:28:44 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: dpram_in_wider_out
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Asymmetric port RAM
+//              Read Wider than Write. 
 // 
 // Dependencies: 
 // 
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Add header and comments
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-// Asymmetric port RAM
-// Read Wider than Write. Read Statement in loop
-//asym_ram_sdp_read_wider.v
 
 module dpram_in_wider_out #(
     parameter RAM_INIT="dpram_in_wider_out.init",

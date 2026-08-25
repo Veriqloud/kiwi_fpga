@@ -9,14 +9,15 @@
 // Project Name: kiwiKD
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
-// Description: Synchronize tx_tready signal to PPS
+// Description:  phase shift tx_tready signal, to align to pps_i rising edge
 // 
 // Dependencies: 
 // 
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - no change
 // Additional Comments:
-// 
+//  pps_i is synchronous to tx_core_clk, no need 2FF synchronizer
 //////////////////////////////////////////////////////////////////////////////////
 
 

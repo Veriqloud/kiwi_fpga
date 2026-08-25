@@ -19,6 +19,9 @@
 //- dpram_*.v
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Fixed reset initialization for PPS / feedback edge tracking
+//               - Removed unused AXI-stream reset input from the transport port list
+//               - Integrated mixed-distribution RNG wrapper and AXIL RNG error monitor
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
@@ -54,7 +57,6 @@ module jesd_transport #(
     
     // Ports of AXI-s slave(RNG stream)
     input   wire                                    s_axis_clk,
-    input   wire                                    s_axis_tresetn,
     input   wire [127 : 0]                          s_axis_tdata,
     input   wire                                    s_axis_tvalid,
     output  wire                                    s_axis_tready,
@@ -106,7 +108,6 @@ module jesd_transport #(
     
 wire               fastdac_en_jesd_int;
 wire               reg_en_o;
-reg  [2:0]         fastdac_en_jesd_r;
 wire               fastdac_sequence_wen_int;
 wire [9:0]         fastdac_sequence_addr_int; 
 wire [31:0]        fastdac_sequence_din_int;
@@ -284,6 +285,7 @@ always @(posedge tx_core_clk) begin
         rd_en_4 <= 0;
         counter40 <= 0;
         pps_trigger <= 0;
+        pps_r <= 0;
     end else begin
         pps_r <= pps_i;
         if (!pps_r && pps_i) begin
@@ -548,6 +550,7 @@ always @(posedge tx_core_clk) begin
     if (tx_core_reset) begin
         offset_val <= 0;
         counter_valid <= 0;
+        tvalid200_r <= 0;
     end else begin
         tvalid200_r <= {tvalid200_r[3:0],tvalid200};
         if (tvalid200_r[4] == 0 && tvalid200_r[3] == 1) begin

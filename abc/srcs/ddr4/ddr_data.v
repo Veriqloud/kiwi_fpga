@@ -38,13 +38,6 @@
 //                 rd_en_gc_test, count_wait_long, counter_wait, counter_tlast
 //                 and the unused fifo_gc prog/almost flags
 // Additional Comments:
-// - TODO pps_i is asynchronous but is used raw in the WAIT_START condition and
-//   sampled through a single flop before the DETECT_PPS edge detect, with no
-//   ASYNC_REG. A metastable sample shifts the START transition and misaligns
-//   dq_gc against the PPS epoch for the whole run. pps_r is already declared
-//   [2:0], so the intended 3-flop chain just needs wiring. To be handled
-//   together with the other modules that take pps_i.
-//
 // - TODO the alpha FSM leaves IDLE_AL only because the START branch of the
 //   state case assigns state_alpha every cycle, and IDLE_AL is the one arm of
 //   the state_alpha case that does not assign it back. Every other arm
@@ -208,7 +201,7 @@ fifo_gc_in_64x64 fifo_gc_in_inst (
 (* ASYNC_REG = "TRUE" *) reg [2:0] reg_enable_r;
 (* ASYNC_REG = "TRUE" *) reg [2:0] start_write_ddr_r;
 reg start_write_ddr_o;
-reg [2:0] pps_r;
+reg pps_r;
 reg [3:0] tvalid200_r;
 (* ASYNC_REG = "TRUE" *) reg [2:0] command_enable_r;
 (* ASYNC_REG = "TRUE" *) reg [2:0] command_alpha_enable_r;

@@ -1,26 +1,25 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Veriqloud
+// Engineer: Fabrice Faveneau
 // 
 // Create Date: 07/13/2023 01:40:59 PM
-// Design Name: 
+// Design Name: Qline_turnkey
 // Module Name: dpram_out_equal_in
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
+// Project Name: kiwiKD
+// Target Devices: Opalkelly XEM8310
+// Tool Versions: Vivado 2024.2
+// Description: Simple Dual-Port Block RAM with Two Clocks
 // 
 // Dependencies: 
 // 
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Add header and comments
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-// Simple Dual-Port Block RAM with Two Clocks
-// File: simple_dual_two_clocks.v
 
 module dpram_out_equal_in #(
     parameter RAM_INIT="alpha_pos.init",

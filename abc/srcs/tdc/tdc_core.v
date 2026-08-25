@@ -59,7 +59,6 @@
 //     directly in front of a CDC synchroniser, a decode glitch can be sampled
 //     as a phantom event. Registering tdc_tvalid in the lclk_i domain first
 //     would close it.
-//   - pps_i edge detection only 1 step sync, need 2 steps ?
 //
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -411,7 +410,7 @@ parameter IDLE = 0, WAIT_START = 1, DETECT_PPS = 2, START = 3;
 
 (* ASYNC_REG = "TRUE" *) reg [2:0] start_gc_r;
 reg start_gc_o;
-reg [2:0] pps_r;
+reg pps_r;
 reg [3:0] tvalid200_r;
 reg fifo_calib_rst;
 //Axil command

@@ -15,7 +15,36 @@
 // 
 // Revision:
 // Revision 0.01 - File Created
+// Revision 0.02 - Added the register and memory map table to the header
 // Additional Comments:
+//   Register map (byte offset from the fast DAC AXI-Lite base):
+//     0x00 slv_reg0  [0]    fastdac_en_jesd_o
+//     0x04 slv_reg1  [3:0]  fastdac_amp_dac1_shift_o,
+//                    [7:4]  fastdac_zero_pos_o,
+//                    [31:16] fastdac_up_offset_o
+//     0x08 slv_reg2  [31:0] fastdac_amp_dac1_o
+//     0x0C slv_reg3  [0]    fastdac_reg_en_o
+//     0x10 slv_reg4  [7:0]  fastdac_dpram_max_addr_seq_dac0_o,
+//                    [15:8] fastdac_dpram_max_addr_seq_dac1_o
+//     0x14 slv_reg5  [0]    fastdac_rng_mode_o,
+//                    [1]    fastdac_dac1_mode_o,
+//                    [2]    fastdac_fb_mode_o,
+//                    [3]    fastdac_zero_mode_o,
+//                    [4]    fastdac_dac0_mode_o
+//     0x18 slv_reg6  [31:0] fastdac_amp_dac2_o
+//     0x1C slv_reg7  [14:0] fastdac_dpram_max_addr_rng_dac1_o
+//     0x20 slv_reg8  [31:0] division_sp_o
+//     0x24 slv_reg9  [31:0] spare software register
+//     0x28 slv_reg10 [15:0] rdec_p0_o
+//     -- read-only / write-one-to-clear status --
+//     0x2C           [7:4]  rng_err raw view,
+//                    [3:0]  rng_err W1C sticky clear bits
+//   Memory write windows:
+//     0x1000-0x1FFF sequence memory, fastdac_sequence_addr_o = awaddr[11:2]
+//     0x2000+       RNG memory, fastdac_rng_addr_o = {1'b0, awaddr[12:2]}
+//                   so the window aliases into 2048 32-bit words by design.
+//   Register and memory writes are expected to be full 32-bit word writes.
+//   Register reads outside the explicit map return slv_reg16.
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -31,29 +60,21 @@
 		// Width of S_AXI data bus
 		parameter integer C_S_AXI_DATA_WIDTH	= 32,
 		// Width of S_AXI address bus
-		parameter integer C_S_AXI_ADDR_WIDTH	= 4
+		parameter integer C_S_AXI_ADDR_WIDTH	= 16
 	)
 	(
 		// Users to add ports here
-        // Control data output
-        // Control register
         output fastdac_en_jesd_o,
-        // output command_rng_fifo_status_o,
-		// input [9:0] rng_fifo_status_i,
-		// input rng_fifo_status_valid_i,
 		output [3:0] rng_err_clr_o,
 		input [7:0] rng_err_i,
         output fastdac_reg_en_o,
-        // output slv_reg_wren,
         output [7:0] fastdac_dpram_max_addr_seq_dac0_o,
         output [7:0] fastdac_dpram_max_addr_seq_dac1_o,
         output [14:0] fastdac_dpram_max_addr_rng_dac1_o,
         output fastdac_rng_mode_o,
-        output [15:0] rdec_p0_o,        // range-decoder P0 (Bernoulli threshold, Q15)
+        output [15:0] rdec_p0_o,        
         output fastdac_dac1_mode_o,
         output fastdac_dac0_mode_o,
-        // output [7:0] fastdac_dpram_max_addr_pos_dac0_o,
-        // output [7:0] fastdac_dpram_max_addr_pos_dac1_o,
         output [3:0]  fastdac_amp_dac1_shift_o,
         output [31:0] fastdac_amp_dac1_o,
         output [31:0] fastdac_amp_dac2_o,
@@ -63,20 +84,6 @@
         output [31:0] division_sp_o,
 		output [3:0] fastdac_zero_pos_o,
 
-
-        // output [14:0] fastdac_reg_alpha0_dac0_0_o,
-        // output [14:0] fastdac_reg_alpha0_dac0_1_o,
-        // output [14:0] fastdac_reg_alpha0_dac0_2_o,
-        // output [14:0] fastdac_reg_alpha1_dac0_0_o,
-        // output [14:0] fastdac_reg_alpha1_dac0_1_o,
-        // output [14:0] fastdac_reg_alpha1_dac0_2_o,
-        output [14:0] fastdac_reg_alpha0_dac1_0_o,
-        output [14:0] fastdac_reg_alpha0_dac1_1_o,
-        output [14:0] fastdac_reg_alpha0_dac1_2_o,
-        output [14:0] fastdac_reg_alpha1_dac1_0_o,
-        output [14:0] fastdac_reg_alpha1_dac1_1_o,
-        // output [14:0] fastdac_reg_alpha1_dac1_2_o,
-        // input [5:0]   fastdac_ddr_status_i,
         // Sequence Read memory
         output reg  fastdac_sequence_wen_o,
         output reg [9:0] fastdac_sequence_addr_o,
@@ -88,9 +95,9 @@
         output reg [31:0] fastdac_rng_din_o,
         
         // Alpha position read memory
-        output reg  fastdac_alpha_pos_wen_o,
-        output reg [7:0] fastdac_alpha_pos_addr_o,
-        output reg [31:0] fastdac_alpha_pos_din_o,
+        // output reg  fastdac_alpha_pos_wen_o,
+        // output reg [7:0] fastdac_alpha_pos_addr_o,
+        // output reg [31:0] fastdac_alpha_pos_din_o,
         
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -200,21 +207,11 @@
 	// 
 	// Registers connections to output signal
 	assign fastdac_en_jesd_o = slv_reg0[0];
-	// assign command_rng_fifo_status_o = slv_reg0[1];
-	// assign fastdac_dpram_max_addr_seq_dac0_o = slv_reg1[6:0];
-	// assign fastdac_dpram_max_addr_seq_dac1_o = slv_reg1[22:16];
-	// assign fastdac_dpram_max_addr_pos_dac0_o = slv_reg2[7:0];
-	// assign fastdac_dpram_max_addr_pos_dac1_o = slv_reg2[23:16];
-	// assign amp_high_dac1_o = slv_reg2[15:0];
 	assign fastdac_amp_dac1_shift_o = slv_reg1[3:0];
 	assign fastdac_amp_dac1_o = slv_reg2[31:0];
 	assign fastdac_amp_dac2_o = slv_reg6[31:0];
 
-	// assign fastdac_reg_alpha0_dac0_0_o = slv_reg3[14:0];
-	// assign fastdac_reg_alpha0_dac0_1_o = slv_reg3[30:16];
 	assign fastdac_reg_en_o = slv_reg3[0]; 
-	// assign fastdac_reg_alpha0_dac0_2_o = slv_reg4[14:0];
-	// assign fastdac_reg_alpha1_dac0_0_o = slv_reg4[30:16];
 	assign fastdac_dpram_max_addr_seq_dac0_o = slv_reg4[7:0];
 	assign fastdac_dpram_max_addr_seq_dac1_o = slv_reg4[15:8];
 	assign fastdac_dpram_max_addr_rng_dac1_o = slv_reg7[14:0];
@@ -227,15 +224,6 @@
 	assign fastdac_up_offset_o = slv_reg1[31:16];
 	assign division_sp_o = slv_reg8[31:0];
 	assign fastdac_zero_pos_o = slv_reg1[7:4];
-	// assign fastdac_reg_alpha1_dac0_1_o = slv_reg5[14:0];
-	// assign fastdac_reg_alpha1_dac0_2_o = slv_reg5[30:16];
-	// assign fastdac_reg_alpha0_dac1_0_o = slv_reg6[14:0];
-	// assign fastdac_reg_alpha0_dac1_1_o = slv_reg6[30:16];
-	// assign fastdac_reg_alpha0_dac1_2_o = slv_reg7[14:0];
-	// assign fastdac_reg_alpha1_dac1_0_o = slv_reg7[30:16];
-	// assign fastdac_reg_alpha1_dac1_1_o = slv_reg8[14:0];
-	// assign fastdac_reg_alpha1_dac1_2_o = slv_reg8[30:16];
-	// assign slv_reg16[5:0] = fastdac_ddr_status_i;
 	// I/O Connections assignments
 
 	assign S_AXI_AWREADY	= axi_awready;
@@ -352,15 +340,16 @@
 	      slv_reg6 <= 0;
 	      slv_reg7 <= 0;
 	      slv_reg8 <= 0;
+	      slv_reg9 <= 0;
 	      slv_reg10 <= 0;
 	      fastdac_sequence_wen_o     <= 0;
-	      fastdac_alpha_pos_wen_o    <= 0;
+	    //   fastdac_alpha_pos_wen_o    <= 0;
 	      fastdac_rng_wen_o <= 0;
 	      access_ok = 0;
 	    end 
 	  else begin
 	    fastdac_sequence_wen_o     <= 0;
-	    fastdac_alpha_pos_wen_o    <= 0;
+	    // fastdac_alpha_pos_wen_o    <= 0;
 	    fastdac_rng_wen_o <= 0;
 	    if (slv_reg_wren)
 	      begin
@@ -399,37 +388,45 @@
 	                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                   // Respective byte enables are asserted as per write strobes 
-	                   // Slave register 3
+	                   // Slave register 4
 	                   slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	                   end
 	               4'h5:
 	                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                   // Respective byte enables are asserted as per write strobes 
-	                   // Slave register 3
+	                   // Slave register 5
 	                   slv_reg5[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	                   end
 	               4'h6:
 	                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                   // Respective byte enables are asserted as per write strobes 
-	                   // Slave register 3
+	                   // Slave register 6
 	                   slv_reg6[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	                   end
 	               4'h7:
 	                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                   // Respective byte enables are asserted as per write strobes 
-	                   // Slave register 3
+	                   // Slave register 7
 	                   slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	                   end
 	                4'h8:
 	                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                   // Respective byte enables are asserted as per write strobes 
-	                   // Slave register 3
+	                   // Slave register 8
 	                   slv_reg8[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+					   end
+	                4'h9:
+	                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+	                   // Respective byte enables are asserted as per write strobes 
+	                   // Slave register 9
+	                   slv_reg9[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	                   end
+
 	               4'hA:
 	                   for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	                   if ( S_AXI_WSTRB[byte_index] == 1 ) begin
@@ -441,6 +438,13 @@
 	                      slv_reg1 <= slv_reg1;
 	                      slv_reg2 <= slv_reg2;
 	                      slv_reg3 <= slv_reg3;
+						  slv_reg4 <= slv_reg4;
+	                      slv_reg5 <= slv_reg5;
+	                      slv_reg6 <= slv_reg6;
+	                      slv_reg7 <= slv_reg7;
+						  slv_reg8 <= slv_reg8;
+						  slv_reg9 <= slv_reg9;
+	                      slv_reg10 <= slv_reg10;
 	                    end
 	           endcase
 	      end else begin  // Write sequence memory access
@@ -454,7 +458,6 @@
 	               for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	               if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	               // Respective byte enables are asserted as per write strobes 
-	               // Slave register 3
 	                   fastdac_sequence_din_o[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	               end
 	           end else begin // Write alpha position memory access
@@ -471,9 +474,7 @@
 	               for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	               if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	               // Respective byte enables are asserted as per write strobes 
-	               // Slave register 3
 	                   fastdac_rng_din_o[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-
 	               end	               
 	           end
 	      end   
@@ -544,10 +545,11 @@
 	    end 
 	end
 	
+	// If using rng_fifo_status_i, slv_reg9 should not be assigned
 	// (* ASYNC_REG = "TRUE" *) reg [2:0] rng_fifo_status_valid_r;
 	// initial begin
 	// 	rng_fifo_status_valid_r <= 0;
-	// 	slv_reg9 <= 0;
+	// 	slv_reg <= 0;
 	// end     
 
 	// always @(posedge S_AXI_ACLK) begin
@@ -622,7 +624,7 @@
 	        4'hA   : reg_data_out <= slv_reg10;
 	        // RNG error register: [7:4] = raw view, [3:0] = W1C sticky
 	        4'hB   : reg_data_out <= {{(C_S_AXI_DATA_WIDTH-8){1'b0}}, rng_err_i};
-	        default : reg_data_out <= slv_reg16;
+	        default : reg_data_out <= 0;
 	      endcase
 	end
 
