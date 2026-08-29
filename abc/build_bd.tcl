@@ -2190,9 +2190,9 @@ proc create_root_design { parentCell } {
     CONFIG.CLKOUT3_DRIVES {Buffer} \
     CONFIG.CLKOUT3_JITTER {209.021} \
     CONFIG.CLKOUT3_PHASE_ERROR {320.727} \
-    CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {100.000} \
+    CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {480.000} \
     CONFIG.CLKOUT3_REQUESTED_PHASE {0.000} \
-    CONFIG.CLKOUT3_USED {false} \
+    CONFIG.CLKOUT3_USED {true} \
     CONFIG.CLKOUT4_DRIVES {Buffer} \
     CONFIG.CLKOUT5_DRIVES {Buffer} \
     CONFIG.CLKOUT6_DRIVES {Buffer} \
@@ -2202,19 +2202,19 @@ proc create_root_design { parentCell } {
     CONFIG.FEEDBACK_SOURCE {FDBK_AUTO} \
     CONFIG.JITTER_SEL {No_Jitter} \
     CONFIG.MMCM_BANDWIDTH {OPTIMIZED} \
-    CONFIG.MMCM_CLKFBOUT_MULT_F {120.000} \
+    CONFIG.MMCM_CLKFBOUT_MULT_F {96.000} \
     CONFIG.MMCM_CLKIN1_PERIOD {100.000} \
     CONFIG.MMCM_CLKIN2_PERIOD {10.0} \
-    CONFIG.MMCM_CLKOUT0_DIVIDE_F {5.000} \
+    CONFIG.MMCM_CLKOUT0_DIVIDE_F {4.000} \
     CONFIG.MMCM_CLKOUT0_PHASE {0.000} \
-    CONFIG.MMCM_CLKOUT1_DIVIDE {15} \
+    CONFIG.MMCM_CLKOUT1_DIVIDE {12} \
     CONFIG.MMCM_CLKOUT1_PHASE {90.000} \
-    CONFIG.MMCM_CLKOUT2_DIVIDE {1} \
+    CONFIG.MMCM_CLKOUT2_DIVIDE {2} \
     CONFIG.MMCM_CLKOUT2_PHASE {0.000} \
     CONFIG.MMCM_COMPENSATION {AUTO} \
     CONFIG.MMCM_DIVCLK_DIVIDE {1} \
     CONFIG.MMCM_REF_JITTER1 {0.001} \
-    CONFIG.NUM_OUT_CLKS {2} \
+    CONFIG.NUM_OUT_CLKS {3} \
     CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {false} \
     CONFIG.PHASESHIFT_MODE {LATENCY} \
     CONFIG.PRIMITIVE {MMCM} \
@@ -2360,8 +2360,9 @@ proc create_root_design { parentCell } {
   connect_bd_net -net clk_wiz_0_clk_out2  [get_bd_pins clk_wiz_0/clk_out2] \
   [get_bd_pins decoy/clk80] \
   [get_bd_pins fastdac/clk80] \
-  [get_bd_pins clk_rst/clk80_i] \
-  [get_bd_pins ttl_gate_apd_0/clk80]
+  [get_bd_pins clk_rst/clk80_i]
+  connect_bd_net -net clk_wiz_0_clk_out3  [get_bd_pins clk_wiz_0/clk_out3] \
+  [get_bd_pins ttl_gate_apd_0/clk480]
   connect_bd_net -net clk_wiz_0_locked  [get_bd_pins clk_wiz_0/locked] \
   [get_bd_ports locked_pll]
   connect_bd_net -net ddr4_0_c0_init_calib_complete  [get_bd_pins ddr4/led] \

@@ -10,11 +10,21 @@
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
 // Description: Generate the gate signal for APD. Include the tune and fine delays
+//
+//              The gate is a 12-bit pattern covering one 12.5 ns period, shifted
+//              out by an OSERDESE3 in 4:1 DDR mode (CLK = clk480, CLKDIV =
+//              clk240, 960 Mb/s). One pattern bit is 1/(4*240 MHz) = 1.0417 ns,
+//              so duty cycle and tune delay are both bit positions in that word:
+//              the run of set bits gives the width, its offset gives the delay.
+//              The ODELAY cascade in fine_delay then trims the position in ps.
 // 
 // Dependencies: 
 //- ttl_reg_mngt.v
 //- fine_delay.v
 // 
+// Revision 0.03 - Gate generated as a 12-bit OSERDESE3 pattern (1.0417 ns per
+//                 bit) instead of a clk240 counter; fine_delay moved to clk240
+//                 (DRC REQP-1743 requires ODELAY CLK == OSERDES CLKDIV)
 // Revision 0.02 - Fix CDC edge-detect in ttl_params_240_r/80_r (compare [2] to
 //                 fully-synchronized [1], not under-synchronized [0]); document
 //                 delay_val (<=7) and duty_val (<=2) range constraints
@@ -59,8 +69,8 @@ module ttl_gate_apd #(
     input   s_axil_aresetn,
 
     //input clocks and reset
-    input   clk240,
-    input   clk80,
+    input   clk240,     // OSERDESE3 CLKDIV, and CLK of every delay primitive
+    input   clk480,     // OSERDESE3 CLK; DDR on this clock gives 960 Mb/s
     input   ttl_rst,
     input   pps_i,
     
@@ -75,6 +85,7 @@ module ttl_gate_apd #(
 //Axil registers
 wire [31:0] ttl_params_o;
 wire [31:0] ttl_params_slv_o;
+wire [31:0] ttl_pattern_o;
 wire ttl_params_en_o;
 wire ttl_trigger_enstep_o, ttl_trigger_enstep_slv1_o, ttl_trigger_enstep_slv2_o;
 ttl_axil_mngt # ( 
@@ -86,6 +97,7 @@ ttl_axil_mngt # (
     .ttl_trigger_enstep_slv2_o(ttl_trigger_enstep_slv2_o),    //en_step trigger slave2
     .ttl_params_o(ttl_params_o),                              //parameters for master
     .ttl_params_slv_o(ttl_params_slv_o),                      //parameters for slaves
+    .ttl_pattern_o(ttl_pattern_o),                            //12-bit gate pattern
     .ttl_params_en_o(ttl_params_en_o),                        //save parameters to regs
     .S_AXI_ACLK(s_axil_aclk),
     .S_AXI_ARESETN(s_axil_aresetn),
@@ -110,59 +122,36 @@ ttl_axil_mngt # (
     .S_AXI_RREADY(s_axil_rready)
 );
 
-// Change clock domain for registers, from axil to 240MHz and 80MHz
+// Change clock domain for registers, from axil to 240MHz. The whole gate
+// datapath (pattern, serializer, delay cascade) lives in clk240, so one
+// synchronizer covers all of it.
 (* ASYNC_REG = "TRUE" *) reg [2:0] ttl_params_240_r;
 reg [31:0] ttl_params_240;
+reg [31:0] ttl_params_slv;
+reg [11:0] ttl_pattern_240;
 initial begin
     ttl_params_240_r <= 0;
     ttl_params_240 <= 0;
+    ttl_params_slv <= 0;
+    ttl_pattern_240 <= 0;
 end
 always @(posedge clk240) begin
     ttl_params_240_r <= {ttl_params_240_r[1:0],ttl_params_en_o};
     if ((ttl_params_240_r[2] == 0) && (ttl_params_240_r[1] == 1)) begin
         ttl_params_240 <= ttl_params_o;
-    end
-end
-
-(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_params_80_r;
-reg [31:0] ttl_params_80;
-reg [31:0] ttl_params_slv;
-initial begin
-    ttl_params_80_r <= 0;
-    ttl_params_80 <= 0;
-    ttl_params_slv <= 0;
-end
-always @(posedge clk80) begin
-    ttl_params_80_r <= {ttl_params_80_r[1:0],ttl_params_en_o};
-    if ((ttl_params_80_r[2] == 0) && (ttl_params_80_r[1] == 1)) begin
-        ttl_params_80 <= ttl_params_o;
         ttl_params_slv <= ttl_params_slv_o;
+        ttl_pattern_240 <= ttl_pattern_o[11:0];
     end
 end
 
-//Generate reset in 240MHz and 80MHz domain
-(* ASYNC_REG = "TRUE" *) reg [2:0] ttl_rst80_r;
+//Generate reset in 240MHz domain
 (* ASYNC_REG = "TRUE" *) reg [2:0] ttl_rst240_r;
 initial begin
-    ttl_rst80_r <= 0;
     ttl_rst240_r <= 0;
-end
-always @(posedge clk80) begin
-    ttl_rst80_r <= {ttl_rst80_r[1:0],ttl_rst};
 end
 always @(posedge clk240) begin
     ttl_rst240_r <= {ttl_rst240_r[1:0],ttl_rst};
 end
-
-wire clk80_o;
-wire ttl_rst80_o;
-wire ttl_rstn80_o;
-reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk80_inst (
-    .clk_i(clk80),
-    .rst_i(ttl_rst80_r[1]),
-    .clk_o(clk80_o),
-    .rstn_o(ttl_rstn80_o),
-    .rst_o(ttl_rst80_o));
 
 wire clk240_o;
 wire ttl_rst240_o;
@@ -194,47 +183,57 @@ always @(posedge clk240) begin
     end
 end
 
-//Generate the pulse, value of duty cycle and tune delay come from axil registers
-reg [4:0] counter;
-reg [7:0] bits;
-reg pulse;
+//Generate the pulse. The 12-bit pattern in ttl_pattern_240 covers one 12.5 ns
+//gate period at 1.0417 ns per bit; bit 0 is the first slot after pps_trigger.
+//OSERDESE3 sends D[0] first, so the pattern goes out low bit first, one nibble
+//per clk240 cycle, three nibbles per period.
+reg [1:0] phase;
+initial begin
+    phase <= 0;
+end
+always @(posedge clk240) begin
+    if (ttl_rst240_o || !pps_trigger) begin
+        phase <= 2'd0;
+    end else begin
+        phase <= (phase == 2'd2) ? 2'd0 : phase + 2'd1;
+    end
+end
 
-wire [3:0] delay_val; // bits[delay_val]: bits is only [7:0], so software must keep
-                       // delay_val <= 7 (values 8-15 would index out of range)
-wire [3:0] duty_val; // software keeps duty_val <= 2: the "counter == 2" reset below
-                      // only closes the cycle correctly for that range
-assign duty_val = ttl_params_240[22:19];
-assign delay_val = ttl_params_240[18:15];
+reg [3:0] gate_nibble;
+always @* begin
+    if (!pps_trigger) begin
+        gate_nibble = 4'b0000;
+    end else begin
+        case (phase)
+            2'd0:    gate_nibble = ttl_pattern_240[3:0];
+            2'd1:    gate_nibble = ttl_pattern_240[7:4];
+            default: gate_nibble = ttl_pattern_240[11:8];
+        endcase
+    end
+end
 
 wire pulse_delay_tune;
 wire pulse_rep;
-always @(posedge clk240) begin
-    if (ttl_rst240_o) begin
-        counter <= 0;
-        pulse <= 1'b0;
-        bits <= 0;
-    end else begin
-        if (pps_trigger) begin  
-            bits <= {bits[6:0],pulse};
-            counter <= counter + 1;
-            if (counter >= 0 && counter < duty_val) begin 
-                pulse<= 1'b1; 
-            end
-            else if (counter == 2) begin 
-                counter <= 0;
-                pulse <= 1'b0;
-            end else begin
-                pulse <= 1'b0;
-            end
-        end else begin
-            counter <= 0;
-            pulse <= 1'b0;
-            bits <= 0;
-        end
-    end
-end
-assign pulse_delay_tune = bits[delay_val];
-assign pulse_rep = pulse;
+
+OSERDESE3 #(
+    .DATA_WIDTH(4),                 // 4 bits per CLKDIV cycle, DDR on CLK: 960 Mb/s
+    .INIT(1'b0),
+    .ODDR_MODE("FALSE"),
+    .OSERDES_D_BYPASS("FALSE"),
+    .OSERDES_T_BYPASS("FALSE"),
+    .SIM_DEVICE("ULTRASCALE_PLUS")
+) OSERDESE3_pulse (
+    .OQ(pulse_delay_tune),  // 1-bit output: serialized data, drives the ODELAY chain
+    .T_OUT(),               // 1-bit output: 3-state control, unused
+    .CLK(clk480),           // 1-bit input: fast clock, DDR
+    .CLKDIV(clk240),        // 1-bit input: divided clock, must match ODELAY CLK
+    .D({4'b0000, gate_nibble}), // 8-bit input: only D[3:0] used at DATA_WIDTH 4
+    .RST(ttl_rst240_o),     // 1-bit input: active-High reset
+    .T(1'b0)                // 1-bit input: 3-state input, output always driven
+);
+
+// Coarse replica of the gate, one clk240 cycle granularity
+assign pulse_rep = |gate_nibble;
 
 OBUFDS #(
       .IOSTANDARD("DEFAULT"), // Specify the output I/O standard
@@ -251,15 +250,16 @@ fine_delay #(
     .DELAY_TYPE(DELAY_TYPE),
     .DELAY_VALUE(DELAY_VALUE),  //need to be between 45-65 taps for IDELAY3 calibrates correctly/BISC process 
     .REFCLK_FREQUENCY(REFCLK_FREQUENCY), // 
-    .UPDATE_MODE(UPDATE_MODE)
+    .UPDATE_MODE(UPDATE_MODE),
+    .CLK_RATIO(3)   // clk_i is 240 MHz
 ) fine_delay_inst (
-    .clk80(clk80),
-    .ttl_rst80_o(ttl_rst80_o),
+    .clk_i(clk240),
+    .rst_i(ttl_rst240_o),
     .pulse_delay_tune(pulse_delay_tune),
     .pulse_p(pulse_p),
     .pulse_n(pulse_n),
-    .ttl_params_80(ttl_params_80),
-    .ttl_params_slv(ttl_params_slv),  
+    .params_i(ttl_params_240),
+    .params_slv_i(ttl_params_slv),  
     .ttl_trigger_enstep_o(ttl_trigger_enstep_o),
     .ttl_trigger_enstep_slv1_o(ttl_trigger_enstep_slv1_o),
     .ttl_trigger_enstep_slv2_o(ttl_trigger_enstep_slv2_o)

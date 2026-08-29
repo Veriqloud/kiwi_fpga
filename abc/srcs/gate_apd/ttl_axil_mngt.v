@@ -10,9 +10,24 @@
 // Target Devices: Opalkelly XEM8310
 // Tool Versions: Vivado 2024.2
 // Description: Manage AXIL interface, assign ttl registers to AXIL registers
+//
+//              Register map (offset = 4*n from the module base):
+//              0x00 slv_reg0 [0]     master ODELAY tune trigger
+//              0x04 slv_reg1 [0]     master fine delay direction (1 = increment)
+//                            [14:1]  master tune window, in 80 MHz cycles
+//              0x08 slv_reg2 [0]     latch enable: 0->1 copies reg1/3/6 into clk240
+//              0x0C slv_reg3 [0]     slave1 direction, [14:1] slave1 window
+//                            [16]    slave2 direction, [30:17] slave2 window
+//              0x10 slv_reg4 [0]     slave1 ODELAY tune trigger
+//              0x14 slv_reg5 [0]     slave2 ODELAY tune trigger
+//              0x18 slv_reg6 [11:0]  gate pattern: one bit per 1.0417 ns slot of
+//                                    the 12.5 ns gate period, bit 0 first. The
+//                                    run of set bits is the duty cycle, its
+//                                    offset is the tune delay.
 // 
 // Dependencies: 
 // 
+// Revision: 0.03 - slv_reg6 carries the 12-bit gate pattern
 // Revision: 0.02 - No change
 // Revision 0.01 - File Created
 // Additional Comments:
@@ -43,6 +58,7 @@
     //  output wire fpga_turnkey_fastdac_sel_o,
         output wire [31:0] ttl_params_o,
         output wire [31:0] ttl_params_slv_o,
+        output wire [31:0] ttl_pattern_o,
         output wire ttl_params_en_o,
 
         // User ports ends
@@ -154,6 +170,7 @@
     assign ttl_trigger_enstep_slv2_o = slv_reg5[0];
     assign ttl_params_o = slv_reg1;
     assign ttl_params_slv_o = slv_reg3;
+    assign ttl_pattern_o = slv_reg6;   //[11:0] gate pattern, 1.0417 ns per bit
     assign ttl_params_en_o =  slv_reg2[0];
 
     // I/O Connections assignments

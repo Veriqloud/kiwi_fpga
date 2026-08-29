@@ -13,8 +13,14 @@
 //              Chain is ODELAYE3(MASTER) -> IDELAYE3(SLAVE_MIDDLE) ->
 //              ODELAYE3(SLAVE_END). Each stage owns its own tap-step engine
 //              (master / slv1 / slv2), driven by an AXIL trigger and a tap count
-//              taken from the ttl_params_* registers. The delayed pulse leaves
+//              taken from the params_* registers. The delayed pulse leaves
 //              through an OBUFDS as an LVDS pair.
+//
+//              clk_i drives both the tap-step engines and the CLK pin of every
+//              delay primitive. When the delayed signal comes from an OSERDESE3,
+//              clk_i must be the same net as that serializer's CLKDIV pin
+//              (DRC REQP-1743): the TTL gate path runs this module at 240 MHz
+//              with CLK_RATIO=3, decoy runs it at 80 MHz with CLK_RATIO=1.
 //
 // Dependencies: Xilinx ODELAYE3 / IDELAYE3 / OBUFDS primitives (UltraScale+).
 //               Requires an IDELAYCTRL in the same I/O bank, clocked at
@@ -24,8 +30,10 @@
 // Revision 0.01 - File Created
 // Revision 0.02 - Header completed, port comments added
 // Additional Comments:
-// Tap stepping is rate-limited by counter_fine: one CE pulse every 16 clk80
-// cycles, so a tune window of N cycles moves the line by about N/16 taps.
+// Tap stepping is rate-limited by counter_fine: one CE pulse every 17*CLK_RATIO
+// clk_i cycles, and the tune window is resolution*CLK_RATIO clk_i cycles. Both
+// scale with CLK_RATIO, so a given register value always means the same
+// wall-clock window and the same number of taps whatever clk_i is.
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -34,10 +42,11 @@ module fine_delay #(
     parameter DELAY_TYPE = "VARIABLE",
     parameter DELAY_VALUE = 50,  //need to be between 45-65 taps for IDELAY3 calibrates correctly/BISC process
     parameter REFCLK_FREQUENCY = 300, // IDELAYCTRL reference clock, MHz (200.0-800.0)
-    parameter UPDATE_MODE = "ASYNC"   // when tap updates take effect (ASYNC, MANUAL, SYNC)
+    parameter UPDATE_MODE = "ASYNC",  // when tap updates take effect (ASYNC, MANUAL, SYNC)
+    parameter integer CLK_RATIO = 1   // clk_i frequency / 80 MHz; scales the tap-step timing
 )(
-    input   clk80,              // 80 MHz control clock: tune engines and all delay primitives
-    input   ttl_rst80_o,        // active-high reset, clk80 domain (input despite the _o suffix)
+    input   clk_i,              // control clock: tune engines and CLK of all delay primitives
+    input   rst_i,              // active-high reset, clk_i domain
     input   pulse_delay_tune,   // pulse to be delayed, drives the master ODELAYE3 ODATAIN
     output  pulse_p,            // delayed pulse, LVDS positive leg (OBUFDS)
     output  pulse_n,            // delayed pulse, LVDS negative leg (OBUFDS)
@@ -45,9 +54,9 @@ module fine_delay #(
     //AXIL registers
     // Master stage (ODELAYE3 MASTER) control word:
     //   [0]     increase_en - 1 = increment taps, 0 = decrement
-    //   [14:1]  resolution  - tune window length in clk80 cycles (~/16 = tap steps)
+    //   [14:1]  resolution  - tune window length, in 80 MHz cycles (~/17 = tap steps)
     //   [31:15] unused
-    input [31:0]    ttl_params_80,
+    input [31:0]    params_i,
     // Slave stages control word, two fields packed into one register:
     //   [0]     increase_en_slv1 - direction for the IDELAYE3 SLAVE_MIDDLE stage
     //   [14:1]  resolution_slv1  - tune window for the IDELAYE3 SLAVE_MIDDLE stage
@@ -55,8 +64,8 @@ module fine_delay #(
     //   [16]    increase_en_slv2 - direction for the ODELAYE3 SLAVE_END stage
     //   [30:17] resolution_slv2  - tune window for the ODELAYE3 SLAVE_END stage
     //   [31]    unused
-    input [31:0]    ttl_params_slv,
-    // Tune triggers, asynchronous to clk80 (sourced from the AXIL clock domain).
+    input [31:0]    params_slv_i,
+    // Tune triggers, asynchronous to clk_i (sourced from the AXIL clock domain).
     // Each opens its stage's tune window; see the counter_long block below.
     input           ttl_trigger_enstep_o,       // master ODELAYE3
     input           ttl_trigger_enstep_slv1_o,  // IDELAYE3 SLAVE_MIDDLE
@@ -71,9 +80,17 @@ wire [13:0] resolution;
 wire [13:0] resolution_slv1;
 wire [13:0] resolution_slv2;
     
-assign resolution = ttl_params_80[14:1];
-assign resolution_slv1 = ttl_params_slv[14:1];
-assign resolution_slv2 = ttl_params_slv[30:17];
+assign resolution = params_i[14:1];
+assign resolution_slv1 = params_slv_i[14:1];
+assign resolution_slv2 = params_slv_i[30:17];
+
+// Tune window, in clk_i cycles
+wire [25:0] window      = resolution      * CLK_RATIO;
+wire [25:0] window_slv1 = resolution_slv1 * CLK_RATIO;
+wire [25:0] window_slv2 = resolution_slv2 * CLK_RATIO;
+
+// CE is always a single clk_i cycle wide, so always exactly one tap per pulse
+localparam integer FINE_PERIOD = 17 * CLK_RATIO;
 
 //Passing domaine
 wire en_step, en_step_slv1, en_step_slv2;
@@ -85,7 +102,7 @@ initial begin
     ttl_trigger_enstep_slv1_r <= 0;
     ttl_trigger_enstep_slv2_r <= 0;
 end
-always @(posedge clk80) begin
+always @(posedge clk_i) begin
     ttl_trigger_enstep_r <= {ttl_trigger_enstep_r[1:0],ttl_trigger_enstep_o};
     ttl_trigger_enstep_slv1_r <= {ttl_trigger_enstep_slv1_r[1:0],ttl_trigger_enstep_slv1_o};
     ttl_trigger_enstep_slv2_r <= {ttl_trigger_enstep_slv2_r[1:0],ttl_trigger_enstep_slv2_o};
@@ -104,16 +121,16 @@ initial begin
     en_vtc_slv1 <= 1;
     en_vtc_slv2 <= 1;
 end
-always @(posedge clk80) begin
-    if (ttl_rst80_o) begin 
-        counter_long <= resolution + 1;
-        counter_long_slv1 <= resolution_slv1 + 1;
-        counter_long_slv2 <= resolution_slv2 + 1; 
+always @(posedge clk_i) begin
+    if (rst_i) begin 
+        counter_long <= window + 1;
+        counter_long_slv1 <= window_slv1 + 1;
+        counter_long_slv2 <= window_slv2 + 1; 
     end else begin
         if (!en_step) begin counter_long <= 0; end
         else if (en_step) begin   
             counter_long <= counter_long + 1;
-            if(counter_long > 0  && counter_long <= resolution) begin
+            if(counter_long > 0  && counter_long <= window) begin
                 stop <= 1'b0;
                 en_vtc <= 1'b0;
             end else begin
@@ -124,7 +141,7 @@ always @(posedge clk80) begin
         if (!en_step_slv1) begin counter_long_slv1 <= 0; end
         else if (en_step_slv1) begin   
             counter_long_slv1 <= counter_long_slv1 + 1;
-            if(counter_long_slv1 > 0  && counter_long_slv1 <= resolution_slv1) begin
+            if(counter_long_slv1 > 0  && counter_long_slv1 <= window_slv1) begin
                 stop_slv1 <= 1'b0;
                 en_vtc_slv1 <= 1'b0;
             end else begin
@@ -135,7 +152,7 @@ always @(posedge clk80) begin
         if (!en_step_slv2) begin counter_long_slv2 <= 0; end
         else if (en_step_slv2) begin   
             counter_long_slv2 <= counter_long_slv2 + 1;
-            if(counter_long_slv2 > 0  && counter_long_slv2 <= resolution_slv2) begin
+            if(counter_long_slv2 > 0  && counter_long_slv2 <= window_slv2) begin
                 stop_slv2 <= 1'b0;
                 en_vtc_slv2 <= 1'b0;
             end else begin
@@ -147,17 +164,17 @@ always @(posedge clk80) begin
     end    
 end
     
-reg [4:0] counter_fine, counter_fine_slv1, counter_fine_slv2;
+reg [7:0] counter_fine, counter_fine_slv1, counter_fine_slv2;
 reg ce, inc;
 reg ce_slv1, inc_slv1;
 reg ce_slv2, inc_slv2;
 wire increase_en, increase_en_slv1, increase_en_slv2;
-assign increase_en = ttl_params_80[0];
-assign increase_en_slv1 = ttl_params_slv[0];
-assign increase_en_slv2 = ttl_params_slv[16];
+assign increase_en = params_i[0];
+assign increase_en_slv1 = params_slv_i[0];
+assign increase_en_slv2 = params_slv_i[16];
 
-always @(posedge clk80) begin
-    if (ttl_rst80_o) begin 
+always @(posedge clk_i) begin
+    if (rst_i) begin 
         counter_fine <= 0;
         counter_fine_slv1 <= 0;
         counter_fine_slv2 <= 0; 
@@ -174,7 +191,7 @@ always @(posedge clk80) begin
                 end         
             end else if (counter_fine == 10) begin
                 ce <= 1'b0;
-            end else if (counter_fine >= 16) begin
+            end else if (counter_fine >= FINE_PERIOD-1) begin
                 counter_fine <= 0;
             end
         end else begin
@@ -192,7 +209,7 @@ always @(posedge clk80) begin
                 end         
             end else if (counter_fine_slv1 == 10) begin
                 ce_slv1 <= 1'b0;
-            end else if (counter_fine_slv1 >= 16) begin
+            end else if (counter_fine_slv1 >= FINE_PERIOD-1) begin
                 counter_fine_slv1 <= 0;
             end
         end else begin
@@ -210,7 +227,7 @@ always @(posedge clk80) begin
                 end         
             end else if (counter_fine_slv2 == 10) begin
                 ce_slv2 <= 1'b0;
-            end else if (counter_fine_slv2 >= 16) begin
+            end else if (counter_fine_slv2 >= FINE_PERIOD-1) begin
                 counter_fine_slv2 <= 0;
             end
         end else begin
@@ -247,13 +264,13 @@ assign pulsein = pulse_delay_tune;
 // .CASC_IN(1'b0), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
 // .CASC_RETURN(0), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
 // .CE(ce), // 1-bit input: Active-High enable increment/decrement input
-// .CLK(clk80), // 1-bit input: Clock input
+// .CLK(clk_i), // 1-bit input: Clock input
 // .CNTVALUEIN(), // 9-bit input: Counter value input
 // .EN_VTC(en_vtc), // 1-bit input: Keep delay constant over VT
 // .INC(inc), // 1-bit input: Increment/Decrement tap delay input
 // .LOAD(load), // 1-bit input: Load DELAY_VALUE input
 // .ODATAIN(pulsein), // 1-bit input: Data input
-// .RST(ttl_rst80_o) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
+// .RST(rst_i) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
 // );
     
 //Add cascade wires
@@ -280,13 +297,13 @@ ODELAYE3_inst_master (
     .CASC_IN(1'b0), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
     .CASC_RETURN(cascade_return_1), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
     .CE(ce), // 1-bit input: Active-High enable increment/decrement input
-    .CLK(clk80), // 1-bit input: Clock input
+    .CLK(clk_i), // 1-bit input: Clock input
     .CNTVALUEIN(), // 9-bit input: Counter value input
     .EN_VTC(en_vtc), // 1-bit input: Keep delay constant over VT
     .INC(inc), // 1-bit input: Increment/Decrement tap delay input
     .LOAD(load), // 1-bit input: Load DELAY_VALUE input
     .ODATAIN(pulsein), // 1-bit input: Data input
-    .RST(ttl_rst80_o) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
+    .RST(rst_i) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
 );
 
 
@@ -312,14 +329,14 @@ IDELAYE3_inst_slave (
     .CASC_IN(cascade_out_1),         // 1-bit input: Cascade delay input from slave ODELAY CASCADE_OUT
     .CASC_RETURN(cascade_return_2), // 1-bit input: Cascade delay returning from slave ODELAY DATAOUT
     .CE(ce_slv1),                   // 1-bit input: Active-High enable increment/decrement input
-    .CLK(clk80),                 // 1-bit input: Clock input
+    .CLK(clk_i),                 // 1-bit input: Clock input
     .CNTVALUEIN(),   // 9-bit input: Counter value input
     .DATAIN(),           // 1-bit input: Data input from the logic
     .EN_VTC(en_vtc_slv1),           // 1-bit input: Keep delay constant over VT
     .IDATAIN(),         // 1-bit input: Data input from the IOBUF
     .INC(inc_slv1),                 // 1-bit input: Increment / Decrement tap delay input
     .LOAD(load_slv1),               // 1-bit input: Load DELAY_VALUE input
-    .RST(ttl_rst80_o)                  // 1-bit input: Asynchronous Reset to the DELAY_VALUE
+    .RST(rst_i)                  // 1-bit input: Asynchronous Reset to the DELAY_VALUE
 );
 
 ODELAYE3 #(
@@ -342,13 +359,13 @@ ODELAYE3_inst_slave (
     .CASC_IN(cascade_out_2), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
     .CASC_RETURN(1'b0), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
     .CE(ce_slv2), // 1-bit input: Active-High enable increment/decrement input
-    .CLK(clk80), // 1-bit input: Clock input
+    .CLK(clk_i), // 1-bit input: Clock input
     .CNTVALUEIN(), // 9-bit input: Counter value input
     .EN_VTC(en_vtc_slv2), // 1-bit input: Keep delay constant over VT
     .INC(inc_slv2), // 1-bit input: Increment/Decrement tap delay input
     .LOAD(load_slv2), // 1-bit input: Load DELAY_VALUE input
     .ODATAIN(1'b0), // 1-bit input: Data input
-    .RST(ttl_rst80_o) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
+    .RST(rst_i) // 1-bit input: Asynchronous Reset to the DELAY_VALUE
 );
 
 OBUFDS #(

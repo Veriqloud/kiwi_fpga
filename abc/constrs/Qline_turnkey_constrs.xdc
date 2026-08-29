@@ -225,7 +225,6 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/cl
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg1_reg[1]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/lrst_i_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg1_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/tdc_rst_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_rst240_r_reg[0]/D}] 
-set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg3_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_rst80_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rst_240_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rst_80_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rst_200_r_reg[0]/D}]
@@ -309,15 +308,14 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/ins
 ###SET CONSTRAINTS TTL
 ## 1-bit CDC
 set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg2_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_params_240_r_reg[0]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg2_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_params_80_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/fine_delay_inst/ttl_trigger_enstep_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg4_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/fine_delay_inst/ttl_trigger_enstep_slv1_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg5_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/fine_delay_inst/ttl_trigger_enstep_slv2_r_reg[0]/D}]
 
 ## multi-bit CDC
 set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_params_240_reg[*]/D}]
-set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg1_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_params_80_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg3_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_params_slv_reg[*]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_axil_mngt_inst/slv_reg6_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ttl_gate_apd_0/inst/ttl_pattern_240_reg[*]/D}]
 
 ### SET CONSTRAINTS DECOY
 ## 1-bit CDC

@@ -429,13 +429,13 @@ fine_delay #(
     .REFCLK_FREQUENCY(REFCLK_FREQUENCY), // 
     .UPDATE_MODE(UPDATE_MODE)
  ) fine_delay_de_inst (
-    .clk80(clk80),
-    .ttl_rst80_o(rst_80_o),
+    .clk_i(clk80),
+    .rst_i(rst_80_o),
     .pulse_delay_tune(decoy_signal_bufi),
     .pulse_p(decoy_signal_p),
     .pulse_n(decoy_signal_n),
-    .ttl_params_80(decoy_params_80_r),
-    .ttl_params_slv(decoy_params_slv_r),  
+    .params_i(decoy_params_80_r),
+    .params_slv_i(decoy_params_slv_r),  
     .ttl_trigger_enstep_o(decoy_trigger_enstep_o),
     .ttl_trigger_enstep_slv1_o(decoy_trigger_enstep_slv1_o),
     .ttl_trigger_enstep_slv2_o(decoy_trigger_enstep_slv2_o)
