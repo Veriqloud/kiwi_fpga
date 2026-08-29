@@ -24,6 +24,9 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
 set files [glob -nocomplain "${origin_dir}/srcs/**/*.v" "${origin_dir}/srcs/**/**/*.v" "$origin_dir/ip/*/*.xci"]
+# clk_rst_mngt_backup.v declares a second module named clk_rst_mngt; with both in
+# the fileset the reference is unresolvable and build_bd.tcl cannot elaborate
+set files [lsearch -all -inline -not -glob $files "*_backup.v"]
 set added_files [add_files -fileset sources_1 $files]
 
 

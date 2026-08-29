@@ -220,9 +220,9 @@ always @(posedge clk80) begin
     end
 end
     
-localparam load = 0;
-localparam load_slv1 = 0;
-localparam load_slv2 = 0;
+localparam load = 1'b0;
+localparam load_slv1 = 1'b0;
+localparam load_slv2 = 1'b0;
 wire pulsein;
 wire pulsedelay;
 assign pulsein = pulse_delay_tune;  
@@ -293,7 +293,8 @@ ODELAYE3_inst_master (
 IDELAYE3 #(
   .CASCADE("SLAVE_MIDDLE"),               // Cascade setting (MASTER, NONE, SLAVE_END, SLAVE_MIDDLE)
   .DELAY_FORMAT(DELAY_FORMAT),          // Units of the DELAY_VALUE (COUNT, TIME)
-  .DELAY_SRC("CASC_IN"),          // Delay input (DATAIN, IDATAIN)
+  .DELAY_SRC("IDATAIN"),          // Delay input (DATAIN, IDATAIN); the cascaded
+                                  // data path is selected by CASCADE, not by this
   .DELAY_TYPE(DELAY_TYPE),           // Set the type of tap delay line (FIXED, VARIABLE, VAR_LOAD)
   .DELAY_VALUE(DELAY_VALUE),                // Input delay value setting
   .IS_CLK_INVERTED(1'b0),         // Optional inversion for CLK
@@ -335,7 +336,7 @@ ODELAYE3 #(
     // SYNC)
 )
 ODELAYE3_inst_slave (
-    .CASC_OUT(1'b0), // 1-bit output: Cascade delay output to IDELAY input cascade
+    .CASC_OUT(), // 1-bit output: Cascade delay output to IDELAY input cascade, unused on SLAVE_END
     .CNTVALUEOUT(), // 9-bit output: Counter value output
     .DATAOUT(cascade_return_2), // 1-bit output: Delayed data from ODATAIN input port
     .CASC_IN(cascade_out_2), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
