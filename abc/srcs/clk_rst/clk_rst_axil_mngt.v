@@ -20,6 +20,7 @@
 // Revision 0.01 - File Created
 // Revision 0.02 - Add some comments for AI review
 // Revision 0.03 - slv_reg8 timebase configuration, 0x24 timebase status
+// Revision 0.04 - TDC counter phase in 0x24 [25:16]
 // Additional Comments:
 // Register map (C_S_AXI_DATA_WIDTH = 32 -> ADDR_LSB = 2, decode on
 // axi_awaddr[5:2]; C_S_AXI_ADDR_WIDTH is driven to 10 by clk_rst_mngt.v):
@@ -40,6 +41,10 @@
 //   0x24  read-only timebase_status_i (pps_timebase, resynchronised)
 //                  [0] locked10  [1] pps10_err  [2] ltc_synced  [3] arm
 //                  [4] locked200 [5] sysref_err [15:8] arm_dist
+//                  [24:16] tdc_rstidx_phase: clk200 cycles from the start of
+//                          the TDC refclk/rstidx counters to the last pps200
+//                          edge, mod 320; 0 when they started on a pps200 edge
+//                  [25] tdc_rstidx_phase valid (cleared by tdc_rst)
 // All unlisted bits are writable but unused. Reads outside 0x00-0x24 return
 // slv_reg16, which is never written or reset.
 //
@@ -72,7 +77,7 @@
 		output wire rng_rst_o,
 		output wire [7:0]  timebase_arm_cnt_o,
 		output wire [15:0] timebase_pps200_preset_o,
-		input  wire [15:0] timebase_status_i,
+		input  wire [25:0] timebase_status_i,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -501,7 +506,7 @@
 	        4'h6   : reg_data_out <= slv_reg6;
 	        4'h7   : reg_data_out <= slv_reg7;
 	        4'h8   : reg_data_out <= slv_reg8;
-	        4'h9   : reg_data_out <= {16'b0, timebase_status_i};
+	        4'h9   : reg_data_out <= {6'b0, timebase_status_i};
 	        default : reg_data_out <= slv_reg16;
 	      endcase
 	end

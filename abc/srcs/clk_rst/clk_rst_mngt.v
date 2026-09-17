@@ -30,6 +30,7 @@
 // Revision 0.02 - Add some comments for AI review
 // Revision 0.03 - PPS epoch and LTC6951 SYNC from pps_timebase; SYSREF captured
 //                 in fastdac_coreclk_o; timebase configuration and status
+// Revision 0.04 - tdc_rstidx_phase_i in the timebase status
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
@@ -72,9 +73,11 @@ module clk_rst_mngt #(
     //- pps_i : PPS from WRS
     //- fastdac_gt_powergood_i :  status signal from JESDPHY
     //- lclk_i : clock 200MHz from TDC chip
+    //- tdc_rstidx_phase_i : {valid, phase} from tdc_clk_rst_mngt, clk200
     input         pps_i,
     input         fastdac_gt_powergood_i,
     input         lclk_i,
+    input  [9:0]  tdc_rstidx_phase_i,
 
     //- clk80_i  : 80MHz basis-processing clock (clk_wiz_0 clk_out2)
     //- clk250_i : 250MHz XDMA AXI clock (xdma_0 axi_aclk)
@@ -139,9 +142,9 @@ wire ltc_sync_rst;
 wire rng_rst;
 wire [7:0]  timebase_arm_cnt;
 wire [15:0] timebase_pps200_preset;
-wire [15:0] timebase_status;
-(* ASYNC_REG = "TRUE" *) reg [15:0] timebase_status_s0 = 0;
-(* ASYNC_REG = "TRUE" *) reg [15:0] timebase_status_s1 = 0;
+wire [25:0] timebase_status;
+(* ASYNC_REG = "TRUE" *) reg [25:0] timebase_status_s0 = 0;
+(* ASYNC_REG = "TRUE" *) reg [25:0] timebase_status_s1 = 0;
 
 clk_rst_axil_mngt # (
     .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
@@ -414,8 +417,8 @@ pps_timebase pps_timebase_inst (
     .arm_dist_o(timebase_arm_dist));
 
 //Timebase status into s_axil_aclk. The bits change rarely, arm_dist only when
-//tree B locks.
-assign timebase_status = {timebase_arm_dist, 2'b00, timebase_sysref_err, timebase_locked200,
+//tree B locks, tdc_rstidx_phase_i only when the TDC counters restart.
+assign timebase_status = {tdc_rstidx_phase_i, timebase_arm_dist, 2'b00, timebase_sysref_err, timebase_locked200,
                           timebase_arm, timebase_ltc_synced, timebase_pps10_err, timebase_locked10};
 always @(posedge s_axil_aclk) begin
     timebase_status_s0 <= timebase_status;

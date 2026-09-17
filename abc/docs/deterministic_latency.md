@@ -109,6 +109,16 @@ only the nominal alignment of the two PPS does.
 clk200 in the TDC, DDR and decoy hierarchies is the same BUFG_GT net as
 tx_core_clk.
 
+## TDC reference clock
+
+`tdc_clk_rst_mngt` starts the 5 MHz `tdc_refclk` and the `tdc_rstidx` pulse
+(every 320 clk200 cycles) on the first pps200 rising edge after `tdc_rst`. The
+edge detector starts from the high state, so a `tdc_rst` released inside the
+100 ms pps200 high window waits for the next second. Both outputs are driven
+from flops. 0x24 [24:16] reads the counter phase at the last pps200 edge: 0 when
+the counters started on a pps200 edge, otherwise the start offset in clk200
+cycles mod 320. It is valid ([25]) from the second pps200 edge after `tdc_rst`.
+
 ## Decoy RNG crossing
 
 `rng_a` is produced in clk200 on the 40 MHz `rd_en_4` grid and used in clk240
@@ -150,7 +160,7 @@ calibration absorbs it once.
 | 0x18 | [0] | `ltc_sync_rst`: unlocks the timebase (unchanged) |
 | 0x20 | [7:0] | `arm_cnt`, reset 16 |
 | 0x20 | [23:8] | `pps200_preset`, reset 364 |
-| 0x24 | [0] locked10, [1] pps10_err, [2] ltc_synced, [3] arm, [4] locked200, [5] sysref_err, [15:8] arm_dist | read-only status |
+| 0x24 | [0] locked10, [1] pps10_err, [2] ltc_synced, [3] arm, [4] locked200, [5] sysref_err, [15:8] arm_dist, [24:16] TDC counter phase (expect 0), [25] phase valid | read-only status |
 
 `Sync_Ltc()` needs no change: the reset relocks the timebase on the next PPS,
 the SYNC bit issues one pulse on the next second boundary, and tree B arms in

@@ -473,6 +473,7 @@ proc create_hier_cell_clk_rst_buffer { parentCell nameHier } {
   create_bd_pin -dir O probe_tdc_refclk
   create_bd_pin -dir O probe_tdc_rstidx
   create_bd_pin -dir O pps_trigger
+  create_bd_pin -dir O -from 9 -to 0 rstidx_phase
   create_bd_pin -dir O stopa_sim_0
   create_bd_pin -dir O O_lclk
   create_bd_pin -dir I clk200_i
@@ -534,6 +535,8 @@ proc create_hier_cell_clk_rst_buffer { parentCell nameHier } {
   [get_bd_pins stopa_sim_0]
   connect_bd_net -net tdc_clk_rst_mngt_0_tdc_pps_trigger  [get_bd_pins tdc_clk_rst_mngt_0/pps_trigger] \
   [get_bd_pins pps_trigger]
+  connect_bd_net -net tdc_clk_rst_mngt_0_rstidx_phase_o  [get_bd_pins tdc_clk_rst_mngt_0/rstidx_phase_o] \
+  [get_bd_pins rstidx_phase]
   connect_bd_net -net tdc_clk_rst_mngt_0_tdc_rstidx_o  [get_bd_pins tdc_clk_rst_mngt_0/tdc_rstidx_o] \
   [get_bd_pins probe_tdc_rstidx] \
   [get_bd_pins tdc_olvds_0/tdc_rstidx]
@@ -888,6 +891,7 @@ proc create_hier_cell_tdc { parentCell nameHier } {
   create_bd_pin -dir O probe_tdc_rstidx
   create_bd_pin -dir I pps200
   create_bd_pin -dir O pps_trigger
+  create_bd_pin -dir O -from 9 -to 0 rstidx_phase
   create_bd_pin -dir I clk10_i
   create_bd_pin -dir I linterrupt_i_0
   create_bd_pin -dir I -type clk s_axil_aclk
@@ -988,6 +992,8 @@ proc create_hier_cell_tdc { parentCell nameHier } {
   [get_bd_pins clk_rst_buffer/stopa_sim_limit]
   connect_bd_net -net tdc_clk_rst_mngt_0_pps_trigger  [get_bd_pins clk_rst_buffer/pps_trigger] \
   [get_bd_pins pps_trigger]
+  connect_bd_net -net clk_rst_buffer_rstidx_phase  [get_bd_pins clk_rst_buffer/rstidx_phase] \
+  [get_bd_pins rstidx_phase]
   connect_bd_net -net tdc_mngt_debug_s_axis_tdata  [get_bd_pins tdc_mngt/debug_s_axis_tdata] \
   [get_bd_pins ila_0/probe9]
   connect_bd_net -net tdc_mngt_debug_s_axis_tvalid  [get_bd_pins tdc_mngt/debug_s_axis_tvalid] \
@@ -1611,6 +1617,7 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
   create_bd_pin -dir O rng_rst_clk200_o
   create_bd_pin -dir I clk250_i
   create_bd_pin -dir I clk80_i
+  create_bd_pin -dir I -from 9 -to 0 tdc_rstidx_phase
 
   # Create instance: clk_rst_mngt, and set properties
   set block_name clk_rst_mngt
@@ -1668,6 +1675,8 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
   [get_bd_pins ext_sync_ltc]
   connect_bd_net -net clk_rst_mngt_tdc_rst_o  [get_bd_pins clk_rst_mngt/tdc_rst_o] \
   [get_bd_pins tdc_rst_o]
+  connect_bd_net -net tdc_rstidx_phase_1  [get_bd_pins tdc_rstidx_phase] \
+  [get_bd_pins clk_rst_mngt/tdc_rstidx_phase_i]
   connect_bd_net -net clk_rst_mngt_ttl_rst  [get_bd_pins clk_rst_mngt/ttl_rst] \
   [get_bd_pins ttl_rst]
   connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
@@ -2488,6 +2497,8 @@ proc create_root_design { parentCell } {
   connect_bd_net -net tdc_gate_pos3  [get_bd_pins tdc/gate_pos3] \
   [get_bd_pins ddr4/gate_pos3] \
   [get_bd_pins fastdac/gate_pos3]
+  connect_bd_net -net tdc_rstidx_phase  [get_bd_pins tdc/rstidx_phase] \
+  [get_bd_pins clk_rst/tdc_rstidx_phase]
   connect_bd_net -net tdc_pps_trigger  [get_bd_pins tdc/pps_trigger] \
   [get_bd_ports pps_trigger]
   connect_bd_net -net tdc_probe_tdc_refclk  [get_bd_pins tdc/probe_tdc_refclk] \
