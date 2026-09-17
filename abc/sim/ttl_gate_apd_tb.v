@@ -8,7 +8,8 @@
 //              of the OSERDESE3 on a 1.0417 ns grid, low bit first, repeating
 //              every 12.5 ns. The gate is measured at the serializer output; the
 //              ODELAY cascade downstream only adds tap delay and needs an
-//              IDELAYCTRL to model.
+//              IDELAYCTRL to model. Also checks that releasing ttl_rst while
+//              pps10_i is high does not start the gate.
 //////////////////////////////////////////////////////////////////////////////////
 
 module ttl_gate_apd_tb;
@@ -121,8 +122,17 @@ initial begin
     #200000;
     axil_rstn = 1;
     #100000;
+    // ttl_rst released while pps10_i is high: no trigger until the next rising edge
+    pps_i = 1'b1;
     ttl_rst = 0;
-    #100000;
+    #50000;
+    if (dut.pps_trigger) begin
+        $display("  *** FAIL: gate started on ttl_rst release with pps10_i high");
+        errors = errors + 1;
+    end else
+        $display("ttl_rst released with pps10_i high: gate not started");
+    pps_i = 1'b0;
+    #50000;
 
     // absolute offset of the gate from the PPS edge
     check_latency(12'b000000000010);

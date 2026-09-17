@@ -22,6 +22,7 @@
 //- ttl_reg_mngt.v
 //- fine_delay.v
 // 
+// Revision 0.04 - PPS edge detect cannot fire on ttl_rst release
 // Revision 0.03 - Gate generated as a 12-bit OSERDESE3 pattern (1.0417 ns per
 //                 bit) instead of a clk240 counter; fine_delay moved to clk240
 //                 (DRC REQP-1743 requires ODELAY CLK == OSERDES CLKDIV)
@@ -169,13 +170,14 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk240_inst (
 
 //Generate PPS trigger signal. pps10_i is launched on clk10, which clk240 is
 //derived from, so this is a timed path and the trigger lands on a fixed
-//clk240 edge.
+//clk240 edge. pps_r resets to 1: a reset released while pps10_i is high waits
+//for the next rising edge.
 reg pps_trigger;
 reg pps_r;
 always @(posedge clk240) begin
     if (ttl_rst240_o) begin
         pps_trigger <= 1'b0;
-        pps_r <= 0;
+        pps_r <= 1'b1;
     end else begin
         pps_r <= pps10_i;
         if (!pps_r && pps10_i) begin
