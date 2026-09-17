@@ -101,8 +101,9 @@ slots. So the old (duty=1, tune=2) is `gate(4, 8)` = 0xF00.
 ## 5. Recalibration — expect the gate to be in the wrong place at first
 
 The path from PPS to the output changed, so the absolute gate position moved.
-Simulation gives 6.689 ns from the PPS edge to the first gate edge; the old
-shift-register path differed. Board propagation and the level translator are not
+Simulation gives 6.689 ns from `pps10_i` to the first gate edge; the old
+shift-register path differed. `pps10_i` comes from `pps_timebase` and follows
+the PPS input by two clk10 cycles (`docs/deterministic_latency.md`). Board propagation and the level translator are not
 in that number, so treat it as "expect a shift of a few ns", not a target.
 
 Procedure: set a wide gate first (e.g. `gate(8, 0)` = 0x0FF) so you can find the

@@ -11,7 +11,7 @@
 // Tool Versions: Vivado 2024.2
 // Description: Manage AXIL interface, create registers for ddr_data module.
 //   slv_reg0-11 are control registers written by software. slv_reg12-16 are
-//   read-only status registers: slv_reg12 tracks pps_i, slv_reg13-16 latch the
+//   read-only status registers: slv_reg12 tracks pps200_i, slv_reg13-16 latch the
 //   FIFO status and current DQ GC counters on the rising edge of the
 //   synchronised *_valid_i strobes.
 //
@@ -49,7 +49,7 @@
 //     0x28 slv_reg10 [15:0]  fiber_delay_o, [31:16] de_fiber_delay_o
 //     0x2C slv_reg11 [15:0]  ab_fiber_delay_o
 //     -- read-only status --
-//     0x30 slv_reg12 [0]     pps_i, resynchronised into S_AXI_ACLK
+//     0x30 slv_reg12 [0]     pps200_i, resynchronised into S_AXI_ACLK
 //     0x34 slv_reg13 [10:0]  ddr_fifos_status_i   (from the 200M domain)
 //     0x38 slv_reg14 [2:0]   fifos_status_i       (from the 250M domain)
 //     0x3C slv_reg15 [31:0]  current_dq_gc_lsb_i
@@ -97,7 +97,7 @@ module ddr_data_axil_mngt #
         input status_200_valid_i,
         input [2:0] fifos_status_i,
         input status_250_valid_i,
-        input pps_i,
+        input pps200_i,
 
         // User ports ends
         // Do not modify the ports beyond this line
@@ -561,7 +561,7 @@ module ddr_data_axil_mngt #
         slv_reg12 <= 0;
         pps_sync1 <= 0;
       end else begin
-        pps_sync1 <= pps_i;
+        pps_sync1 <= pps200_i;
         slv_reg12 <= pps_sync1;
       end
     end

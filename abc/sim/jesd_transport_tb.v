@@ -116,7 +116,7 @@ jesd_transport jesd_transport_inst(
     .tx_core_reset(tx_core_reset),
     .tx_tdata(tx_tdata),
     .tx_tready(tx_tready),
-    .pps_i(pps_i)
+    .pps200_i(pps_i)
     );
 
 //AXIL clock

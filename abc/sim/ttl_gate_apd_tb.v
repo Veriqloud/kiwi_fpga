@@ -47,7 +47,7 @@ ttl_gate_apd dut (
     .s_axil_araddr(8'b0), .s_axil_arprot(3'b0), .s_axil_arvalid(1'b0), .s_axil_arready(),
     .s_axil_rdata(), .s_axil_rresp(), .s_axil_rvalid(), .s_axil_rready(1'b0),
     .s_axil_aclk(axil_clk), .s_axil_aresetn(axil_rstn),
-    .clk240(clk240), .clk480(clk480), .ttl_rst(ttl_rst), .pps_i(pps_i),
+    .clk240(clk240), .clk240_serdes(clk240), .clk480(clk480), .ttl_rst(ttl_rst), .pps10_i(pps_i),
     .pulse_p(), .pulse_n(), .pulse_rep_p(), .pulse_rep_n()
 );
 

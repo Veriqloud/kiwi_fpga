@@ -1,0 +1,220 @@
+# Deterministic latency: one PPS sampling point
+
+Branch `ttl-gate-serializer`, 2026-09-15.
+
+## Problem
+
+The offset between the DAC output and the TTL gate changed across power cycles.
+
+- PPS was sampled by single flops in nine places across five clocks
+  (`clk_rst_mngt` clk10, `ttl_gate_apd` and `decoy` clk240, `jesd_transport`
+  and `sync_tx_tready` tx_core_clk, `decoy`, `tdc_clk_rst_mngt`, `tdc_core`,
+  `ddr_data` clk200). The PPS edge sits at a fixed but unknown phase in each
+  clock. A sampler whose setup/hold window contains that phase resolves
+  differently on every power cycle; with nine samplers the chance that one of
+  them is marginal is high. The WRS aligns PPS with a 10 MHz rising edge, so the
+  clk10 sampler used for the LTC6951 SYNC sat exactly on the edge.
+- SYSREF was declared as its own clock, grouped asynchronous to refclk and
+  captured through a 3-flop synchronizer, so the JESD TX LMFC could land one
+  core-clock cycle either way.
+- The decoy RNG value crossed from clk200 to clk240 through a synchronizer on
+  `rd_en_4`, so the clk240 cycle on which a new value took effect could move.
+
+## Clock trees
+
+Board (`kiwi_pcb/MB`):
+
+- WR 10 MHz on J19 into the CDCLVD2104 (U10). OUT0 drives the LTC6951 REF,
+  OUT2 drives the FPGA clk10 (B19/B20).
+- LTC6951: R = 1, N = 20, P = 3, VCO 4.8 GHz, RAO = 1, SN = 1. One P cycle is
+  625 ps.
+
+| Output | Divider | Delay | Frequency | Goes to |
+|---|---|---|---|---|
+| OUT0 | M0 = 8 | - (REF-aligned) | 200 MHz | FPGA refclk, tx_core_clk |
+| OUT1 | M1 = 8 | DLY1 = 9 | 200 MHz | AD9152 clock |
+| OUT2 | M2 = 512 | DLY2 = 14 | 3.125 MHz | AD9152 SYSREF |
+| OUT3 | M3 = 512 | DLY3 = 2 | 3.125 MHz | FPGA SYSREF |
+| OUT4 | M4 = 16 | 0 | 100 MHz | FPGA clk100, unused |
+
+Two trees, both locked to the same 10 MHz edges:
+
+- Tree A: clk10 and the clk_wiz MMCM outputs (240, 80, 480 MHz, and a second
+  240 MHz on its own BUFG for the TTL serializer CLKDIV, shifted 56.25 deg). Every output is an
+  integer multiple of 10 MHz, so its phase to clk10 is the same after every
+  lock, and Vivado times clk10 to clk240/clk80 paths.
+- Tree B: LTC6951 OUT0 (tx_core_clk) and OUT3 (SYSREF). Their phase to the
+  10 MHz edges is fixed once a SYNC has been issued.
+
+The refclk-to-clk10 phase at the FPGA is a board constant that STA does not
+model. Nothing is sampled across the two trees: tree B takes its epoch from
+SYSREF, and the one data path from tree B to tree A (decoy RNG) goes through a
+symbol-indexed table.
+
+## pps_timebase
+
+`srcs/clk_rst/pps_timebase.v`, instantiated in `clk_rst_mngt`. The module header
+has the cycle-level description.
+
+1. PPS is sampled once, on the clk10 falling edge, 50 ns from the 10 MHz rising
+   edge it is aligned with. The first PPS after `ltc_rst_o` zeroes a
+   10 000 000-cycle counter; afterwards PPS is only compared against count 0
+   (`pps10_err`). `pps10_o` is high for the first 100 ms of every second.
+2. On the first second boundary with the SYNC request bit set, `sync_ltc_o` is
+   high for 20 000 cycles (2 ms), launched on the clk10 falling edge.
+3. `arm` rises at count 16 of the first second that does not contain a SYNC
+   pulse. It crosses into tx_core_clk through a 2-FF synchronizer. The first
+   SYSREF rising edge after it becomes cycle `pps200_preset` of the second, and
+   a 200 000 000-cycle counter runs from there. `pps200_o` is high for the first
+   100 ms of every second. Every SYSREF edge after that must land 64 cycles
+   after the previous one (`sysref_err`).
+
+## SYNC and SYSREF phase
+
+With RAO = SN = 1 the LTC6951 retimes the falling edge of SYNC to a REF rising
+edge and restarts OUT1..OUT4 one N cycle plus 18 + Dx P cycles later. OUT0 is
+not restarted; its rising edges stay on the REF grid. The offset of an output
+from the OUT0 edges is therefore (18 + Dx) mod 8 P cycles.
+
+- DLY3 = 6 gave 24 mod 8 = 0: FPGA SYSREF started on a refclk edge and the
+  capture had no margin. DLY3 = 2 gives 4 P cycles = 2.5 ns, the middle of the
+  refclk period. The change is in `kiwi_hw_control`
+  `remote/registers/ltc/Ltc6951Regs.txt` and `Ltc6951Expect.txt` (h10 = 0x02).
+- The DAC pair is unchanged: OUT1 at 27 P, OUT2 at 32 P, so the DAC sees SYSREF
+  3 P cycles (1.875 ns) before its clock edge.
+
+SYSREF rising edges then lie at 212.5 ns + k x 320 ns after the second boundary.
+The SYNC pulse is 20 000 clk10 cycles = 6250 SYSREF periods long, so this does
+not depend on which second the SYNC happens in.
+
+`arm` reaches tx_core_clk about 1.61 us into the second. The SYSREF edges around
+it are 118 ns before and 202 ns after. If the LTC6951 latency does not include
+the N cycle, the edges are at 112.5 ns + k x 320 ns and the margins are 218 ns
+and 102 ns. `arm_dist` tells the two apart: 42 with the N cycle, 22 without.
+`pps200_preset` = 364 puts `pps200_o` on the same second boundary as `pps10_o`
+for 42; for 22 it should be 344. Determinism does not depend on the preset,
+only the nominal alignment of the two PPS does.
+
+## Consumers
+
+| Module | Clock | PPS input |
+|---|---|---|
+| ttl_gate_apd | clk240 | pps10_i |
+| decoy (pattern, rng_a_r) | clk240 | pps10_i |
+| decoy (DPRAM read-out, rng table write) | clk200 | pps200_i |
+| jesd_transport, sync_tx_tready | tx_core_clk | pps200_i |
+| tdc_clk_rst_mngt, tdc_core | clk200 | pps200_i |
+| ddr_data, ddr_data_axil_mngt (status) | clk200, AXI | pps200_i |
+
+clk200 in the TDC, DDR and decoy hierarchies is the same BUFG_GT net as
+tx_core_clk.
+
+## Decoy RNG crossing
+
+`rng_a` is produced in clk200 on the 40 MHz `rd_en_4` grid and used in clk240
+on the 6-slot decoy pattern. Both sides number their symbols from their own
+synchronous PPS; one second holds 40 000 000 symbols, a multiple of 16.
+
+- clk200 writes `rng_a` for symbol n into a 16-entry register table at index
+  n mod 16, three cycles after the tick.
+- clk240 reads index (n - 8) mod 16 at the start of its symbol n (the pattern
+  slot with counter == 2, first slot of the temp_signal1 half) into `rng_a_r`.
+- The index returns to 0 on the event after the PPS edge. A write strobe in the
+  same clk200 cycle as the pps200 edge still belongs to the old second. From
+  the second second on, the `rd_en_4` grid puts a strobe exactly there, while
+  in the first second the ticks only start after the edge.
+
+An entry is 8 symbols (200 ns) old when read and is rewritten 16 symbols
+(400 ns) after it was written. Simulation passes with pps200 up to 170 ns
+either side of pps10. The emitted decoy
+symbol lags the recorded `rng_a` by 8 symbols more than before; the decoy delay
+calibration absorbs it once.
+
+## Constraints
+
+- `ext_pps`: `set_input_delay` +-40 ns against clk_10 (falling-edge capture).
+- `ext_sync_ltc`: `set_output_delay` 0 against clk_10 (falling-edge launch).
+- SYSREF: the `sysrefclk` clock and its clock group are gone;
+  `set_input_delay` 1.5..3.5 ns against refclk.
+- `arm_s_reg[0]` (clk10 to tx_core_clk), `slv_reg8` (static configuration) and
+  `timebase_status_s0` (into the AXI clock) are false paths.
+- Decoy table to `rng_a_r`: `set_max_delay -datapath_only 5`.
+
+## Registers
+
+`clk_rst_axil_mngt`, base 0x12000 (decode widened to 4 bits):
+
+| Offset | Bits | Meaning |
+|---|---|---|
+| 0x00 | [0] | SYNC request (unchanged) |
+| 0x18 | [0] | `ltc_sync_rst`: unlocks the timebase (unchanged) |
+| 0x20 | [7:0] | `arm_cnt`, reset 16 |
+| 0x20 | [23:8] | `pps200_preset`, reset 364 |
+| 0x24 | [0] locked10, [1] pps10_err, [2] ltc_synced, [3] arm, [4] locked200, [5] sysref_err, [15:8] arm_dist | read-only status |
+
+`Sync_Ltc()` needs no change: the reset relocks the timebase on the next PPS,
+the SYNC bit issues one pulse on the next second boundary, and tree B arms in
+the second after it. `ltc_synced` reads 1 from the end of the pulse until the
+bit is cleared.
+
+## Bring-up on hardware
+
+1. Scope PPS against the 10 MHz at the FPGA side of the cables: rising edges
+   within +-40 ns.
+2. After `Sync_Ltc()` and 2 s, read 0x12024: locked10 = 1, pps10_err = 0,
+   arm = 1, locked200 = 1, sysref_err = 0, arm_dist = 42 (or 22, then write
+   344 to the preset field).
+3. Power-cycle 20 times and histogram the DAC-to-gate offset: one value.
+4. Recalibrate once: the gate, DAC and decoy positions relative to the second
+   all moved. PPS to `pps10_o` is two clk10 cycles.
+
+## Verification
+
+- `sim/pps_timebase_tb.v`, scaled second, behavioural LTC6951: five power cycles
+  with PPS skew -40..+40 ns, refclk phase 0.1..4.7 ns and a different SYSREF
+  phase before the SYNC. `pps10`, `pps200` and `arm_dist` (42) are identical in
+  every run, SYNC is launched on the falling edge with the programmed width, and
+  both error flags trip when PPS or SYSREF move.
+- `sim/decoy_rng_xfer_tb.v`: refclk phase 0.1..4.9 ns x pps200 offset -150, 0,
+  +150 ns. Every clk240 symbol n carries clk200 symbol n - 8.
+- `sim/ttl_gate_apd_tb.v`: pattern widths and 6.689 ns from `pps10_i` to the
+  first gate edge.
+
+Vivado 2024.2 implementation, `bitstream/bit_sep15_det_latency` (md5
+d983dbb0041bfd2fbd98856ee9d169c3). All constraints met; pulse width has 0
+failing endpoints.
+
+| Path | Setup slack | Hold slack |
+|---|---|---|
+| Whole design | 0.321 ns | 0.010 ns |
+| SYSREF pin to capture flop (1.5..3.5 ns input delay) | 1.071 ns | 0.521 ns |
+| PPS pin to clk10 falling-edge flop (+-40 ns) | 9.690 ns | 7.973 ns |
+| SYNC flop to pin | 42.386 ns | |
+| pps10_o to clk240 consumers | | 0.235 ns |
+| Decoy table to rng_a_r (5 ns max delay) | 4.391 ns | |
+| clk240 to clk240_serdes (multicycle 2) | 4.773 ns | 0.100 ns |
+
+Clock interaction: clk_10 to refclk carries only the `arm` false path, refclk to
+clk240 only the decoy table.
+
+## TTL gate serializer clocks
+
+OSERDESE3 allows CLKDIV to lag CLK by at most 1.56 ns and CLK to lag CLKDIV by
+at most 0.27 ns (slow corner). On-chip variation between two separate clock
+trees is about 0.4 ns, so delay-matched clocks fail the 0.27 ns side.
+
+- clk240_serdes is a fourth MMCM output (/4, like clk240) on its own BUFG, loaded
+  only by the OSERDESE3 CLKDIV and the three delay primitives' CLK. The
+  fine_delay control logic stays on clk240.
+- clk480 and clk240_serdes are in one CLOCK_DELAY_GROUP with USER_CLOCK_ROOT
+  X0Y0, the serializer's clock region.
+- clk240_serdes is shifted 56.25 deg (0.651 ns), the middle of the window. The
+  max-skew checks report 0.481 ns and 0.437 ns of slack.
+- clk240 logic feeding the serializer and the delay primitives is captured on
+  the next clk240_serdes edge (multicycle 2 setup, 1 hold).
+
+Simulation commands (xsim, Vivado 2024.2), from an empty directory:
+
+    xvlog --relax $XILINX_VIVADO/data/verilog/src/glbl.v <sources> <tb>
+    xelab --relax -L unisims_ver -L secureip <tb> glbl -s tb
+    xsim tb -R [--testplusarg PH200=<ps> --testplusarg OFF200=<cycles>]

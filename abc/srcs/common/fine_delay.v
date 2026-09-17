@@ -16,11 +16,13 @@
 //              taken from the params_* registers. The delayed pulse leaves
 //              through an OBUFDS as an LVDS pair.
 //
-//              clk_i drives both the tap-step engines and the CLK pin of every
-//              delay primitive. When the delayed signal comes from an OSERDESE3,
-//              clk_i must be the same net as that serializer's CLKDIV pin
-//              (DRC REQP-1743): the TTL gate path runs this module at 240 MHz
-//              with CLK_RATIO=3, decoy runs it at 80 MHz with CLK_RATIO=1.
+//              clk_i drives the tap-step engines, clk_prim_i the CLK pin of every
+//              delay primitive. Both must be the same frequency and phase. When
+//              the delayed signal comes from an OSERDESE3, clk_prim_i must be the
+//              same net as that serializer's CLKDIV pin (DRC REQP-1743). The TTL
+//              gate path runs this module at 240 MHz with CLK_RATIO=3 and a
+//              low-fanout clk_prim_i; decoy runs it at 80 MHz with CLK_RATIO=1 and
+//              the same net on both clocks.
 //
 // Dependencies: Xilinx ODELAYE3 / IDELAYE3 / OBUFDS primitives (UltraScale+).
 //               Requires an IDELAYCTRL in the same I/O bank, clocked at
@@ -45,7 +47,8 @@ module fine_delay #(
     parameter UPDATE_MODE = "ASYNC",  // when tap updates take effect (ASYNC, MANUAL, SYNC)
     parameter integer CLK_RATIO = 1   // clk_i frequency / 80 MHz; scales the tap-step timing
 )(
-    input   clk_i,              // control clock: tune engines and CLK of all delay primitives
+    input   clk_i,              // control clock: tune engines
+    input   clk_prim_i,         // CLK of all delay primitives, same frequency and phase as clk_i
     input   rst_i,              // active-high reset, clk_i domain
     input   pulse_delay_tune,   // pulse to be delayed, drives the master ODELAYE3 ODATAIN
     output  pulse_p,            // delayed pulse, LVDS positive leg (OBUFDS)
@@ -297,7 +300,7 @@ ODELAYE3_inst_master (
     .CASC_IN(1'b0), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
     .CASC_RETURN(cascade_return_1), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
     .CE(ce), // 1-bit input: Active-High enable increment/decrement input
-    .CLK(clk_i), // 1-bit input: Clock input
+    .CLK(clk_prim_i), // 1-bit input: Clock input
     .CNTVALUEIN(), // 9-bit input: Counter value input
     .EN_VTC(en_vtc), // 1-bit input: Keep delay constant over VT
     .INC(inc), // 1-bit input: Increment/Decrement tap delay input
@@ -329,7 +332,7 @@ IDELAYE3_inst_slave (
     .CASC_IN(cascade_out_1),         // 1-bit input: Cascade delay input from slave ODELAY CASCADE_OUT
     .CASC_RETURN(cascade_return_2), // 1-bit input: Cascade delay returning from slave ODELAY DATAOUT
     .CE(ce_slv1),                   // 1-bit input: Active-High enable increment/decrement input
-    .CLK(clk_i),                 // 1-bit input: Clock input
+    .CLK(clk_prim_i),            // 1-bit input: Clock input
     .CNTVALUEIN(),   // 9-bit input: Counter value input
     .DATAIN(),           // 1-bit input: Data input from the logic
     .EN_VTC(en_vtc_slv1),           // 1-bit input: Keep delay constant over VT
@@ -359,7 +362,7 @@ ODELAYE3_inst_slave (
     .CASC_IN(cascade_out_2), // 1-bit input: Cascade delay input from slave IDELAY CASCADE_OUT
     .CASC_RETURN(1'b0), // 1-bit input: Cascade delay returning from slave IDELAY DATAOUT
     .CE(ce_slv2), // 1-bit input: Active-High enable increment/decrement input
-    .CLK(clk_i), // 1-bit input: Clock input
+    .CLK(clk_prim_i), // 1-bit input: Clock input
     .CNTVALUEIN(), // 9-bit input: Counter value input
     .EN_VTC(en_vtc_slv2), // 1-bit input: Keep delay constant over VT
     .INC(inc_slv2), // 1-bit input: Increment/Decrement tap delay input

@@ -59,7 +59,8 @@
 //     directly in front of a CDC synchroniser, a decode glitch can be sampled
 //     as a phantom event. Registering tdc_tvalid in the lclk_i domain first
 //     would close it.
-//   - pps_i edge detection only 1 step sync, need 2 steps ?
+//   - pps200_i is synchronous to clk200_i (pps_timebase); one flop is enough
+//     for its edge detect
 //
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -99,7 +100,7 @@ module tdc_core (
     input           clk200_i,
     input           rd_en_4,
     input           gc_rst,
-    input           pps_i,
+    input           pps200_i,       // PPS synchronous to clk200_i (pps_timebase)
     // ---- Debug ports ----
     output          tvalid200,
     output [31:0]   tdata200,
@@ -513,14 +514,14 @@ always @(posedge clk200_i) begin
 				// 	start_gc_o <= 1'b1;
 				// 	state_gc <= DETECT_PPS;
 				// end
-				if (start_gc_r[2] == 1 && !pps_i) begin
+				if (start_gc_r[2] == 1 && !pps200_i) begin
 					start_gc_o <= 1'b1;
 					state_gc <= DETECT_PPS;
 				end else state_gc <= WAIT_START;
 			end
 			DETECT_PPS: begin //Wait for the next PPS edge, detect this edge 
-				pps_r <= pps_i;
-				if (!pps_r && pps_i) begin
+				pps_r <= pps200_i;
+				if (!pps_r && pps200_i) begin
 					state_gc <= START;
 				end else state_gc <= DETECT_PPS;
 			end

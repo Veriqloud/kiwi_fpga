@@ -62,7 +62,8 @@ module decoy#(
     input           clk240,
     input           clk80,
     input           clk200,
-    input           pps_i,
+    input           pps10_i,    // PPS synchronous to clk10 (pps_timebase), used in clk240
+    input           pps200_i,   // PPS synchronous to clk200 (pps_timebase)
     input           decoy_rst,
     //rng temp from fastdac
     input   wire [1:0]    rng_value, 
@@ -77,7 +78,7 @@ module decoy#(
     output [2:0]    counter,
     output          temp_signal2,
     output          temp_signal1,
-    output [4:0]    rd_en_4_r,
+    output [4:0]    rng_xfer_dbg,   // {update strobe, clk240 symbol index}
     output [1:0]    rng_a_r,
     output [1:0]    rng_a,
     output          decoy_signal,
@@ -257,13 +258,13 @@ always @(posedge clk200) begin
     end else begin
         case(state_rng)
             IDLE_SR: begin
-                if (pps_i) begin
+                if (pps200_i) begin
                     state_rng <= IDLE_SR;
                 end else state_rng <= WAIT_SR;
             end
             WAIT_SR: begin
-                pps_200_r <= pps_i;
-                if (!pps_200_r && pps_i) begin
+                pps_200_r <= pps200_i;
+                if (!pps_200_r && pps200_i) begin
                     state_rng <= SR0;
                     read_enable <= 1;
                 end else state_rng <= WAIT_SR;
@@ -355,13 +356,13 @@ always @(posedge clk240) begin
     end else begin
         case(state_temp)
             IDLE: begin
-                if (pps_i) begin
+                if (pps10_i) begin
                     state_temp <= IDLE;
                 end else state_temp <= WAIT;
             end
             WAIT: begin
-                pps_r <= pps_i;
-                if (!pps_r && pps_i) begin
+                pps_r <= pps10_i;
+                if (!pps_r && pps10_i) begin
                     state_temp <= TRIGGER;
                 end else state_temp <= WAIT;
             end
@@ -382,26 +383,85 @@ wire [1:0] rng_a;
 assign rng_a = decoy_rng_mode_r?rng_value[1:0]:dpram_rng_dout[1:0];
 // assign rng_a = decoy_rng_mode_r?dpram_rng_dout[1:0]:rng_value[1:0];
 
-//Generate decoy signal
-(* ASYNC_REG = "TRUE" *) reg [4:0] rd_en_4_r;
-reg [1:0] rng_a_r;
+//rng_a crosses from clk200 to clk240 through a table indexed by the symbol
+//number within the second. Each side counts its 40 MHz symbols from its own
+//synchronous PPS (pps200_i, pps10_i), which mark the same second, so the entry
+//written for symbol n is read for symbol n + RNG_XFER_LAG and no clock samples
+//a signal from the other one. An entry is RNG_XFER_LAG symbols (200 ns) old
+//when read and is rewritten 16 symbols (400 ns) after it was written, which
+//leaves +-200 ns for the offset between pps10_i and pps200_i.
+localparam integer RNG_XFER_AW = 4;
+localparam [RNG_XFER_AW-1:0] RNG_XFER_LAG = 8;
+
+//On both sides an event in the cycle of the PPS edge still belongs to the
+//second that is ending; the index is 0 for the next event whatever the phase of
+//the symbol grid.
+
+//clk200 side: rng_a settles 2 cycles after the rd_en_4 tick and holds for 5,
+//so it is written 3 cycles after the tick
+(* ram_style = "registers" *) reg [1:0] rng_xfer_mem [0:(1<<RNG_XFER_AW)-1];
+reg [2:0] rd_en_4_d;
+reg pps200_d;
+reg [RNG_XFER_AW-1:0] xfer_wr_sym;
 initial begin
-    rd_en_4_r = 0;
-    rng_a_r = 0;
+    rd_en_4_d = 0;
+    pps200_d = 1;
+    xfer_wr_sym = 0;
+end
+always @(posedge clk200) begin
+    if (rst_200_o) begin
+        rd_en_4_d <= 0;
+        pps200_d <= 1;
+        xfer_wr_sym <= 0;
+    end else begin
+        rd_en_4_d <= {rd_en_4_d[1:0], rd_en_4};
+        pps200_d <= pps200_i;
+        xfer_wr_sym <= (pps200_i && !pps200_d) ? 0 : xfer_wr_sym + rd_en_4_d[2];
+    end
+end
+always @(posedge clk200) begin
+    if (rd_en_4_d[2]) begin
+        rng_xfer_mem[xfer_wr_sym] <= rng_a;
+    end
 end
 
+//clk240 side: a symbol is counter 2..6,1, the temp_signal1 half then the
+//temp_signal2 half; rng_a_r changes on the edge where counter == 2, so the
+//first output slot of the symbol already uses the new value
+reg pps10_d;
+reg [RNG_XFER_AW-1:0] xfer_rd_sym;
+reg xfer_update;
+reg [1:0] rng_a_r;
+wire symbol_start = (state_temp == TRIGGER) && (counter == 2);
+initial begin
+    pps10_d = 1;
+    xfer_rd_sym = 0;
+    xfer_update = 0;
+    rng_a_r = 0;
+end
+always @(posedge clk240) begin
+    if (rst_240_o) begin
+        pps10_d <= 1;
+        xfer_rd_sym <= 0;
+        xfer_update <= 0;
+        rng_a_r <= 0;
+    end else begin
+        pps10_d <= pps10_i;
+        xfer_update <= symbol_start;
+        if (symbol_start) begin
+            rng_a_r <= rng_xfer_mem[xfer_rd_sym - RNG_XFER_LAG];
+        end
+        xfer_rd_sym <= (pps10_i && !pps10_d) ? 0 : xfer_rd_sym + symbol_start;
+    end
+end
+assign rng_xfer_dbg = {xfer_update, xfer_rd_sym};
+
+//Generate decoy signal
 reg decoy_signal;
 always @(posedge clk240) begin
     if (rst_240_o) begin
-        rd_en_4_r <= 0;
-        rng_a_r <= 0;
         decoy_signal <= 0;
     end else begin
-        rd_en_4_r <= {rd_en_4_r[3:0], rd_en_4}; //using rd_en_4 is old version
-        if (rd_en_4_r[4] == 0 && rd_en_4_r[3] == 1) begin
-            rng_a_r <= rng_a;    
-        end
-
         case(rng_a_r)
             2'b00: decoy_signal <= 0;
             2'b01: decoy_signal <= temp_signal1;
@@ -430,6 +490,7 @@ fine_delay #(
     .UPDATE_MODE(UPDATE_MODE)
  ) fine_delay_de_inst (
     .clk_i(clk80),
+    .clk_prim_i(clk80),
     .rst_i(rst_80_o),
     .pulse_delay_tune(decoy_signal_bufi),
     .pulse_p(decoy_signal_p),

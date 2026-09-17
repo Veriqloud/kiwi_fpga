@@ -350,7 +350,7 @@ module jesd204b_tx
     //              Lmfc management            //
     /////////////////////////////////////////////
     /////////////////////////////////////////////
-    (* ASYNC_REG = "TRUE" *) reg [2:0]       vtx_sysref_r = 0;
+    reg [2:0]       vtx_sysref_r = 0;   // btx_sysref_i is registered in tx_core_clk (clk_rst_mngt)
     reg             bfirst_event_detected_int = 0;
     (* ASYNC_REG = "TRUE" *) reg [1:0]       btx_sync_r = 0;
     (* ASYNC_REG = "TRUE" *) reg [2:0]       bsysref_required_r = 0;

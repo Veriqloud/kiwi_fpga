@@ -33,7 +33,7 @@ module ddr_data_reg_mngt #(
     parameter integer C_s_axil_DATA_WIDTH    = 32,
     parameter integer C_s_axil_ADDR_WIDTH    = 12
 )(
-    input  wire         pps_i,
+    input  wire         pps200_i,
     output wire         mr_start_write_ddr_i,
     output wire         mr_command_enable,
     output wire         mr_command_alpha_enable,
@@ -118,7 +118,7 @@ ddr_data_axil_mngt # (
     .status_200_valid_i(status_200_valid_i),
     .fifos_status_i(fifos_status_i),
     .status_250_valid_i(status_250_valid_i),
-    .pps_i(pps_i),
+    .pps200_i(pps200_i),
     .S_AXI_ACLK(s_axil_aclk),
     .S_AXI_ARESETN(s_axil_aresetn),
     .S_AXI_AWADDR(s_axil_awaddr),

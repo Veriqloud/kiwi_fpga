@@ -13,7 +13,11 @@ create_clock -period 5.000 -name refclk -waveform {0.000 2.500} [get_ports cr_ex
 set_property PACKAGE_PIN AB6 [get_ports cr_ext_cr_fastdac_refclki_n]
 set_property PACKAGE_PIN AB7 [get_ports cr_ext_cr_fastdac_refclki_p]
 
-create_clock -period 320.000 -name sysrefclk -waveform {0.000 161.000} [get_ports cr_ext_cr_fastdac_sysref_p]
+# SYSREF is data to refclk, captured by one flop in tx_core_clk (clk_rst_mngt).
+# LTC6951 OUT3 (DLY3 = 2) starts 18 + 2 = 20 P cycles after an OUT0 rising
+# edge, 4 P cycles = 2.5 ns into the 8-P-cycle refclk period. +-1 ns for the board.
+set_input_delay -clock [get_clocks refclk] -max 3.500 [get_ports cr_ext_cr_fastdac_sysref_p]
+set_input_delay -clock [get_clocks refclk] -min 1.500 [get_ports cr_ext_cr_fastdac_sysref_p]
 set_property PACKAGE_PIN AC19 [get_ports cr_ext_cr_fastdac_sysref_p]
 set_property PACKAGE_PIN AD19 [get_ports cr_ext_cr_fastdac_sysref_n]
 set_property IOSTANDARD LVDS [get_ports cr_ext_cr_fastdac_sysref_*]
@@ -42,6 +46,13 @@ set_property DIFF_TERM_ADV TERM_100 [get_ports tdc_ext_in_lclk_*]
 set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk100_o]
 #set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets Bb_top_i/clk_rst/clk_rst_mngt/inst/clk10_o]
 set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk10_o]
+# TTL gate serializer: clk480 (OSERDESE3 CLK, clk_out3) and clk240_serdes (CLKDIV,
+# clk_out4) are low-fanout nets from the same MMCM with matched delay. OSERDESE3
+# allows CLKDIV to lag CLK by at most 1.56 ns and CLK to lag CLKDIV by 0.27 ns;
+# clk_out4 is shifted 56.25 deg (0.651 ns) to sit in the middle of that window.
+set_property CLOCK_DELAY_GROUP ttl_serdes_clks [get_nets {Qline_turnkey_top_i/clk_wiz_0/inst/clk_out3 Qline_turnkey_top_i/clk_wiz_0/inst/clk_out4}]
+# Both nets only reach the serializer and its delay cascade in clock region X0Y0
+set_property USER_CLOCK_ROOT X0Y0 [get_nets {Qline_turnkey_top_i/clk_wiz_0/inst/clk_out3 Qline_turnkey_top_i/clk_wiz_0/inst/clk_out4}]
 
 
 ##Leds---------------------------------------------------------
@@ -152,6 +163,13 @@ set_property DIFF_TERM_ADV TERM_100 [get_ports tdc_ext_in_frameb_*]
 set_property PACKAGE_PIN K9 [get_ports ext_sync_ltc]
 set_property PACKAGE_PIN F14 [get_ports ext_pps]
 set_property IOSTANDARD LVCMOS33 [get_ports ext_pps]
+# PPS is sampled on the clk10 falling edge (pps_timebase). The WRS aligns it with
+# a 10 MHz rising edge; +-40 ns of skew at the pins leaves 10 ns of margin.
+set_input_delay -clock [get_clocks clk_10] -max 40.000 [get_ports ext_pps]
+set_input_delay -clock [get_clocks clk_10] -min -40.000 [get_ports ext_pps]
+# SYNC leaves on the clk10 falling edge, 50 ns before the LTC6951 REF edge
+set_output_delay -clock [get_clocks clk_10] -max 0.000 [get_ports ext_sync_ltc]
+set_output_delay -clock [get_clocks clk_10] -min 0.000 [get_ports ext_sync_ltc]
 
 
 
@@ -215,7 +233,6 @@ set xdma_axi_aclk [get_clocks -of_objects [get_pins Qline_turnkey_top_i/xdma_0/i
 
 ##Set clock groups----------------------------------------------
 set_clock_groups -asynchronous -group [get_clocks tdc_lclk] -group [get_clocks refclk] 
-set_clock_groups -asynchronous -group [get_clocks refclk] -group [get_clocks sysrefclk]
 set_clock_groups -asynchronous -group [get_clocks mmcm_clkout1] -group [get_clocks refclk]
 
 ###SET CONSTRAINTS CLK_RST_MNGT
@@ -231,6 +248,10 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/cl
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg6_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/ltc_sync_rst_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg0_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clockchip_sync_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg7_reg[0]/C}] -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/rng_rst_clk200_r_reg[0]/D Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/rng_rst_clk80_r_reg[0]/D Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/rng_rst_clk250_r_reg[0]/D}]
+## pps_timebase: arm into tree B, static configuration, status into s_axil_aclk
+set_false_path -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/pps_timebase_inst/arm_s_reg[0]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/clk_rst_axil_mngt_inst/slv_reg8_reg[*]/C}]
+set_false_path -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/timebase_status_s0_reg[*]/D}]
 
 ### SET CONSTRAINTS DDR_DATA
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_200_reg/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_250_r_reg[0]/D}]
@@ -336,13 +357,15 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axi
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg4_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rdec_p0_r_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_axil_mngt_inst/slv_reg7_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/decoy_dpram_max_addr_rng_r_reg[*]/D}]
 
-## rd_en_4 tick (refclk/clk200) -> clk240 ASYNC_REG synchronizer, and rng_a data
-## (BRAM dout + fifo_1x2 dout, both refclk domain, both settle at tick+10ns) ->
-## qualified capture rng_a_r in clk240 (window tick+16.7..20.8ns via the 5-stage
-## rd_en_4_r chain, edge detect on [4:3]). Bounded with max_delay, NOT false path:
-## the qualifier-vs-data skew defines the capture window and must stay constrained.
-set_max_delay -datapath_only 4.000 -from [get_pins {Qline_turnkey_top_i/fastdac/jesd_transport_0/inst/rd_en_4_reg/C}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rd_en_4_r_reg[0]/D}]
-set_max_delay -datapath_only 4.000 -from [get_clocks refclk] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
+## TTL gate: clk240 logic (pattern nibble, fine_delay control) -> OSERDESE3 D and
+## delay primitives on clk240_serdes, which lags clk240 by 0.651 ns. The intended
+## capture is the next clk240_serdes edge, not the one 0.651 ns after launch.
+set_multicycle_path 2 -setup -end -from [get_clocks clk_out1_Qline_turnkey_top_clk_wiz_0_0] -to [get_clocks clk_out4_Qline_turnkey_top_clk_wiz_0_0]
+set_multicycle_path 1 -hold -end -from [get_clocks clk_out1_Qline_turnkey_top_clk_wiz_0_0] -to [get_clocks clk_out4_Qline_turnkey_top_clk_wiz_0_0]
+
+## rng_a table (clk200) -> rng_a_r (clk240). An entry is read 8 symbols (200 ns)
+## after it is written and is not rewritten for 400 ns; the bound keeps routing short.
+set_max_delay -datapath_only 5.000 -from [get_cells -hierarchical -filter {NAME =~ Qline_turnkey_top_i/decoy/decoy_0/inst/rng_xfer_mem_reg*}] -to [get_pins {Qline_turnkey_top_i/decoy/decoy_0/inst/rng_a_r_reg[*]/D}]
 ########################################################################
 ## AI suggestion :
 ########################################################################

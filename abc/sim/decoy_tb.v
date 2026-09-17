@@ -109,8 +109,9 @@ module decoy_tb #(
         .C_s_axil_ADDR_WIDTH(C_s_axil_ADDR_WIDTH),
         .SIMULATION(SIMULATION)
     ) uut (
-        // .clk200(clk200), 
-        .pps_i(pps_i),
+        // .clk200(clk200),
+        .pps10_i(pps_i),
+        .pps200_i(pps_i),
         .clk240(clk240),
         .clk80(clk80),
         .clk200(clk200),

@@ -123,7 +123,7 @@ module tdc_core_tb();
         .clk200_i(clk200_i),
         .rd_en_4(rd_en_4),
         .gc_rst(gc_rst),
-        .pps_i(pps_i),
+        .pps200_i(pps_i),
         .tvalid200(tvalid200),
         .tdata200(tdata200),
         .click_result(click_result),

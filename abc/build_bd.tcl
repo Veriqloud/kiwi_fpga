@@ -271,7 +271,7 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   create_bd_pin -dir I sdi_i
   create_bd_pin -dir O -from 31 -to 0 stopa_sim_limit
   create_bd_pin -dir I -type rst gc_rst
-  create_bd_pin -dir I ext_pps
+  create_bd_pin -dir I pps200
   create_bd_pin -dir O -from 47 -to 0 gc
   create_bd_pin -dir O -from 47 -to 0 gc_time_valid
   create_bd_pin -dir O debug_tdc_tvalid
@@ -359,8 +359,8 @@ proc create_hier_cell_tdc_mngt { parentCell nameHier } {
   [get_bd_pins fifo_gc_tdc_rtl_0/s_aclk] \
   [get_bd_pins tdc_core_0/m_axis_clk] \
   [get_bd_pins tdc_core_0/clk200_i]
-  connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
-  [get_bd_pins tdc_core_0/pps_i]
+  connect_bd_net -net pps200_1  [get_bd_pins pps200] \
+  [get_bd_pins tdc_core_0/pps200_i]
   connect_bd_net -net frame_i_1  [get_bd_pins frame_i] \
   [get_bd_pins tdc_core_0/frame_i]
   connect_bd_net -net gc_rst_1  [get_bd_pins gc_rst] \
@@ -469,7 +469,7 @@ proc create_hier_cell_clk_rst_buffer { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir O O_frameA
   create_bd_pin -dir O O_sdiA
-  create_bd_pin -dir I ext_pps
+  create_bd_pin -dir I pps200
   create_bd_pin -dir O probe_tdc_refclk
   create_bd_pin -dir O probe_tdc_rstidx
   create_bd_pin -dir O pps_trigger
@@ -524,8 +524,8 @@ proc create_hier_cell_clk_rst_buffer { parentCell nameHier } {
   connect_bd_net -net clk200_i_1  [get_bd_pins clk200_i] \
   [get_bd_pins tdc_olvds_0/tdc_lclki] \
   [get_bd_pins tdc_clk_rst_mngt_0/clk200_i]
-  connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
-  [get_bd_pins tdc_clk_rst_mngt_0/pps_i]
+  connect_bd_net -net pps200_1  [get_bd_pins pps200] \
+  [get_bd_pins tdc_clk_rst_mngt_0/pps200_i]
   connect_bd_net -net stopa_sim_enable_i_1  [get_bd_pins stopa_sim_enable_i] \
   [get_bd_pins tdc_clk_rst_mngt_0/stopa_sim_enable_i]
   connect_bd_net -net stopa_sim_limit_1  [get_bd_pins stopa_sim_limit] \
@@ -708,7 +708,8 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I clk240
   create_bd_pin -dir I rd_en_4
-  create_bd_pin -dir I -from 0 -to 0 ext_pps
+  create_bd_pin -dir I pps10
+  create_bd_pin -dir I pps200
   create_bd_pin -dir O decoy_signal_p_0
   create_bd_pin -dir O decoy_signal_n_0
   create_bd_pin -dir O decoy_signal_0
@@ -790,7 +791,7 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   [get_bd_pins decoy_signal_n_0]
   connect_bd_net -net decoy_0_decoy_signal_p  [get_bd_pins decoy_0/decoy_signal_p] \
   [get_bd_pins decoy_signal_p_0]
-  connect_bd_net -net decoy_0_rd_en_4_r  [get_bd_pins decoy_0/rd_en_4_r] \
+  connect_bd_net -net decoy_0_rng_xfer_dbg  [get_bd_pins decoy_0/rng_xfer_dbg] \
   [get_bd_pins ila_0/probe6]
   connect_bd_net -net decoy_0_rdec_p0_o  [get_bd_pins decoy_0/rdec_p0_r] \
   [get_bd_pins decoy_rng_fifos_0/rdec_p0_i]
@@ -812,9 +813,11 @@ proc create_hier_cell_decoy { parentCell nameHier } {
   [get_bd_pins de_rng_flags]
   connect_bd_net -net decoy_rst_1  [get_bd_pins decoy_rst] \
   [get_bd_pins decoy_0/decoy_rst]
-  connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
+  connect_bd_net -net pps10_1  [get_bd_pins pps10] \
   [get_bd_pins ila_0/probe5] \
-  [get_bd_pins decoy_0/pps_i]
+  [get_bd_pins decoy_0/pps10_i]
+  connect_bd_net -net pps200_1  [get_bd_pins pps200] \
+  [get_bd_pins decoy_0/pps200_i]
   connect_bd_net -net probe7_1  [get_bd_pins rd_en_4] \
   [get_bd_pins decoy_0/rd_en_4] \
   [get_bd_pins decoy_rng_fifos_0/rd_en_4]
@@ -883,7 +886,7 @@ proc create_hier_cell_tdc { parentCell nameHier } {
   create_bd_pin -dir I -type clk m_axi_tclk
   create_bd_pin -dir O probe_tdc_refclk
   create_bd_pin -dir O probe_tdc_rstidx
-  create_bd_pin -dir I ext_pps
+  create_bd_pin -dir I pps200
   create_bd_pin -dir O pps_trigger
   create_bd_pin -dir I clk10_i
   create_bd_pin -dir I linterrupt_i_0
@@ -958,9 +961,9 @@ proc create_hier_cell_tdc { parentCell nameHier } {
   [get_bd_pins ila_0/clk]
   connect_bd_net -net clk_rst_buffer_stopa_sim_0  [get_bd_pins clk_rst_buffer/stopa_sim_0] \
   [get_bd_pins stopa_sim_0]
-  connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
-  [get_bd_pins clk_rst_buffer/ext_pps] \
-  [get_bd_pins tdc_mngt/ext_pps] \
+  connect_bd_net -net pps200_1  [get_bd_pins pps200] \
+  [get_bd_pins clk_rst_buffer/pps200] \
+  [get_bd_pins tdc_mngt/pps200] \
   [get_bd_pins ila_0/probe4]
   connect_bd_net -net gc_rst_1  [get_bd_pins gc_rst] \
   [get_bd_pins tdc_mngt/gc_rst]
@@ -1092,7 +1095,7 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I clk200_i
-  create_bd_pin -dir I ext_pps
+  create_bd_pin -dir I pps200
   create_bd_pin -dir I -type rst s_axil_aresetn
   create_bd_pin -dir I -type rst ddr_data_rstn
   create_bd_pin -dir I rd_en_4
@@ -1483,10 +1486,10 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   [get_bd_pins ddr4_0/c0_sys_clk_n]
   connect_bd_net -net ddr_sys_clk_p_1  [get_bd_pins ddr_sys_clk_p] \
   [get_bd_pins ddr4_0/c0_sys_clk_p]
-  connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
+  connect_bd_net -net pps200_1  [get_bd_pins pps200] \
   [get_bd_pins system_ila_ddr/probe1] \
-  [get_bd_pins ddr_data_reg_mngt_0/pps_i] \
-  [get_bd_pins ddr_data_0/pps_i]
+  [get_bd_pins ddr_data_reg_mngt_0/pps200_i] \
+  [get_bd_pins ddr_data_0/pps200_i]
   connect_bd_net -net fifos_out_0_axis_prog_empty_alpha  [get_bd_pins fifos_out_0/axis_prog_empty_alpha] \
   [get_bd_pins mon_ddr_fifos_0/alpha_out_fifo_empty]
   connect_bd_net -net fifos_out_0_axis_prog_empty_gco  [get_bd_pins fifos_out_0/axis_prog_empty_gco] \
@@ -1587,6 +1590,8 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
   create_bd_pin -dir O -from 0 -to 0 -type rst tx_core_reset_o
   create_bd_pin -dir O rstn_axil_o
   create_bd_pin -dir I ext_pps
+  create_bd_pin -dir O pps10
+  create_bd_pin -dir O pps200
   create_bd_pin -dir I sys_rst_n
   create_bd_pin -dir O rstn_ddr_axi_o
   create_bd_pin -dir I clk_ddr_axi_i
@@ -1667,6 +1672,10 @@ proc create_hier_cell_clk_rst { parentCell nameHier } {
   [get_bd_pins ttl_rst]
   connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
   [get_bd_pins clk_rst_mngt/pps_i]
+  connect_bd_net -net clk_rst_mngt_pps10_o  [get_bd_pins clk_rst_mngt/pps10_o] \
+  [get_bd_pins pps10]
+  connect_bd_net -net clk_rst_mngt_pps200_o  [get_bd_pins clk_rst_mngt/pps200_o] \
+  [get_bd_pins pps200]
   connect_bd_net -net fastdac_gt_powergood_i_1  [get_bd_pins fastdac_gt_powergood_i] \
   [get_bd_pins clk_rst_mngt/fastdac_gt_powergood_i]
   connect_bd_net -net lclk_i_1  [get_bd_pins lclk_i] \
@@ -1737,7 +1746,7 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I btx_sysref_i
   create_bd_pin -dir I -type rst tx_core_reset
-  create_bd_pin -dir I ext_pps
+  create_bd_pin -dir I pps200
   create_bd_pin -dir O -from 0 -to 0 rd_en_4
   create_bd_pin -dir O -from 3 -to 0 rng_value
   create_bd_pin -dir I tvalid200
@@ -1838,9 +1847,9 @@ proc create_hier_cell_fastdac { parentCell nameHier } {
   [get_bd_pins jesd_transport_0/de_err_ctrl_underrun]
   connect_bd_net -net de_rng_flags_1  [get_bd_pins de_rng_flags] \
   [get_bd_pins jesd_transport_0/de_rng_flags]
-  connect_bd_net -net ext_pps_1  [get_bd_pins ext_pps] \
+  connect_bd_net -net pps200_1  [get_bd_pins pps200] \
   [get_bd_pins ila_fastdac/probe1] \
-  [get_bd_pins jesd_transport_0/pps_i]
+  [get_bd_pins jesd_transport_0/pps200_i]
   connect_bd_net -net gate_pos0_1  [get_bd_pins gate_pos0] \
   [get_bd_pins jesd_transport_0/gate_pos0]
   connect_bd_net -net gate_pos1_1  [get_bd_pins gate_pos1] \
@@ -2194,6 +2203,9 @@ proc create_root_design { parentCell } {
     CONFIG.CLKOUT3_REQUESTED_PHASE {0.000} \
     CONFIG.CLKOUT3_USED {true} \
     CONFIG.CLKOUT4_DRIVES {Buffer} \
+    CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {240.000} \
+    CONFIG.CLKOUT4_REQUESTED_PHASE {56.250} \
+    CONFIG.CLKOUT4_USED {true} \
     CONFIG.CLKOUT5_DRIVES {Buffer} \
     CONFIG.CLKOUT6_DRIVES {Buffer} \
     CONFIG.CLKOUT7_DRIVES {Buffer} \
@@ -2211,10 +2223,12 @@ proc create_root_design { parentCell } {
     CONFIG.MMCM_CLKOUT1_PHASE {90.000} \
     CONFIG.MMCM_CLKOUT2_DIVIDE {2} \
     CONFIG.MMCM_CLKOUT2_PHASE {0.000} \
+    CONFIG.MMCM_CLKOUT3_DIVIDE {4} \
+    CONFIG.MMCM_CLKOUT3_PHASE {56.250} \
     CONFIG.MMCM_COMPENSATION {AUTO} \
     CONFIG.MMCM_DIVCLK_DIVIDE {1} \
     CONFIG.MMCM_REF_JITTER1 {0.001} \
-    CONFIG.NUM_OUT_CLKS {3} \
+    CONFIG.NUM_OUT_CLKS {4} \
     CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {false} \
     CONFIG.PHASESHIFT_MODE {LATENCY} \
     CONFIG.PRIMITIVE {MMCM} \
@@ -2363,6 +2377,8 @@ proc create_root_design { parentCell } {
   [get_bd_pins clk_rst/clk80_i]
   connect_bd_net -net clk_wiz_0_clk_out3  [get_bd_pins clk_wiz_0/clk_out3] \
   [get_bd_pins ttl_gate_apd_0/clk480]
+  connect_bd_net -net clk_wiz_0_clk_out4  [get_bd_pins clk_wiz_0/clk_out4] \
+  [get_bd_pins ttl_gate_apd_0/clk240_serdes]
   connect_bd_net -net clk_wiz_0_locked  [get_bd_pins clk_wiz_0/locked] \
   [get_bd_ports locked_pll]
   connect_bd_net -net ddr4_0_c0_init_calib_complete  [get_bd_pins ddr4/led] \
@@ -2394,12 +2410,15 @@ proc create_root_design { parentCell } {
   connect_bd_net -net decoy_rst_1  [get_bd_pins clk_rst/decoy_rst] \
   [get_bd_pins decoy/decoy_rst]
   connect_bd_net -net ext_pps_1  [get_bd_ports ext_pps] \
-  [get_bd_pins clk_rst/ext_pps] \
-  [get_bd_pins fastdac/ext_pps] \
-  [get_bd_pins tdc/ext_pps] \
-  [get_bd_pins ddr4/ext_pps] \
-  [get_bd_pins decoy/ext_pps] \
-  [get_bd_pins ttl_gate_apd_0/pps_i]
+  [get_bd_pins clk_rst/ext_pps]
+  connect_bd_net -net clk_rst_pps10  [get_bd_pins clk_rst/pps10] \
+  [get_bd_pins decoy/pps10] \
+  [get_bd_pins ttl_gate_apd_0/pps10_i]
+  connect_bd_net -net clk_rst_pps200  [get_bd_pins clk_rst/pps200] \
+  [get_bd_pins fastdac/pps200] \
+  [get_bd_pins tdc/pps200] \
+  [get_bd_pins ddr4/pps200] \
+  [get_bd_pins decoy/pps200]
   connect_bd_net -net fastdac_gt_powergood  [get_bd_pins fastdac/gt_powergood] \
   [get_bd_pins clk_rst/fastdac_gt_powergood_i]
   connect_bd_net -net gc_rst_1  [get_bd_pins clk_rst/gc_rst_o] \

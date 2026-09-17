@@ -12,10 +12,12 @@
 // Description: 
 //- Instantiate buffers for differential signals, clocks. 
 //- Generate resets in each clock domain
-//- Generate SYNC signal for clockchip LTC6951
-// 
+//- Capture SYSREF in the fastdac core clock
+//- PPS epoch for both clock trees and SYNC for clockchip LTC6951 (pps_timebase)
+//
 // Dependencies:
 //- clk_rst_axil_mngt.v  (x1)  AXI4-Lite slave, source of all software resets
+//- pps_timebase.v       (x1)  PPS sampling, pps10_o/pps200_o, LTC6951 SYNC
 //- reset_register.v     (x11) per-domain reset assert/release stage
 //- Xilinx primitives:
 //--- IBUFDS_GTE4 (x1) fastdac refclk -> GT QPLL reference
@@ -26,6 +28,8 @@
 // Revision: 
 // Revision 0.01 - File Created
 // Revision 0.02 - Add some comments for AI review
+// Revision 0.03 - PPS epoch and LTC6951 SYNC from pps_timebase; SYSREF captured
+//                 in fastdac_coreclk_o; timebase configuration and status
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
@@ -103,12 +107,15 @@ module clk_rst_mngt #(
     output        fastdac_refclk_o,
     output        fastdac_coreclk_o,
     output wire   fastdac_corerst_o,
-    output        fastdac_sysref_o,
+    output reg    fastdac_sysref_o,
     output        fastdac_syncout_o,
     output        clk10_o,
     output        clk100_o,
     //output SYNC signal for clockchip LTC6951
-    output        sync_ltc_o, 
+    output        sync_ltc_o,
+    //PPS synchronous to clk10_o (tree A) and to fastdac_coreclk_o (tree B)
+    output        pps10_o,
+    output        pps200_o,
     //output reset signals for other modules
     output wire   tdc_rst_o,
     output wire   lrst_o,
@@ -130,8 +137,13 @@ wire fpga_turnkey_fastdac_rst;
 wire ddr_data_rst;
 wire ltc_sync_rst;
 wire rng_rst;
+wire [7:0]  timebase_arm_cnt;
+wire [15:0] timebase_pps200_preset;
+wire [15:0] timebase_status;
+(* ASYNC_REG = "TRUE" *) reg [15:0] timebase_status_s0 = 0;
+(* ASYNC_REG = "TRUE" *) reg [15:0] timebase_status_s1 = 0;
 
-clk_rst_axil_mngt # ( 
+clk_rst_axil_mngt # (
     .C_S_AXI_DATA_WIDTH(C_s_axil_DATA_WIDTH),
     .C_S_AXI_ADDR_WIDTH(C_s_axil_ADDR_WIDTH)
 ) clk_rst_axil_mngt_inst (
@@ -145,6 +157,9 @@ clk_rst_axil_mngt # (
     .ddr_data_rst_o(ddr_data_rst),
     .ltc_sync_rst_o(ltc_sync_rst),
     .rng_rst_o(rng_rst),
+    .timebase_arm_cnt_o(timebase_arm_cnt),
+    .timebase_pps200_preset_o(timebase_pps200_preset),
+    .timebase_status_i(timebase_status_s1),
     .S_AXI_ACLK(s_axil_aclk),
     .S_AXI_ARESETN(rstn_axil_o),
     .S_AXI_AWADDR(s_axil_awaddr),
@@ -186,11 +201,19 @@ BUFG_GT #(.SIM_DEVICE("ULTRASCALE_PLUS")) BUFG_GT_inst (
     .DIV(3'b0),
     .I(fastdac_coreclk_int));
     
-//Input buffer for sysref
+//Input buffer for sysref. SYSREF is data to the core clock: one capture flop,
+//timed by set_input_delay against refclk, feeds both the JESD link layer and
+//pps_timebase.
+wire fastdac_sysref_int;
 IBUFDS sysref_ibuf (
     .IB(fastdac_sysref_n),
-    .O(fastdac_sysref_o),
+    .O(fastdac_sysref_int),
     .I(fastdac_sysref_p));
+
+initial fastdac_sysref_o = 1'b0;
+always @(posedge fastdac_coreclk_o) begin
+    fastdac_sysref_o <= fastdac_sysref_int;
+end
 
 //Input buffer for syncout
 IBUFDS syncout_ibuf (
@@ -352,62 +375,50 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) rng_reset_clk250_inst (
     .rst_o(rng_rst_clk250_o));
 
 
-//Generate SYNC signal for clockchip LTC6951
-reg sync_ltc_o;
+//SYNC request from software into clk10
 (* ASYNC_REG = "TRUE" *) reg [2:0] clockchip_sync_r;
-reg [15:0] counter_clk;
-reg pps_clk_r;
-reg pps_clk_trigger;
 initial begin
-    pps_clk_r <= 0;
     clockchip_sync_r <= 3'b0;
-    counter_clk <= 0;
-    pps_clk_trigger <= 0;
 end
-
 always @(posedge clk10_o) begin
-   if (ltc_rst_o) begin
-      clockchip_sync_r <= 0;
-      sync_ltc_o <= 0;
-
-      pps_clk_trigger <= 0;
-      pps_clk_r <= 0;
-
-      counter_clk <= 0;
-   end else begin
-      clockchip_sync_r <= {clockchip_sync_r[1:0],clockchip_sync};
-      pps_clk_r <= pps_i;
-      //Detect rising edge of pps after receive the sync command from OS
-      if ((!pps_clk_r && pps_i) && clockchip_sync_r[2]) begin
-         pps_clk_trigger <= 1;
-      end
-      if (pps_clk_trigger) begin
-         counter_clk <= counter_clk + 1;
-         if ((counter_clk > 0) && (counter_clk <= 16'd20000)) begin //20000 = 2ms for sync pulse
-            sync_ltc_o <= 1'b1;
-         end else if (counter_clk > 16'd20000) begin
-            counter_clk <= counter_clk;
-            sync_ltc_o <= 1'b0;
-         end else begin
-            sync_ltc_o <= 1'b0;
-         end
-      end else begin
-         sync_ltc_o <= 1'b0;
-         counter_clk <= 0;
-      end
-
-   end
+    if (ltc_rst_o) begin
+        clockchip_sync_r <= 0;
+    end else begin
+        clockchip_sync_r <= {clockchip_sync_r[1:0],clockchip_sync};
+    end
 end
 
-//ILA debug
-// ila_sync_ltc sync_ltc_ila_inst (
-// 	.clk(fastdac_coreclk_o), // input wire clk
-// 	.probe0(pps_i), // input wire [0:0]  probe0  
-// 	.probe1(clk10_o), // input wire [0:0]  probe1 
-// 	.probe2(sync_ltc_o), // input wire [0:0]  probe2 
-// 	.probe3(clockchip_sync), // input wire [0:0]  probe3 
-// 	.probe4(clockchip_sync_r), // input wire [2:0]  probe4 
-// 	.probe5(counter_clk), // input wire [15:0]  probe5
-// 	.probe6(pps_clk_trigger) // input wire [0:0]  probe6
-// );
+//PPS epoch for both clock trees and LTC6951 SYNC. ltc_rst_o (slv_reg6) unlocks
+//the timebase; it locks again on the next PPS.
+wire timebase_locked10, timebase_pps10_err, timebase_ltc_synced, timebase_arm;
+wire timebase_locked200, timebase_sysref_err;
+wire [7:0] timebase_arm_dist;
+pps_timebase pps_timebase_inst (
+    .clk10(clk10_o),
+    .rst10(ltc_rst_o),
+    .pps_i(pps_i),
+    .ltc_sync_req_i(clockchip_sync_r[2]),
+    .arm_cnt_i(timebase_arm_cnt),
+    .pps10_o(pps10_o),
+    .sync_ltc_o(sync_ltc_o),
+    .locked10_o(timebase_locked10),
+    .pps10_err_o(timebase_pps10_err),
+    .ltc_synced_o(timebase_ltc_synced),
+    .arm_o(timebase_arm),
+    .clk200(fastdac_coreclk_o),
+    .sysref_i(fastdac_sysref_o),
+    .pps200_preset_i(timebase_pps200_preset),
+    .pps200_o(pps200_o),
+    .locked200_o(timebase_locked200),
+    .sysref_err_o(timebase_sysref_err),
+    .arm_dist_o(timebase_arm_dist));
+
+//Timebase status into s_axil_aclk. The bits change rarely, arm_dist only when
+//tree B locks.
+assign timebase_status = {timebase_arm_dist, 2'b00, timebase_sysref_err, timebase_locked200,
+                          timebase_arm, timebase_ltc_synced, timebase_pps10_err, timebase_locked10};
+always @(posedge s_axil_aclk) begin
+    timebase_status_s0 <= timebase_status;
+    timebase_status_s1 <= timebase_status_s0;
+end
 endmodule

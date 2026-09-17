@@ -103,7 +103,7 @@ module ddr_data_tb();
 
 ddr_data ddr_data_int(
     .clk200_i(clk200_i),
-    .pps_i(pps_i),
+    .pps200_i(pps_i),
     .ddr_data_rstn(ddr_data_rstn),
     .rd_en_4(rd_en_4),
     .rng_data(rng_data),

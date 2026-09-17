@@ -17,8 +17,8 @@
 // Revision 0.01 - File Created
 // Revision 0.02 - Add comments for AI review. No functional change.
 // Additional Comments:
-//   FOR FUTURE CONSIDERATION - pps_i need to be synchornized with 2-FF, but will cost some latency.
-//   For now we capture pps edge right at the next clock edge, which is acceptable for our application.
+//   pps200_i is synchronous to clk200_i (pps_timebase), so the edge detect needs
+//   one flop.
 //
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +31,7 @@ module tdc_clk_rst_mngt #(
 (
     input           clk200_i,
     input           tdc_rst,
-    input           pps_i,
+    input           pps200_i,
     output          tdc_refclk_o,
     output          tdc_rstidx_o,
     input [31:0]    stopa_sim_limit_i,
@@ -50,8 +50,8 @@ always @(posedge clk200_i, posedge tdc_rst) begin
         pps_trigger <= 1'b0;
         pps_r <= 0;
     end else begin
-        pps_r <= pps_i;
-        if (!pps_r && pps_i) begin
+        pps_r <= pps200_i;
+        if (!pps_r && pps200_i) begin
             pps_trigger <= 1'b1;
         end
     end

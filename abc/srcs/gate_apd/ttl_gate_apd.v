@@ -69,11 +69,14 @@ module ttl_gate_apd #(
     input   s_axil_aresetn,
 
     //input clocks and reset
-    input   clk240,     // OSERDESE3 CLKDIV, and CLK of every delay primitive
-    input   clk480,     // OSERDESE3 CLK; DDR on this clock gives 960 Mb/s
+    input   clk240,         // gate pattern logic
+    input   clk240_serdes,  // 240 MHz on its own BUFG, loaded only by the OSERDESE3
+                            // CLKDIV and the delay primitives' CLK; delay-matched to
+                            // clk480 and shifted 0.651 ns later than clk240
+    input   clk480,         // OSERDESE3 CLK; DDR on this clock gives 960 Mb/s
     input   ttl_rst,
-    input   pps_i,
-    
+    input   pps10_i,    // PPS synchronous to clk10 (pps_timebase)
+
     //output with/without delay pulse 
     output  pulse_p,
     output  pulse_n,
@@ -164,11 +167,9 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_clk240_inst (
     .rstn_o(ttl_rstn240_o),
     .rst_o(ttl_rst240_o));
 
-//Generate PPS trigger signal
-// Note: pps_i is sampled with a single flop, unlike the ASYNC_REG chains used
-// above for ttl_params_*/ttl_rst*. No timing relationship to clk240 is
-// declared in the XDC for this pin, so it is effectively asynchronous here
-// regardless of the source clock relationship. Open item for later review.
+//Generate PPS trigger signal. pps10_i is launched on clk10, which clk240 is
+//derived from, so this is a timed path and the trigger lands on a fixed
+//clk240 edge.
 reg pps_trigger;
 reg pps_r;
 always @(posedge clk240) begin
@@ -176,8 +177,8 @@ always @(posedge clk240) begin
         pps_trigger <= 1'b0;
         pps_r <= 0;
     end else begin
-        pps_r <= pps_i;
-        if (!pps_r && pps_i) begin
+        pps_r <= pps10_i;
+        if (!pps_r && pps10_i) begin
             pps_trigger <= 1'b1;
         end
     end
@@ -226,7 +227,7 @@ OSERDESE3 #(
     .OQ(pulse_delay_tune),  // 1-bit output: serialized data, drives the ODELAY chain
     .T_OUT(),               // 1-bit output: 3-state control, unused
     .CLK(clk480),           // 1-bit input: fast clock, DDR
-    .CLKDIV(clk240),        // 1-bit input: divided clock, must match ODELAY CLK
+    .CLKDIV(clk240_serdes), // 1-bit input: divided clock, must match ODELAY CLK
     .D({4'b0000, gate_nibble}), // 8-bit input: only D[3:0] used at DATA_WIDTH 4
     .RST(ttl_rst240_o),     // 1-bit input: active-High reset
     .T(1'b0)                // 1-bit input: 3-state input, output always driven
@@ -254,6 +255,7 @@ fine_delay #(
     .CLK_RATIO(3)   // clk_i is 240 MHz
 ) fine_delay_inst (
     .clk_i(clk240),
+    .clk_prim_i(clk240_serdes),
     .rst_i(ttl_rst240_o),
     .pulse_delay_tune(pulse_delay_tune),
     .pulse_p(pulse_p),

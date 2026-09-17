@@ -19,9 +19,10 @@
 // Revision:
 // Revision 0.01 - File Created
 // Revision 0.02 - Add some comments for AI review
+// Revision 0.03 - slv_reg8 timebase configuration, 0x24 timebase status
 // Additional Comments:
 // Register map (C_S_AXI_DATA_WIDTH = 32 -> ADDR_LSB = 2, decode on
-// axi_awaddr[4:2]; C_S_AXI_ADDR_WIDTH is driven to 10 by clk_rst_mngt.v):
+// axi_awaddr[5:2]; C_S_AXI_ADDR_WIDTH is driven to 10 by clk_rst_mngt.v):
 //   0x00  slv_reg0 [0] clockchip_sync_o
 //                  [1] fpga_turnkey_fastdac_rst_o
 //   0x04  slv_reg1 [0] tdc_rst_o
@@ -32,7 +33,14 @@
 //   0x14  slv_reg5 [0] decoy_rst_o
 //   0x18  slv_reg6 [0] ltc_sync_rst_o
 //   0x1C  slv_reg7 [0] rng_rst_o
-// All unlisted bits are writable but unused. Reads outside 0x00-0x1C return
+//   0x20  slv_reg8 [7:0]  timebase_arm_cnt_o: clk10 cycle of the second at
+//                         which pps_timebase arms tree B (reset 16)
+//                  [23:8] timebase_pps200_preset_o: clk200 cycle of the second
+//                         given to the SYSREF edge chosen after arm (reset 364)
+//   0x24  read-only timebase_status_i (pps_timebase, resynchronised)
+//                  [0] locked10  [1] pps10_err  [2] ltc_synced  [3] arm
+//                  [4] locked200 [5] sysref_err [15:8] arm_dist
+// All unlisted bits are writable but unused. Reads outside 0x00-0x24 return
 // slv_reg16, which is never written or reset.
 //
 //////////////////////////////////////////////////////////////////////////////////
@@ -62,6 +70,9 @@
 		output wire ddr_data_rst_o,
 		output wire ltc_sync_rst_o,
 		output wire rng_rst_o,
+		output wire [7:0]  timebase_arm_cnt_o,
+		output wire [15:0] timebase_pps200_preset_o,
+		input  wire [15:0] timebase_status_i,
 
 		// User ports ends
 		// Do not modify the ports beyond this line
@@ -146,7 +157,7 @@
 	// ADDR_LSB = 2 for 32 bits (n downto 2)
 	// ADDR_LSB = 3 for 64 bits (n downto 3)
 	localparam integer ADDR_LSB = (C_S_AXI_DATA_WIDTH/32) + 1;
-	localparam integer OPT_MEM_ADDR_BITS = 2;
+	localparam integer OPT_MEM_ADDR_BITS = 3;
 	//----------------------------------------------
 	//-- Signals for user logic register space example
 	//------------------------------------------------
@@ -176,6 +187,9 @@
 	assign ddr_data_rst_o = slv_reg4[0];
 	assign ltc_sync_rst_o = slv_reg6[0];
 	assign rng_rst_o = slv_reg7[0];
+	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg8;
+	assign timebase_arm_cnt_o = slv_reg8[7:0];
+	assign timebase_pps200_preset_o = slv_reg8[23:8];
 
 	
 	// I/O Connections assignments
@@ -291,6 +305,7 @@
 	      slv_reg5 <= 0;
 	      slv_reg6 <= 0;
 	      slv_reg7 <= 0;
+	      slv_reg8 <= 32'h00016C10;
 	    end 
 	  else begin
 	    if (slv_reg_wren)
@@ -352,6 +367,13 @@
 	                // Slave register 7
 	                slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end
+	          4'h8:
+	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+	                // Respective byte enables are asserted as per write strobes
+	                // Slave register 8
+	                slv_reg8[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	              end
 	          default : begin
 	                      slv_reg0 <= slv_reg0;
 	                      slv_reg1 <= slv_reg1;
@@ -361,6 +383,7 @@
 	                      slv_reg5 <= slv_reg5;
 	                      slv_reg6 <= slv_reg6;
 	                      slv_reg7 <= slv_reg7;
+	                      slv_reg8 <= slv_reg8;
 	                    end
 	        endcase
 	      end
@@ -477,6 +500,8 @@
 	        4'h5   : reg_data_out <= slv_reg5;
 	        4'h6   : reg_data_out <= slv_reg6;
 	        4'h7   : reg_data_out <= slv_reg7;
+	        4'h8   : reg_data_out <= slv_reg8;
+	        4'h9   : reg_data_out <= {16'b0, timebase_status_i};
 	        default : reg_data_out <= slv_reg16;
 	      endcase
 	end

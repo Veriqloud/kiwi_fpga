@@ -100,7 +100,7 @@ module jesd_transport #(
     input                                         rng_rst_clk250,
     output  reg [127 : 0]                         tx_tdata,
     input   wire                                  tx_tready,
-    input                                         pps_i
+    input                                         pps200_i        // PPS synchronous to tx_core_clk (pps_timebase)
 
     );
     
@@ -269,7 +269,7 @@ wire tx_tready_sync;
 sync_tx_tready sync_tx_tready_inst (
     .tx_core_clk(tx_core_clk),
     .tx_core_rst(tx_core_reset),
-    .pps_i(pps_i),
+    .pps200_i(pps200_i),
     .tx_tready(tx_tready),
     .tx_tready_o(tx_tready_sync)
 );
@@ -285,8 +285,8 @@ always @(posedge tx_core_clk) begin
         counter40 <= 0;
         pps_trigger <= 0;
     end else begin
-        pps_r <= pps_i;
-        if (!pps_r && pps_i) begin
+        pps_r <= pps200_i;
+        if (!pps_r && pps200_i) begin
             pps_trigger <= 1;
         end
         if (pps_trigger) begin

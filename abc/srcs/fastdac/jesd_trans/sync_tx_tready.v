@@ -21,7 +21,7 @@
 
 
 module sync_tx_tready(
-    input pps_i,
+    input pps200_i,     // PPS synchronous to tx_core_clk (pps_timebase)
     input tx_core_clk,
     input tx_core_rst,
     input tx_tready,
@@ -34,8 +34,8 @@ always @(posedge tx_core_clk, posedge tx_core_rst) begin
         tx_tready_o <= 0;
         pps_r <= 0;
     end else begin
-        pps_r <= pps_i;
-        if (!pps_r && pps_i) begin
+        pps_r <= pps200_i;
+        if (!pps_r && pps200_i) begin
             tx_tready_o <= tx_tready;
         end
     end

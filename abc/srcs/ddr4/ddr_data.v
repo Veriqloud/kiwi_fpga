@@ -38,12 +38,8 @@
 //                 rd_en_gc_test, count_wait_long, counter_wait, counter_tlast
 //                 and the unused fifo_gc prog/almost flags
 // Additional Comments:
-// - TODO pps_i is asynchronous but is used raw in the WAIT_START condition and
-//   sampled through a single flop before the DETECT_PPS edge detect, with no
-//   ASYNC_REG. A metastable sample shifts the START transition and misaligns
-//   dq_gc against the PPS epoch for the whole run. pps_r is already declared
-//   [2:0], so the intended 3-flop chain just needs wiring. To be handled
-//   together with the other modules that take pps_i.
+// - pps200_i is synchronous to clk200_i (pps_timebase), so the WAIT_START
+//   condition and the one-flop DETECT_PPS edge detect are timed paths.
 //
 // - TODO the alpha FSM leaves IDLE_AL only because the START branch of the
 //   state case assigns state_alpha every cycle, and IDLE_AL is the one arm of
@@ -58,7 +54,7 @@
 
 module ddr_data(
     input           clk200_i,
-    input           pps_i,
+    input           pps200_i,       // PPS synchronous to clk200_i (pps_timebase)
     input           ddr_data_rstn,
     //input from fastdac
     input           rd_en_4,
@@ -417,7 +413,7 @@ always @(posedge clk200_i) begin
             end
             WAIT_START: begin
                 start_write_ddr_r <= {start_write_ddr_r[1:0], sr_start_write_ddr_i};
-                if (start_write_ddr_r[2] == 1 && !pps_i) begin
+                if (start_write_ddr_r[2] == 1 && !pps200_i) begin
                     start_write_ddr_o <= 1'b1;
                     state <= DETECT_PPS;
                 end 
@@ -428,8 +424,8 @@ always @(posedge clk200_i) begin
 
             end
             DETECT_PPS: begin
-                pps_r <= pps_i;
-                if (!pps_r && pps_i) begin
+                pps_r <= pps200_i;
+                if (!pps_r && pps200_i) begin
                     state <= START;
                 end 
                 else  begin
