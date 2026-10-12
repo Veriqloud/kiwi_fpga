@@ -50,7 +50,7 @@ module ddr_data_reg_mngt #(
     output wire [15:0]  mr_ab_fiber_delay_i,
     input  wire [47:0]  mr_current_dq_gc,
     input  wire         mr_current_dq_gc_valid,
-    input  wire [10:0]  ddr_fifos_status_i,
+    input  wire [63:0]  ddr_fifos_status_i,
     input  wire         status_200_valid_i,
     input  wire [2:0]   fifos_status_i,
     input  wire         status_250_valid_i,

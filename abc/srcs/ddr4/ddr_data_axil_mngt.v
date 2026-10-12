@@ -33,6 +33,9 @@
 //               - Removed the dead commented-out write case for slv_reg12,
 //                 which is a read-only status register
 //               - Fixed the axi_araddr reset literal width
+// Revision 0.03 - ddr_fifos_status_i widened to 64 bits: [31:0] -> slv_reg13
+//                 (0x34, new bits [31:11]), [63:32] -> new read-only
+//                 slv_reg17 (0x44). DDR path status, docs/monitoring.md
 // Additional Comments:
 //   Register map (byte offset from the ddr_data AXI-Lite base):
 //     0x00 slv_reg0  [0]     start_write_ddr_o
@@ -50,10 +53,11 @@
 //     0x2C slv_reg11 [15:0]  ab_fiber_delay_o
 //     -- read-only status --
 //     0x30 slv_reg12 [0]     pps200_i, resynchronised into S_AXI_ACLK
-//     0x34 slv_reg13 [10:0]  ddr_fifos_status_i   (from the 200M domain)
+//     0x34 slv_reg13 [31:0]  ddr_fifos_status_i[31:0]  (from the 200M domain)
 //     0x38 slv_reg14 [2:0]   fifos_status_i       (from the 250M domain)
 //     0x3C slv_reg15 [31:0]  current_dq_gc_lsb_i
 //     0x40 slv_reg16 [16:0]  current_dq_gc_msb_i
+//     0x44 slv_reg17 [31:0]  ddr_fifos_status_i[63:32] (from the 200M domain)
 //   Every other offset reads 0. Writes above 0x7F are accepted with an OKAY
 //   response but discarded.
 //
@@ -93,7 +97,7 @@ module ddr_data_axil_mngt #
         input [31:0] current_dq_gc_lsb_i,
         input [16:0] current_dq_gc_msb_i,
         input        current_dq_gc_valid_i,
-        input [10:0] ddr_fifos_status_i,
+        input [63:0] ddr_fifos_status_i,
         input status_200_valid_i,
         input [2:0] fifos_status_i,
         input status_250_valid_i,
@@ -204,6 +208,7 @@ module ddr_data_axil_mngt #
     reg [C_S_AXI_DATA_WIDTH-1:0]    slv_reg14;    
     reg [C_S_AXI_DATA_WIDTH-1:0]    slv_reg15;
     reg [C_S_AXI_DATA_WIDTH-1:0]    slv_reg16;
+    reg [C_S_AXI_DATA_WIDTH-1:0]    slv_reg17;
     wire     slv_reg_rden;
     wire     slv_reg_wren;
     reg [C_S_AXI_DATA_WIDTH-1:0]     reg_data_out;
@@ -530,12 +535,17 @@ module ddr_data_axil_mngt #
         slv_reg14 <= 0;
         slv_reg15 <= 0;
         slv_reg16 <= 0;
+        slv_reg17 <= 0;
       end else begin
         //ddr and fifos status from 200M domain
         status_200_valid_r <= {status_200_valid_r[1:0],status_200_valid_i};
         if (status_200_valid_r[2] == 0 && status_200_valid_r[1] == 1) begin
-          slv_reg13 <= ddr_fifos_status_i;
-        end else slv_reg13 <= slv_reg13;
+          slv_reg13 <= ddr_fifos_status_i[31:0];
+          slv_reg17 <= ddr_fifos_status_i[63:32];
+        end else begin
+          slv_reg13 <= slv_reg13;
+          slv_reg17 <= slv_reg17;
+        end
         //fifos status from 250M domain 
         status_250_valid_r <= {status_250_valid_r[1:0], status_250_valid_i};
         if (status_250_valid_r[2] == 0 && status_250_valid_r[1] == 1) begin
@@ -623,6 +633,7 @@ module ddr_data_axil_mngt #
             5'he   : reg_data_out <= slv_reg14;
             5'hf   : reg_data_out <= slv_reg15;
             5'h10  : reg_data_out <= slv_reg16;
+            5'h11  : reg_data_out <= slv_reg17;
             default : reg_data_out <= {C_S_AXI_DATA_WIDTH{1'b0}};
           endcase
     end

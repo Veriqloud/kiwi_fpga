@@ -19,6 +19,7 @@
 //- clk_rst_axil_mngt.v  (x1)  AXI4-Lite slave, source of all software resets
 //- pps_timebase.v       (x1)  PPS sampling, pps10_o/pps200_o, LTC6951 SYNC
 //- reset_register.v     (x11) per-domain reset assert/release stage
+//- ddr_axi_reset_seq.v  (x1)  DDR path reset, S side and MIG AXI side together
 //- Xilinx primitives:
 //--- IBUFDS_GTE4 (x1) fastdac refclk -> GT QPLL reference
 //--- BUFG_GT     (x1) fastdac core clock (200MHz)
@@ -31,6 +32,9 @@
 // Revision 0.03 - PPS epoch and LTC6951 SYNC from pps_timebase; SYSREF captured
 //                 in fastdac_coreclk_o; timebase configuration and status
 // Revision 0.04 - tdc_rstidx_phase_i in the timebase status
+// Revision 0.05 - rstn_ddr_axi_o follows ddr_data_rst as well as the MIG UI
+//                 reset (ddr_axi_reset_seq): M side released first, then
+//                 ddr_data_rstn_o
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
@@ -231,13 +235,6 @@ reset_register #(.RST_ACTIVE_LEVEL("LOW")) reset_reg_axil_inst (
     .clk_o(/*unused*/),
     .rstn_o(rstn_axil_o));
     
-//Genrate reset for DDR MIG AXI
-reset_register #(.RST_ACTIVE_LEVEL("HIGH")) reset_reg_ddr_axi_inst (
-    .clk_i(clk_ddr_axi_i),
-    .rst_i(rst_ddr_axi_i),
-    .clk_o(/*unused*/),
-    .rstn_o(rstn_ddr_axi_o),
-    .rst_o(/*unused*/));
 
 //Buffers for clock 10MHz and 100MHz
 wire clk10_int;
@@ -350,9 +347,22 @@ reset_register #(.RST_ACTIVE_LEVEL("HIGH")) gc_reset_inst (
     .rstn_o(/*unused*/),
     .rst_o(gc_rst_o));
 
+//Reset for the DDR MIG AXI shim (c0_ddr4_aresetn) and the M side of the AXI
+//clock converter: sequenced with ddr_data_rstn_o by ddr_axi_reset_seq_inst
+//below, so a DDR path reset resets both sides of the clock converter and the
+//MIG AXI shim together.
+wire ddr_data_s_rstn_200;
+ddr_axi_reset_seq ddr_axi_reset_seq_inst (
+    .clk200_i(fastdac_coreclk_o),
+    .req_rstn_200(ddr_data_rst_r[1]),
+    .clk_ui_i(clk_ddr_axi_i),
+    .rst_ui_i(rst_ddr_axi_i),
+    .s_rstn_200_o(ddr_data_s_rstn_200),
+    .m_rstn_ui_o(rstn_ddr_axi_o));
+
 reset_register #(.RST_ACTIVE_LEVEL("LOW")) ddr_data_resetn_inst (
     .clk_i(fastdac_coreclk_o),
-    .rstn_i(ddr_data_rst_r[1]),
+    .rstn_i(ddr_data_s_rstn_200),
     .clk_o(/*unused*/),
     .rstn_o(ddr_data_rstn_o));
 

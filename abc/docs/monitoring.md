@@ -262,3 +262,100 @@ Do **not** regenerate the FIFO IP just for `Overflow_Flag`/`Underflow_Flag`:
 underflow would only re-implement E2 inside the core (still needs the sticky
 latch); overflow is prevented by the write gates and would be a second
 never-event at best.
+
+---
+
+## 7. DDR path status and reset (ddr_data AXI-Lite, page 0x1000)
+
+Path: `ddr_data` packs one byte per 40 MHz tick into 256-bit words (32 ticks,
+64 periods per word) → `axis_burst` (16-word packets) → AXI virtual FIFO →
+AXI clock converter → DDR4 MIG AXI shim. The reader in `ddr_data` takes the
+words back in order and picks the symbol of each click by word index
+(`read_count`). One word added to or missing from the stream shifts every
+lookup by 64 periods.
+
+### 7.1 Reset (0x12000 offset 0x10, `ddr_data_rst`)
+
+`ddr_axi_reset_seq` (in `clk_rst_mngt`) resets both sides of the clock
+converter and the MIG AXI shim (`c0_ddr4_aresetn`) together:
+
+- `ddr_data_rst` = 0: the S side (`ddr_data`, `axis_burst`, vfifo, converter
+  S port, `mon_ddr_fifos`) goes into reset at once; the M side (converter M
+  port, MIG AXI shim) follows through a 3-FF synchroniser in `ui_clk`.
+- `ddr_data_rst` = 1: the M side is released first; the S side follows 16
+  clk200 cycles after the release has been seen back in clk200. The S side
+  stays in reset for at least 64 clk200 cycles and until the M side has been
+  seen in reset, so a short pulse still resets both sides.
+- `c0_ddr4_aresetn` resets the AXI shim only; it does not recalibrate the
+  DDR4 (that is `sys_rst`, PCIe PERST#).
+- The MIG pairs W beats with AW commands by count and can hold one W beat
+  without a command. With the M side reset, a reset that lands inside a burst
+  leaves nothing behind in the MIG.
+
+### 7.2 Stopping the writer (`start_write`, offset 0x00)
+
+`start_write` is sampled while `ddr_data` waits for the start PPS. Once it
+runs, `start_write` held at 0 for 2^18 clk200 cycles (1.31 ms) sets `stop_req`:
+the writer finishes the 16-word packet in progress (tlast) and loads no more
+words. A 0 → 1 pulse pair shorter than 1.31 ms is ignored. If the output is
+blocked (vfifo full) when the stop takes effect, the writer stops at once.
+The stop lasts until the next DDR path reset; writing 1 again does not
+restart the writer.
+
+### 7.3 Registers
+
+`0x34` (`slv_reg13`), bits `[10:0]` unchanged; all bits captured from clk200
+every 100 µs:
+
+| bit | name | kind | meaning |
+|-----|------|------|---------|
+| 31:24 | `slip_delta` | value | embedded word index − `read_count` (mod 256) at the last mismatch |
+| 23:19 | — | — | 0 |
+| 18 | `wr_drained` | live | the vfifo has sent at least as many W beats as `ddr_data` handed over |
+| 17 | `stop_req` | sticky | `start_write` was held low for 1.31 ms |
+| 16 | `slip` | sticky | a word read back carried a word index ≠ `read_count` |
+| 15 | `wr_drop` | sticky | a packed word was dropped because the previous one still waited for tready |
+| 14 | `err_passed` | sticky | a lookup's word had already been consumed and was not the last word read |
+| 13 | `axi_quiet` | live | vfifo `m_axi`: nothing outstanding, no VALID, for 1023 cycles |
+| 12 | `wr_stopped` | live | writer loads no more words and its last word has been taken |
+| 11 | `quiesced` | live | `wr_stopped` & `wr_drained` & `axi_quiet` |
+| 10:9 | `vfifo_idle` | live | |
+| 8:7 | `vfifo_full` | live | |
+| 6:5 | `vfifo_empty` | live | |
+| 2 | `gc_out_fifo_full` | live | |
+| 1 | `gc_in_fifo_empty` | live | |
+| 0 | `alpha_out_fifo_full` | live | |
+
+`0x44` (`slv_reg17`, new, read-only): `[15:0]` `wr_drop_cnt`, `[31:16]`
+`esc_cnt` (lookups answered by the `err_passed` escape), both saturating.
+
+All sticky bits and counters clear with the DDR path reset. Before START
+(after a reset) `quiesced` reads 1 once the vfifo has been idle for 1023
+cycles.
+
+### 7.4 Word index check
+
+Bits `[7:6]` of bytes 0..23 of every DDR word carry the 48-bit index of the
+word (bits `[2j+1:2j]` in byte j); bytes 24..31 carry 0 there. The reader
+compares it with `read_count` on every word it takes and sets `slip` on a
+mismatch. A stream with one extra word in front reads `slip_delta` = −1
+(0xFF), one missing word +1. Alpha/decoy bits `[5:0]` are unchanged.
+
+### 7.5 Lookups
+
+The reader keeps the last word it consumed. A click whose word is that word is
+answered from the copy. A click whose word is further back (out of order or
+duplicated gc entry) is answered with alpha 0 / decoy 0 and bit 3 of its
+4-bit alpha nibble set (`lookup_bad`); `err_passed` and `esc_cnt` count it.
+Bit 3 of each nibble is 0 for every other lookup.
+
+### 7.6 Host sequence
+
+1. At session stop (after gc stops feeding `gc_in`): write 0 to `0x00`.
+2. Before `Ddr.init`: poll `0x34` bit 11 (`quiesced`), e.g. every 10 ms for up
+   to 100 ms. On timeout (vfifo full, or the vfifo never drained), reset
+   anyway: the reset of 7.1 covers it.
+3. Read `0x34` bits 14..17 and `0x44` and log them; nonzero `slip`,
+   `wr_drop` or `err_passed` mean the session's lookups were wrong from that
+   point on.
+4. `Ddr.init` (offset 0x10 0 → 1), configure, `start_write` 0 → 1 as before.

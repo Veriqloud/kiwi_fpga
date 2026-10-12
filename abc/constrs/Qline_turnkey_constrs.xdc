@@ -258,6 +258,10 @@ set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mo
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/mon_trigger_250_r_reg[2]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/status_250_valid_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/status_250_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg14_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/status_200_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg13_reg[*]/D}]
+set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/mon_ddr_fifos_0/inst/status_200_o_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg17_reg[*]/D}]
+## ddr_axi_reset_seq: clk200 request into ui_clk, ui_clk reset state back into clk200 (both 3-FF synchronisers)
+set_false_path -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/ddr_axi_reset_seq_inst/m_req_ui_r_reg[0]/D}]
+set_false_path -to [get_pins {Qline_turnkey_top_i/clk_rst/clk_rst_mngt/inst/ddr_axi_reset_seq_inst/m_ack_r_reg[0]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/current_dq_gc_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg15_reg[*]/D}]
 set_false_path -from [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/current_dq_gc_reg[*]/C}] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_reg_mngt_0/inst/ddr_data_axil_mngt_inst/slv_reg16_reg[*]/D}]
 set_false_path -from [get_pins Qline_turnkey_top_i/ddr4/ddr_data_0/inst/s_axis_tready_gc_200_reg/C] -to [get_pins {Qline_turnkey_top_i/ddr4/ddr_data_0/inst/s_axis_tready_gc_r_reg[0]/D}]

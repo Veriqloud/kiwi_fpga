@@ -23,9 +23,13 @@
 //                 so the unsynchronised read in ddr_data_axil_mngt could tear
 //                 and report a combination that never existed.
 //               - Added MON_PERIOD / MON_PULSE in place of magic numbers
+// Revision 0.03 - status_200_o widened to 64 bits: [31:11] ext_status_i and
+//                 [63:32] ext_counts_i from ddr_data (DDR path status)
 // Additional Comments:
 // - Bit map, needed by software to decode slv_reg13 and slv_reg14:
-//     status_200_o [10:9] vfifo_idle    [8:7] vfifo_full   [6:5] vfifo_empty
+//     status_200_o [63:32] ext_counts_i (slv_reg17, 0x44)
+//                  [31:11] ext_status_i (DDR path status, docs/monitoring.md)
+//                  [10:9] vfifo_idle    [8:7] vfifo_full   [6:5] vfifo_empty
 //                  [4:3]  reserved, tied 0
 //                  [2]    gc_out_fifo_full
 //                  [1]    gc_in_fifo_empty
@@ -58,8 +62,10 @@ module mon_ddr_fifos(
     input       gc_in_fifo_empty,
     input       alpha_out_fifo_full,
     input       alpha_out_fifo_empty,
+    input [20:0] ext_status_i,
+    input [31:0] ext_counts_i,
 
-    output [10:0]    status_200_o,
+    output [63:0]    status_200_o,
     output          status_200_valid_o,
     output [2:0]    status_250_o,
     output          status_250_valid_o
@@ -71,12 +77,12 @@ localparam integer MON_PULSE  = 99;     // valid strobe width, clk200 cycles
 reg [25:0] counter_200;
 reg mon_trigger_200;
 
-wire [10:0] status_200;
-assign status_200 = {vfifo_idle,vfifo_full,vfifo_empty,1'b0,1'b0,gc_out_fifo_full,gc_in_fifo_empty,alpha_out_fifo_full};
+wire [63:0] status_200;
+assign status_200 = {ext_counts_i,ext_status_i,vfifo_idle,vfifo_full,vfifo_empty,1'b0,1'b0,gc_out_fifo_full,gc_in_fifo_empty,alpha_out_fifo_full};
 
 wire status_200_valid_o;
 assign status_200_valid_o = mon_trigger_200_r[2];
-reg [10:0] status_200_o;
+reg [63:0] status_200_o;
 reg [2:0] mon_trigger_200_r;
 initial begin
     mon_trigger_200_r <= 0;

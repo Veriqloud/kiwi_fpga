@@ -20,6 +20,8 @@
 //                 delta_count, delta_addr, mismatch_addr). It was added to
 //                 chase one specific DDR pointer bug, which is now fixed. Kept
 //                 in place rather than deleted in case the symptom returns.
+// Revision 0.03 - axi_quiet_o: m_axi idle detector for the DDR path quiesce
+//                 (ddr_data stop before a reset, docs/monitoring.md)
 // Additional Comments:
 // The ports for monitoring logic are still present, but the logic is commented out.
 //////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +102,13 @@ module axi_virtual_controller_wrapper(
     output [47:0] counter_write,
     output [47:0] delta_count,
     output [31:0] delta_addr,
-    output [31:0] mismatch_addr
+    output [31:0] mismatch_addr,
+
+    //AXI activity on m_axi: 1 after QUIET_CYCLES clk cycles with no
+    //transaction outstanding and no VALID on any channel
+    output reg    axi_quiet_o,
+    //W beats sent on m_axi since reset
+    output reg [31:0] axi_wbeats_o
 
 );
 
@@ -126,6 +134,48 @@ module axi_virtual_controller_wrapper(
 //     end
 // end
 
+
+
+// m_axi idle detector. Outstanding write bursts (AW accepted, B not yet),
+// write beats promised by accepted AWs but not yet sent (negative while W
+// runs ahead of AW), and outstanding read bursts (AR accepted, RLAST not yet).
+localparam integer QUIET_CYCLES = 1023;
+reg [7:0]         aw_out;
+reg signed [15:0] w_need;
+reg [7:0]         ar_out;
+reg [9:0]         quiet_cnt;
+wire aw_hs = m_axi_awvalid & m_axi_awready;
+wire w_hs  = m_axi_wvalid  & m_axi_wready;
+wire b_hs  = m_axi_bvalid  & m_axi_bready;
+wire ar_hs = m_axi_arvalid & m_axi_arready;
+wire rl_hs = m_axi_rvalid  & m_axi_rready & m_axi_rlast;
+wire axi_busy = (aw_out != 0) || (w_need != 0) || (ar_out != 0) ||
+                m_axi_awvalid || m_axi_wvalid || m_axi_bvalid ||
+                m_axi_arvalid || m_axi_rvalid;
+always @(posedge aclk) begin
+    if (!aresetn) begin
+        aw_out      <= 0;
+        w_need      <= 0;
+        ar_out      <= 0;
+        quiet_cnt   <= 0;
+        axi_quiet_o <= 1'b0;
+        axi_wbeats_o <= 0;
+    end else begin
+        if (w_hs) axi_wbeats_o <= axi_wbeats_o + 1;
+        aw_out <= aw_out + aw_hs - b_hs;
+        w_need <= w_need + (aw_hs ? ({8'd0, m_axi_awlen} + 16'sd1) : 16'sd0) - (w_hs ? 16'sd1 : 16'sd0);
+        ar_out <= ar_out + ar_hs - rl_hs;
+        if (axi_busy) begin
+            quiet_cnt   <= 0;
+            axi_quiet_o <= 1'b0;
+        end else if (quiet_cnt != QUIET_CYCLES) begin
+            quiet_cnt   <= quiet_cnt + 1;
+            axi_quiet_o <= 1'b0;
+        end else begin
+            axi_quiet_o <= 1'b1;
+        end
+    end
+end
 
 axi_vfifo_ctrl_0 axi_virtual_controller_ddr4_inst (
     .aclk(aclk),                                          // input wire aclk

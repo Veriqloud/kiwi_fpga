@@ -1542,6 +1542,16 @@ proc create_hier_cell_ddr4 { parentCell nameHier } {
   [get_bd_pins ddr4_0/sys_rst]
   connect_bd_net -net xlconstant_0_dout  [get_bd_pins xlconstant_0/dout] \
   [get_bd_pins axi_virtual_controll_0/vfifo_mm2s_channel_full]
+  # DDR path status: vfifo m_axi idle into ddr_data, ddr_data status into the
+  # monitor (0x34 [31:11], 0x44), docs/monitoring.md
+  connect_bd_net -net axi_virtual_controll_0_axi_quiet_o  [get_bd_pins axi_virtual_controll_0/axi_quiet_o] \
+  [get_bd_pins ddr_data_0/axi_quiet_i]
+  connect_bd_net -net axi_virtual_controll_0_axi_wbeats_o  [get_bd_pins axi_virtual_controll_0/axi_wbeats_o] \
+  [get_bd_pins ddr_data_0/axi_wbeats_i]
+  connect_bd_net -net ddr_data_0_ext_status_o  [get_bd_pins ddr_data_0/ext_status_o] \
+  [get_bd_pins mon_ddr_fifos_0/ext_status_i]
+  connect_bd_net -net ddr_data_0_ext_counts_o  [get_bd_pins ddr_data_0/ext_counts_o] \
+  [get_bd_pins mon_ddr_fifos_0/ext_counts_i]
 
   # Restore current instance
   current_bd_instance $oldCurInst

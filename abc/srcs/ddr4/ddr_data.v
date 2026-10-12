@@ -37,6 +37,21 @@
 //               - Removed dead registers alpha, counter_valid, rd_en_gc,
 //                 rd_en_gc_test, count_wait_long, counter_wait, counter_tlast
 //                 and the unused fifo_gc prog/almost flags
+// Revision 0.03 - DDR path integrity (docs/monitoring.md, "DDR path status"):
+//               - m_axis (to axis_burst / vfifo) is a full AXI-Stream master:
+//                 a word waits for tready; a word that completes while the
+//                 previous one still waits is dropped and counted
+//                 (wr_drop / wr_drop_cnt) instead of being lost silently
+//               - start_write low for 2^STOP_FILTER_LOG2 cycles stops the
+//                 writer at the next 16-word packet boundary; quiesced = writer
+//                 stopped and m_axi of the vfifo idle (axi_quiet_i)
+//               - bits [7:6] of bytes 0..23 of every DDR word carry the word
+//                 index; the reader compares it with read_count (slip)
+//               - the reader keeps the last word it consumed: a lookup whose
+//                 word was already consumed is served from that copy, a lookup
+//                 whose word is further back is answered with alpha/decoy 0,
+//                 bit 3 of its alpha nibble set, err_passed and esc_cnt,
+//                 instead of draining the vfifo forever
 // Additional Comments:
 // - pps200_i is synchronous to clk200_i (pps_timebase), so the WAIT_START
 //   condition and the one-flop DETECT_PPS edge detect are timed paths.
@@ -52,7 +67,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module ddr_data(
+module ddr_data #(
+    parameter integer STOP_FILTER_LOG2 = 18   // 2^18 clk200 cycles = 1.31 ms
+)(
     input           clk200_i,
     input           pps200_i,       // PPS synchronous to clk200_i (pps_timebase)
     input           ddr_data_rstn,
@@ -123,6 +140,12 @@ module ddr_data(
     input wire         m_axis_tready_alpha,
     output reg         m_axis_tvalid_alpha,
     output reg         fifo_alpha_rst,
+
+    //DDR path status (docs/monitoring.md, "DDR path status")
+    input              axi_quiet_i,     //vfifo m_axi idle, from axi_virtual_controller_wrapper
+    input [31:0]       axi_wbeats_i,    //W beats the vfifo has sent to DDR since reset
+    output [20:0]      ext_status_o,    //-> 0x34 [31:11]
+    output [31:0]      ext_counts_o,    //-> 0x44
 
     //Debug
     output [1:0] alpha_q,
@@ -340,6 +363,42 @@ initial begin
     state_alpha <= IDLE_AL;
 end
 
+//DDR path integrity
+reg         stop_req;                       //start_write held low, writer told to stop
+reg [STOP_FILTER_LOG2:0] stop_cnt;
+reg         wr_enable;                      //writer may load new words into m_axis
+reg [47:0]  wr_word_idx;                    //index of the word being packed
+reg         wr_drop;                        //sticky: a word was dropped (m_axis busy)
+reg [15:0]  wr_drop_cnt;                    //saturating
+reg [255:0] last_word;                      //last word consumed on s_axis
+reg [47:0]  last_idx;                       //its read_count
+reg         last_valid;
+reg         lookup_bad;                     //current lookup could not be answered
+reg         err_passed;                     //sticky: a lookup's word was already gone
+reg [15:0]  esc_cnt;                        //saturating count of such lookups
+reg         slip;                           //sticky: embedded word index != read_count
+reg [7:0]   slip_delta;                     //embedded - read_count, last mismatch
+reg [31:0]  wr_in_cnt;                      //words accepted on m_axis since reset
+wire [63:0] wr_idx_ext = {16'd0, wr_word_idx};
+wire [47:0] gc_div48 = {5'd0, gc_time_valid_div};
+wire [47:0] de_div48 = {5'd0, de_gc_time_valid_div};
+wire        s_hs = s_axis_tvalid && s_axis_tready;
+reg  [47:0] rd_idx_embedded;
+integer     k_idx;
+always @(*) begin
+    for (k_idx = 0; k_idx < 24; k_idx = k_idx + 1)
+        rd_idx_embedded[2*k_idx +: 2] = s_axis_tdata[8*k_idx+6 +: 2];
+end
+//Quiesced: the writer loads nothing more and its last word has been taken,
+//every word it handed over has gone out as a W beat, and the vfifo m_axi has
+//nothing outstanding (B received) and no VALID for 1023 cycles.
+wire wr_stopped = !wr_enable && !m_axis_tvalid;
+wire wr_drained = ($signed(axi_wbeats_i - wr_in_cnt) >= 0);
+wire quiesced   = wr_stopped && wr_drained && axi_quiet_i;
+assign ext_status_o = {slip_delta, 5'd0, wr_drained, stop_req, slip, wr_drop, err_passed,
+                       axi_quiet_i, wr_stopped, quiesced};
+assign ext_counts_o = {esc_cnt, wr_drop_cnt};
+
 always @(posedge clk200_i) begin
     if (!ddr_data_rstn) begin
 
@@ -376,9 +435,38 @@ always @(posedge clk200_i) begin
 
         s_axis_tready_gc_200 <= 0; //s_axis receive gc_in
 
+        stop_req <= 0;
+        stop_cnt <= 0;
+        wr_enable <= 0;
+        wr_word_idx <= 0;
+        wr_drop <= 0;
+        wr_drop_cnt <= 0;
+        last_word <= 0;
+        last_idx <= 0;
+        last_valid <= 0;
+        lookup_bad <= 0;
+        err_passed <= 0;
+        esc_cnt <= 0;
+        slip <= 0;
+        slip_delta <= 0;
+        wr_in_cnt <= 0;
+
         state <= IDLE;
         state_alpha <= IDLE_AL;
     end else begin
+        if (m_axis_tvalid && m_axis_tready) wr_in_cnt <= wr_in_cnt + 1;
+        //every word taken from the vfifo, whatever the alpha state
+        if (s_hs) begin
+            read_count <= read_count + 1;
+            last_word <= s_axis_tdata;
+            last_idx <= read_count;
+            last_valid <= 1'b1;
+            if (rd_idx_embedded != read_count) begin
+                slip_delta <= rd_idx_embedded[7:0] - read_count[7:0];
+                slip <= 1'b1;
+            end
+        end
+
         case (state)
             IDLE: begin
                 start_write_ddr_r <= 0;
@@ -408,6 +496,12 @@ always @(posedge clk200_i) begin
 
                 s_axis_tready_gc_200 <= 0;
 
+                stop_req <= 0;
+                stop_cnt <= 0;
+                wr_enable <= 0;
+                wr_word_idx <= 0;
+                last_valid <= 0;
+
                 state <= WAIT_START;
                 state_alpha <= IDLE_AL;
             end
@@ -427,6 +521,7 @@ always @(posedge clk200_i) begin
                 pps_r <= pps200_i;
                 if (!pps_r && pps200_i) begin
                     state <= START;
+                    wr_enable <= 1'b1;
                 end 
                 else  begin
                     state <= DETECT_PPS;
@@ -479,10 +574,20 @@ always @(posedge clk200_i) begin
                 end else sr_current_dq_gc <= sr_current_dq_gc;
                 //end
 
-                //Pack data to save in ddr, verify number of write and read are matched
+                //Stop request: start_write held low for 2^STOP_FILTER_LOG2 cycles
+                start_write_ddr_r <= {start_write_ddr_r[1:0], sr_start_write_ddr_i};
+                if (start_write_ddr_r[2]) begin
+                    stop_cnt <= 0;
+                end else if (!stop_cnt[STOP_FILTER_LOG2]) begin
+                    stop_cnt <= stop_cnt + 1;
+                end
+                if (stop_cnt[STOP_FILTER_LOG2]) stop_req <= 1'b1;
+
+                //Pack data to save in ddr. Bits [7:6] of byte j (j < 24) carry
+                //bits [2j+1:2j] of the word index, checked on read.
                 if (rd_en_4_r[1] == 1'b1) begin
                     cycle_counter <= cycle_counter + 1;
-                    data_pack[(8*cycle_counter)+:8] <= {2'b00,rng_a_data,rng_data};
+                    data_pack[(8*cycle_counter)+:8] <= {wr_idx_ext[(2*cycle_counter)+:2],rng_a_data,rng_data};
                     if (cycle_counter >= 7'd31) begin
                             cycle_counter <= 7'b0;
                         pack_done <= 1'b1;
@@ -491,20 +596,33 @@ always @(posedge clk200_i) begin
                     cycle_counter <= cycle_counter;
                     data_pack <= data_pack;
                 end
+                //AXI-Stream master: a word is held until tready. A word that
+                //completes while the previous one is still waiting is dropped
+                //and counted. After a stop request the writer finishes the
+                //current 16-word packet (tlast) and loads nothing more; if the
+                //output is blocked it stops at once.
                 if (pack_done == 1'b1) begin
                     pack_done <= 1'b0;
-                    m_axis_tdata <= data_pack;
-                    m_axis_tvalid <= 1'b1;
                     data_pack <= 256'b0;
-                end else begin
-                    m_axis_tdata <= m_axis_tdata;
+                    wr_word_idx <= wr_word_idx + 1;
+                    if (wr_enable) begin
+                        if (m_axis_tvalid && !m_axis_tready) begin
+                            wr_drop <= 1'b1;
+                            if (wr_drop_cnt != 16'hffff) wr_drop_cnt <= wr_drop_cnt + 1;
+                            if (stop_req) wr_enable <= 1'b0;
+                        end else begin
+                            m_axis_tdata <= data_pack;
+                            m_axis_tvalid <= 1'b1;
+                            m_axis_tlast <= (dq_gc[8:0] == 9'd511);
+                            if (stop_req && dq_gc[8:0] == 9'd511) wr_enable <= 1'b0;
+                        end
+                    end else if (m_axis_tvalid && m_axis_tready) begin
+                        m_axis_tvalid <= 1'b0;
+                        m_axis_tlast <= 1'b0;
+                    end
+                end else if (m_axis_tvalid && m_axis_tready) begin
                     m_axis_tvalid <= 1'b0;
-                    m_axis_tlast <= 0;
-                end
-                if (pack_done == 1'b1 && dq_gc[8:0] == 9'd511) begin
-                    m_axis_tlast <= 1;
-                end else begin
-                    m_axis_tlast <= 0;
+                    m_axis_tlast <= 1'b0;
                 end
 
                 //Reading saved alpha from ddr and reading received gc from fifo_gc,
@@ -532,6 +650,7 @@ always @(posedge clk200_i) begin
             IDLE_AL: begin
                 read_count <= 48'b0;
                 read_done <= 1'b0;
+                last_valid <= 1'b0;
             end
             WAIT: begin
                 read_done <= 0;
@@ -546,36 +665,34 @@ always @(posedge clk200_i) begin
                 end else state_alpha <= WAIT;
             end
             COUNTING_CM: begin
-                s_axis_tready <= 1;
                 read_done <= 0;
-                if (s_axis_tvalid && s_axis_tready) begin
-                    read_count <= read_count + 1;
-                end else begin
-                    read_count <= read_count;
-                end
-
-                if (((read_count-0) == gc_time_valid_div) && ({q_pos,de_q_pos} == 2'b00) && s_axis_tvalid && s_axis_tready) begin
-                    alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
-                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
+                if (last_valid && last_idx == gc_div48) begin
+                    //word already consumed (previous lookup): use the copy
+                    alpha_q <= q_pos ? last_word[8*gc_time_valid_mod+:2] : last_word[(8*gc_time_valid_mod+2)+:2];
+                    decoy_q <= de_q_pos ? last_word[8*de_gc_time_valid_mod+4] : last_word[8*de_gc_time_valid_mod+5];
+                    lookup_bad <= 1'b0;
                     state_alpha <= DONE;
                     s_axis_tready <= 0;
-                end else if (((read_count-0) == gc_time_valid_div) && ({q_pos,de_q_pos} == 2'b01) && s_axis_tvalid && s_axis_tready) begin
-                    alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
-                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1]; 
-                    state_alpha <= DONE;
-                    s_axis_tready <= 0;
-                end else if (((read_count-0) == gc_time_valid_div) && ({q_pos,de_q_pos} == 2'b10) && s_axis_tvalid && s_axis_tready) begin
-                    alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
-                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
-                    state_alpha <= DONE;
-                    s_axis_tready <= 0; 
-                end else if (((read_count-0) == gc_time_valid_div) && ({q_pos,de_q_pos} == 2'b11) && s_axis_tvalid && s_axis_tready) begin
-                    alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
-                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1];
+                end else if (read_count > gc_div48) begin
+                    //word is gone: answer, flag, and move on
+                    alpha_q <= 2'b00;
+                    decoy_q <= 1'b0;
+                    lookup_bad <= 1'b1;
+                    err_passed <= 1'b1;
+                    if (esc_cnt != 16'hffff) esc_cnt <= esc_cnt + 1;
                     state_alpha <= DONE;
                     s_axis_tready <= 0;
                 end else begin
-                    state_alpha <= COUNTING_CM;
+                    s_axis_tready <= 1;
+                    if ((read_count == gc_div48) && s_hs) begin
+                        alpha_q <= q_pos ? s_axis_tdata[8*gc_time_valid_mod+:2] : s_axis_tdata[(8*gc_time_valid_mod+2)+:2];
+                        decoy_q <= de_q_pos ? s_axis_tdata[8*de_gc_time_valid_mod+4] : s_axis_tdata[8*de_gc_time_valid_mod+5];
+                        lookup_bad <= 1'b0;
+                        state_alpha <= DONE;
+                        s_axis_tready <= 0;
+                    end else begin
+                        state_alpha <= COUNTING_CM;
+                    end
                 end
 
                 if (dq_gc == 0) begin
@@ -583,23 +700,23 @@ always @(posedge clk200_i) begin
                 end
             end
             COUNTING_AL: begin
-                s_axis_tready <= 1;
                 read_done <= 0;
                 decoy_q <= decoy_q;
-                if (s_axis_tvalid && s_axis_tready) begin
-                    read_count <= read_count + 1;
-                end else begin
-                    read_count <= read_count;
-                end
-
-                if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
-                    alpha_q <= s_axis_tdata[(8*gc_time_valid_mod + 2)+:2];
+                s_axis_tready <= 1;
+                if (last_valid && last_idx == gc_div48) begin
+                    alpha_q <= q_pos ? last_word[8*gc_time_valid_mod+:2] : last_word[(8*gc_time_valid_mod+2)+:2];
+                    lookup_bad <= 1'b0;
                     state_alpha <= COUNTING_DE;
-                    // s_axis_tready <= 0;
-                end else if (((read_count-0) == gc_time_valid_div) && (q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
-                    alpha_q <= s_axis_tdata[8*gc_time_valid_mod+:2]; 
+                end else if (read_count > gc_div48) begin
+                    alpha_q <= 2'b00;
+                    lookup_bad <= 1'b1;
+                    err_passed <= 1'b1;
+                    if (esc_cnt != 16'hffff) esc_cnt <= esc_cnt + 1;
                     state_alpha <= COUNTING_DE;
-                    // s_axis_tready <= 0;
+                end else if ((read_count == gc_div48) && s_hs) begin
+                    alpha_q <= q_pos ? s_axis_tdata[8*gc_time_valid_mod+:2] : s_axis_tdata[(8*gc_time_valid_mod+2)+:2];
+                    lookup_bad <= 1'b0;
+                    state_alpha <= COUNTING_DE;
                 end else begin
                     state_alpha <= COUNTING_AL;
                 end
@@ -610,23 +727,27 @@ always @(posedge clk200_i) begin
             end
 
             COUNTING_DE: begin
-                s_axis_tready <= 1;
                 read_done <= 0;
-                if (s_axis_tvalid && s_axis_tready) begin
-                    read_count <= read_count + 1;
-                end else begin
-                    read_count <= read_count;
-                end
-                if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b0) && s_axis_tvalid && s_axis_tready) begin
-                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod + 5)+:1];
+                if (last_valid && last_idx == de_div48) begin
+                    decoy_q <= de_q_pos ? last_word[8*de_gc_time_valid_mod+4] : last_word[8*de_gc_time_valid_mod+5];
                     state_alpha <= DONE;
                     s_axis_tready <= 0;
-                end else if (((read_count-0) == de_gc_time_valid_div) && (de_q_pos == 1'b1) && s_axis_tvalid && s_axis_tready) begin
-                    decoy_q <= s_axis_tdata[(8*de_gc_time_valid_mod+4)+:1]; 
+                end else if (read_count > de_div48) begin
+                    decoy_q <= 1'b0;
+                    lookup_bad <= 1'b1;
+                    err_passed <= 1'b1;
+                    if (esc_cnt != 16'hffff) esc_cnt <= esc_cnt + 1;
                     state_alpha <= DONE;
                     s_axis_tready <= 0;
                 end else begin
-                    state_alpha <= COUNTING_DE;
+                    s_axis_tready <= 1;
+                    if ((read_count == de_div48) && s_hs) begin
+                        decoy_q <= de_q_pos ? s_axis_tdata[8*de_gc_time_valid_mod+4] : s_axis_tdata[8*de_gc_time_valid_mod+5];
+                        state_alpha <= DONE;
+                        s_axis_tready <= 0;
+                    end else begin
+                        state_alpha <= COUNTING_DE;
+                    end
                 end
 
                 if (dq_gc == 0) begin
@@ -684,7 +805,6 @@ always @(posedge clk200_i) begin
             // end
             DONE: begin
                 read_done <= 1;
-                read_count <= read_count;
                 state_alpha <= WAIT;
             end
             default: state_alpha <= IDLE_AL;
@@ -725,7 +845,7 @@ always @(posedge clk200_i) begin
                     start_save_alpha <= 1'b1;
                     if (start_save_alpha == 1'b1 && read_done == 1'b1) begin
                         alpha_cycle_counter <= alpha_cycle_counter + 1;
-                        alpha_pack[(4*alpha_cycle_counter)+:4] <= {1'b0,decoy_q,alpha_q};
+                        alpha_pack[(4*alpha_cycle_counter)+:4] <= {lookup_bad,decoy_q,alpha_q};
                         if (alpha_cycle_counter >= 7'd31) begin
                             alpha_cycle_counter <= 0;
                             alpha_pack_done <= 1'b1;
