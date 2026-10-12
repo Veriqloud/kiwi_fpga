@@ -52,6 +52,12 @@
 //                 whose word is further back is answered with alpha/decoy 0,
 //                 bit 3 of its alpha nibble set, err_passed and esc_cnt,
 //                 instead of draining the vfifo forever
+// Revision 0.04 - Decoy bits packed as {rng_a_data[0], rng_a_data[1]}: the
+//                 lookup took the decoy bit of the other pulse of the gc than
+//                 the angle (rng_a_data[0] is the first pulse, rng_data[1:0]
+//                 the second), so the decoy tag of every click was the
+//                 neighbouring pulse's, right at fiber delay d-1 for one half
+//                 of the clicks and d+1 for the other
 // Additional Comments:
 // - pps200_i is synchronous to clk200_i (pps_timebase), so the WAIT_START
 //   condition and the one-flop DETECT_PPS edge detect are timed paths.
@@ -585,9 +591,14 @@ always @(posedge clk200_i) begin
 
                 //Pack data to save in ddr. Bits [7:6] of byte j (j < 24) carry
                 //bits [2j+1:2j] of the word index, checked on read.
+                //The first pulse of the gc is in the upper bit(s) of both
+                //fields: rng_data[3:2] drives the first DAC pulse (amp1),
+                //rng_a_data[0] the first decoy half (temp_signal1), so the
+                //decoy bits go in swapped and the lookups read [5:4] with the
+                //same q_pos as [3:0].
                 if (rd_en_4_r[1] == 1'b1) begin
                     cycle_counter <= cycle_counter + 1;
-                    data_pack[(8*cycle_counter)+:8] <= {wr_idx_ext[(2*cycle_counter)+:2],rng_a_data,rng_data};
+                    data_pack[(8*cycle_counter)+:8] <= {wr_idx_ext[(2*cycle_counter)+:2],rng_a_data[0],rng_a_data[1],rng_data};
                     if (cycle_counter >= 7'd31) begin
                             cycle_counter <= 7'b0;
                         pack_done <= 1'b1;

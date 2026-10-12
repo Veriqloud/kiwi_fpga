@@ -58,7 +58,9 @@ module tb;
     end
   end
 
-  // ground truth: the byte ddr_data packs for each gc (tick) index
+  // ground truth per gc (tick) index, in emission order: the first pulse of the
+  // gc carries angle rng[3:2] (amp1) and decoy rnga[0] (temp_signal1), the
+  // second rng[1:0] and rnga[1]
   reg [7:0] tick_byte [0:2000000]; integer ntick=0;
   always @(posedge clk) if (dut.state==3 && dut.rd_en_4_r[1]) begin
     tick_byte[ntick] = {2'b00, rnga, rng}; ntick = ntick+1;
@@ -77,21 +79,27 @@ module tb;
   end
 
   // results: sample at DONE
-  integer nclk=0; integer gcs [0:63]; integer nproc=0;
-  integer hits [-3:3]; integer k;
-  reg [7:0] b; reg [1:0] exp_a; integer gv;
+  // A click with half bit q (tdata_gc[48]) and pair_delay 0 is looked up in gc
+  // gc - delay + q, pulse 1 - q.
+  integer nclk=0; integer gcs [0:63]; integer gq [0:63]; integer nproc=0;
+  integer hits [-3:3]; integer de_hits [-3:3]; integer k;
+  reg [7:0] b; reg [1:0] exp_a; reg exp_d; integer gv, h;
   always @(posedge clk) if (dut.state_alpha==5) begin
+    h = 1 - gq[nproc];
     for (k=-3;k<=3;k=k+1) begin
-      gv = gcs[nproc] - FD + k*32;          // q=0, pair_delay=0 -> q_pos=1 -> byte[1:0]
-      b = tick_byte[gv]; exp_a = b[1:0];
+      gv = gcs[nproc] - FD + gq[nproc] + k*32;
+      b = tick_byte[gv]; exp_a = h ? b[1:0] : b[3:2];
       if (exp_a == dut.alpha_q) hits[k] = hits[k]+1;
+      gv = gcs[nproc] - DE + gq[nproc] + k*32;
+      b = tick_byte[gv]; exp_d = b[4+h];
+      if (exp_d == dut.decoy_q) de_hits[k] = de_hits[k]+1;
     end
     nproc = nproc+1;
   end
 
   integer i, nclicks;
   initial begin
-    for (k=-3;k<=3;k=k+1) hits[k]=0;
+    for (k=-3;k<=3;k=k+1) begin hits[k]=0; de_hits[k]=0; end
     repeat (20) @(posedge clk); rstn=1;
     repeat (10) @(posedge clk); reg_en=1; repeat(10) @(posedge clk); reg_en=0;
     cmd_alpha_en=1; cmd_gc_en=1; start_w=1;
@@ -102,7 +110,8 @@ module tb;
       if (MODE==3) gcs[i] = 8000 + 3 + 2*i;  // both alpha lookups in the same 32-gc word
       else if (MODE==4) gcs[i] = (i==1) ? 8000 - 100 : 8000 + 400*i;
       else gcs[i] = 4000 + i*301 + (i*7)%32;
-      @(posedge clk); gc_din <= {15'd0, 1'b0, 16'd0, gcs[i][31:0]}; gc_wr <= 1;
+      gq[i] = (MODE==0) ? i%2 : 0;
+      @(posedge clk); gc_din <= {15'd0, gq[i][0], 16'd0, gcs[i][31:0]}; gc_wr <= 1;
       @(posedge clk); gc_wr <= 0;
       repeat (3) @(posedge clk);
     end
@@ -111,6 +120,8 @@ module tb;
              MODE, FD_ADJ, 2*FD_ADJ, nproc, nclicks);
     for (k=-3;k<=3;k=k+1) $display("  alpha matches truth at gc_time_valid %+0d words (%+0d periods): %0d/%0d",
              k, 64*k, hits[k], nproc);
+    for (k=-3;k<=3;k=k+1) $display("  decoy matches truth at de_gc_time_valid %+0d words (%+0d periods): %0d/%0d",
+             k, 64*k, de_hits[k], nproc);
     $display("  lookup_bad (alpha nibble bit 3) of the last lookup %0d", dut.lookup_bad);
     $display("  read_count %0d, state_alpha %0d, vfifo words left %0d; slip %0d slip_delta %0d err_passed %0d esc %0d drops %0d", dut.read_count, dut.state_alpha, qt-qh, ext_status[5], $signed(ext_status[20:13]), ext_status[3], ext_counts[31:16], ext_counts[15:0]);
     $finish;
